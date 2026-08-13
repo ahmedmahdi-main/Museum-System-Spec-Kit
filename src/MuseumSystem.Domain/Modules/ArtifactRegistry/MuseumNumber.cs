@@ -10,7 +10,7 @@ public sealed record MuseumNumber
 
     public string CategoryCode { get; }
     public int ItemNumber { get; }
-    public string DisplayValue => $"{CategoryCode}/{ItemNumber}";
+    public string DisplayValue => $"{CategoryCode}-{ItemNumber}";
 
     public static MuseumNumber Create(string categoryCode, int itemNumber)
     {
@@ -25,3 +25,4 @@ public sealed record MuseumNumber
 
     public override string ToString() => DisplayValue;
 }
+

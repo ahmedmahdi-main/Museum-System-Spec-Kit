@@ -37,7 +37,7 @@ public sealed class CreateArtifactUseCaseTests
         var result = await artifactUseCases.CreateArtifact(new CreateArtifactRequest(category.Value!.CategoryId, 12, "قطعة نسيج", location.Value!.LocationId));
 
         Assert.True(result.Succeeded);
-        Assert.Equal("TXT/12", result.Value!.MuseumNumber);
+        Assert.Equal("TXT-12", result.Value!.MuseumNumber);
         Assert.Equal(location.Value.LocationId, result.Value.CurrentLocationId);
         Assert.Equal(location.Value.LocationId, result.Value.LastKnownStorageLocationId);
     }
@@ -88,3 +88,4 @@ public sealed class CreateArtifactUseCaseTests
         return new MuseumDbContext(options);
     }
 }
+

@@ -12,7 +12,7 @@ public sealed class MuseumNumberTests
 
         Assert.Equal("CAT", museumNumber.CategoryCode);
         Assert.Equal(42, museumNumber.ItemNumber);
-        Assert.Equal("CAT/42", museumNumber.DisplayValue);
+        Assert.Equal("CAT-42", museumNumber.DisplayValue);
         Assert.DoesNotContain(categoryId.ToString(), museumNumber.DisplayValue);
     }
 
@@ -22,3 +22,4 @@ public sealed class MuseumNumberTests
         Assert.Throws<ArgumentOutOfRangeException>(() => MuseumNumber.Create("CAT", 0));
     }
 }
+

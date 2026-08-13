@@ -18,7 +18,7 @@ public sealed class ArtifactTests
 
         Assert.Equal(artifactId, artifact.ArtifactId);
         Assert.Equal(category.CategoryId, artifact.CategoryId);
-        Assert.Equal("BRZ/7", artifact.MuseumNumberDisplay);
+        Assert.Equal("BRZ-7", artifact.MuseumNumberDisplay);
         Assert.Equal(ArtifactCurrentStatus.InStorage, artifact.CurrentStatus);
         Assert.Equal(location.LocationId, artifact.CurrentLocationId);
         Assert.Equal(location.LocationId, artifact.LastKnownStorageLocationId);
@@ -35,3 +35,4 @@ public sealed class ArtifactTests
         Assert.Throws<InvalidOperationException>(() => Artifact.Create(category, 7, "تمثال صغير", display));
     }
 }
+
