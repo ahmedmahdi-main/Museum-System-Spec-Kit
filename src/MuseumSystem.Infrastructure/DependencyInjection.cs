@@ -19,10 +19,11 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("MuseumDatabase")
             ?? throw new InvalidOperationException("Connection string 'MuseumDatabase' is not configured.");
 
+        services.AddHttpContextAccessor();
         services.AddDbContext<MuseumDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<IMuseumDbContext>(provider => provider.GetRequiredService<MuseumDbContext>());
         services.AddScoped<IExcelImportReader, ClosedXmlImportReader>();
-        services.AddScoped<IAuditActorContext, SystemAuditActorContext>();
+        services.AddScoped<IAuditActorContext, HttpAuditActorContext>();
         services.AddScoped<IAuditWriter, AuditWriter>();
 
         services.AddIdentityCore<ApplicationUser>()

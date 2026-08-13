@@ -4,7 +4,7 @@
 
 **Prerequisites**: `spec.md`, `plan.md`, `data-model.md`, `research.md`, `quickstart.md`, `contracts/`, `.specify/memory/constitution.md`
 
-**Scope Guard**: Phase-one Modular Monolith only. Do not add Microservices, Event Bus, CQRS/MediatR/Event Sourcing, gRPC, RabbitMQ, or optional Docker runtime work.
+**Scope Guard**: Phase-one Modular Monolith only. Do not add Microservices, Event Bus, CQRS/MediatR/Event Sourcing, gRPC, RabbitMQ, Redis, or any new infrastructure beyond the optional Docker Compose packaging tasks T116-T118.
 
 **Task Format**: `- [ ] T### [P?] [US?] Description with file path`
 
@@ -188,22 +188,34 @@
 
 ### Hardening & UAT Tests
 
-- [ ] T103 [P] Add end-to-end permission matrix tests in `tests/MuseumSystem.Web.AcceptanceTests/Security/PermissionMatrixTests.cs` (Plan Authorization Boundaries, Constitution IX)
-- [ ] T104 [P] Add quickstart build/database validation test notes in `tests/MuseumSystem.Integration.Tests/Quickstart/BuildDatabaseValidationTests.cs` (Quickstart, Plan Phase F)
-- [ ] T105 [P] Add RTL usability acceptance coverage for primary screens in `tests/MuseumSystem.Web.AcceptanceTests/Usability/RtlPrimaryScreensTests.cs` (SC-008, Constitution IV)
-- [ ] T106 [P] Add backup/restore drill checklist test artifact in `tests/MuseumSystem.Integration.Tests/Deployment/BackupRestoreReadinessTests.cs` (Plan Phase F, Constitution XI)
-- [ ] T107 [P] Add performance smoke tests for search and bulk operations in `tests/MuseumSystem.Integration.Tests/Performance/PhaseOnePerformanceSmokeTests.cs` (SC-003, SC-004, SC-005)
+- [x] T103 [P] Add end-to-end permission matrix tests in `tests/MuseumSystem.Web.AcceptanceTests/Security/PermissionMatrixTests.cs` (Plan Authorization Boundaries, Constitution IX)
+- [x] T104 [P] Add quickstart build/database validation test notes in `tests/MuseumSystem.Integration.Tests/Quickstart/BuildDatabaseValidationTests.cs` (Quickstart, Plan Phase F)
+- [x] T105 [P] Add RTL usability acceptance coverage for primary screens in `tests/MuseumSystem.Web.AcceptanceTests/Usability/RtlPrimaryScreensTests.cs` (SC-008, Constitution IV)
+- [x] T106 [P] Add backup/restore drill checklist test artifact in `tests/MuseumSystem.Integration.Tests/Deployment/BackupRestoreReadinessTests.cs` (Plan Phase F, Constitution XI)
+- [x] T107 [P] Add performance smoke tests for search and bulk operations in `tests/MuseumSystem.Integration.Tests/Performance/PhaseOnePerformanceSmokeTests.cs` (SC-003, SC-004, SC-005)
 
 ### Hardening & UAT Implementation
 
-- [ ] T108 Finalize permission constants and role presets in `src/MuseumSystem.Application/Modules/IdentityAccess/Permissions.cs` (Plan Authorization Boundaries, Constitution IX)
-- [ ] T109 Enforce authorization policies on all Blazor pages in `src/MuseumSystem.Web/Components/Routes.razor` (Plan Authorization Boundaries, Constitution IX)
-- [ ] T110 Implement application-boundary audit writer in `src/MuseumSystem.Infrastructure/Audit/AuditWriter.cs` (Plan audit foundation, Constitution IX)
-- [ ] T111 Add user-facing Arabic validation messages without stack traces in `src/MuseumSystem.Web/Components/Shared/ValidationSummary.razor` (FR-031, FR-032, SC-008)
-- [ ] T112 Add migration creation instructions and no-Docker deployment notes in `specs/001-central-artifact-registry/quickstart.md` (Plan Migration / Deployment Approach, Constitution XII)
-- [ ] T113 Add initial EF Core migration task output location in `src/MuseumSystem.Infrastructure/Persistence/Migrations/` (Plan Migration / Deployment Approach)
-- [ ] T114 Run and record quickstart validation checklist results in `specs/001-central-artifact-registry/checklists/uat-results.md` (Quickstart, SC-001, SC-002, SC-003, SC-004, SC-005, SC-006, SC-007, SC-008, SC-009, SC-010)
-- [ ] T115 Review `specs/001-central-artifact-registry/tasks.md` against `specs/001-central-artifact-registry/plan.md` to ensure no out-of-scope architecture was introduced (Constitution XIV)
+- [x] T108 Finalize permission constants and role presets in `src/MuseumSystem.Application/Modules/IdentityAccess/Permissions.cs` (Plan Authorization Boundaries, Constitution IX)
+- [x] T109 Enforce authorization policies on all Blazor pages in `src/MuseumSystem.Web/Components/Routes.razor` (Plan Authorization Boundaries, Constitution IX)
+- [x] T110 Implement application-boundary audit writer in `src/MuseumSystem.Infrastructure/Audit/AuditWriter.cs` (Plan audit foundation, Constitution IX)
+- [x] T111 Add user-facing Arabic validation messages without stack traces in `src/MuseumSystem.Web/Components/Shared/ValidationSummary.razor` (FR-031, FR-032, SC-008)
+- [x] T112 Add migration creation instructions and no-Docker deployment notes in `specs/001-central-artifact-registry/quickstart.md` (Plan Migration / Deployment Approach, Constitution XII)
+- [x] T113 Add initial EF Core migration task output location in `src/MuseumSystem.Infrastructure/Persistence/Migrations/` (Plan Migration / Deployment Approach)
+- [x] T114 Run and record quickstart validation checklist results in `specs/001-central-artifact-registry/checklists/uat-results.md` (Quickstart, SC-001, SC-002, SC-003, SC-004, SC-005, SC-006, SC-007, SC-008, SC-009, SC-010)
+- [x] T115 Review `specs/001-central-artifact-registry/tasks.md` against `specs/001-central-artifact-registry/plan.md` to ensure no out-of-scope architecture was introduced (Constitution XIV)
+
+## Phase 7: Optional Docker Compose Packaging
+
+**Goal**: Add Docker Compose as an optional runtime path while keeping direct Windows Server deployment supported and independent of Docker.
+
+**Independent Test Criteria**: Docker Compose configuration renders successfully, the web image builds, the compose stack starts with PostgreSQL health checks, and the app receives an environment-based PostgreSQL connection string. Normal `dotnet build` and `dotnet test` still pass.
+
+### Optional Docker Compose Implementation
+
+- [x] T116 Create a multi-stage Dockerfile for `MuseumSystem.Web` using .NET 10 in `Dockerfile` (Plan Migration / Deployment Approach, Constitution XI)
+- [x] T117 Create root `docker-compose.yml` with only `MuseumSystem.Web`, PostgreSQL, a persistent PostgreSQL volume, environment-based connection string, PostgreSQL health check, and dependency/startup configuration; add `.env.example` without real secrets (Plan Migration / Deployment Approach, Constitution XI, Constitution XIV)
+- [x] T118 Verify `docker compose config`, `docker compose build`, `docker compose up`, and application connectivity to PostgreSQL; document Docker start/stop commands in `specs/001-central-artifact-registry/quickstart.md` (Plan Migration / Deployment Approach, Constitution XI)
 
 ## Dependencies & Execution Order
 
@@ -215,6 +227,7 @@
 - **Phase 4 Excel Import**: depends on Artifact Registry and location persistence T034-T040; can begin after Phase 2 if Storehouse movement screens are not touched.
 - **Phase 5 Reconciliation & Corrections**: depends on Storehouse movement/current-state model T052-T066.
 - **Phase 6 Hardening & UAT**: depends on all selected phase-one functionality.
+- **Phase 7 Optional Docker Compose Packaging**: depends on Phase 6 validation and changes only packaging/docs, not system logic.
 
 ### Parallel Opportunities
 
@@ -225,6 +238,7 @@
 - Excel Import tests T067-T072 can run in parallel; implementation T073-T077 can split by Domain, Infrastructure, and Application.
 - Reconciliation entities T090-T092 can run in parallel before rules and use cases.
 - Hardening tests T103-T107 can run in parallel once phase functionality is available.
+- Docker packaging tasks T116-T117 can be reviewed independently before T118 verification.
 
 ### MVP Scope
 
@@ -240,6 +254,7 @@
 4. Add Excel Import after registry uniqueness and location references are stable.
 5. Add Reconciliation & Corrections after movement/current-state behavior is reliable.
 6. Finish with Hardening & UAT using `quickstart.md` scenarios.
+7. Add optional Docker Compose packaging after phase-one behavior is complete, keeping direct Windows Server deployment unchanged.
 
 ## Notes
 
@@ -247,3 +262,4 @@
 - Every implementation task stays inside `ArtifactRegistry`, `StorehouseOperations`, `Import`, or `IdentityAccess` module boundaries.
 - Tests are included in each phase because the feature specification and constitution require critical business rule testing.
 - Do not implement image stewardship or public-facing museum features in this phase.
+- Docker Compose support is optional packaging only and must not introduce RabbitMQ, Redis, Microservices, CQRS/MediatR, Event Bus, or any new application runtime dependency.

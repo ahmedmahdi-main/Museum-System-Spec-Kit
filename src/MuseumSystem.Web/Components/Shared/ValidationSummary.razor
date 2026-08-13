@@ -1,0 +1,20 @@
+@using MuseumSystem.Application.Common
+
+@if (Issues.Count > 0 || Messages.Count > 0)
+{
+    <div class="status-message" role="alert">
+        @foreach (var message in Messages)
+        {
+            <p>@message</p>
+        }
+        @foreach (var issue in Issues)
+        {
+            <p>@issue.Message</p>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<ValidationIssue> Issues { get; set; } = [];
+    [Parameter] public IReadOnlyList<string> Messages { get; set; } = [];
+}

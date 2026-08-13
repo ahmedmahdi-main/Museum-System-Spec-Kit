@@ -170,4 +170,112 @@ dotnet test
 
 ### Optional Docker Path
 
-Docker يمكن دعمه لاحقاً للتطوير أو النشر الاختياري، لكنه ليس متطلب تشغيل ولا شرط قبول للمرحلة الأولى.
+Docker Compose is an optional packaging/runtime path for development or approved deployments. Direct Windows Server deployment remains supported and does not require Docker. The compose stack includes only `MuseumSystem.Web`, PostgreSQL, and a persistent PostgreSQL volume.
+
+1. Create a local environment file from the example and set local-only values:
+
+```text
+copy .env.example .env
+```
+
+2. Verify the Compose file after setting `POSTGRES_PASSWORD` in `.env`:
+
+```text
+docker compose config
+```
+
+3. Build the web image:
+
+```text
+docker compose build
+```
+
+4. Start PostgreSQL and the web application:
+
+```text
+docker compose up -d
+```
+
+5. Apply EF Core migrations from the host against the exposed PostgreSQL port before first use:
+
+```text
+set ConnectionStrings__MuseumDatabase=Host=localhost;Port=5432;Database=museum_system;Username=museum_app;Password=<local-password>
+dotnet ef database update --project src\MuseumSystem.Infrastructure --startup-project src\MuseumSystem.Web
+```
+
+6. Check service status and logs:
+
+```text
+docker compose ps
+docker compose logs web
+```
+
+7. Stop the optional Docker stack without deleting database data:
+
+```text
+docker compose down
+```
+
+8. Delete the local PostgreSQL volume only when intentionally resetting local data:
+
+```text
+docker compose down -v
+```
+
+Do not commit `.env`; keep real passwords and production secrets outside the repository.
+
+## Migration and Direct Windows Server Deployment
+
+### EF Core Migration Commands
+
+Run these commands from the repository root after setting a valid PostgreSQL connection string in `src/MuseumSystem.Web/appsettings.json` or an environment-specific configuration source:
+
+```text
+dotnet restore .\Museum-System.sln
+dotnet build .\Museum-System.sln
+dotnet ef database update --project src\MuseumSystem.Infrastructure --startup-project src\MuseumSystem.Web
+```
+
+The initial migration output is stored under:
+
+```text
+src/MuseumSystem.Infrastructure/Persistence/Migrations/
+```
+
+### Direct Windows Server Deployment
+
+Docker is optional and not required for phase-one operation. The supported direct path is:
+
+1. Install the .NET 10 hosting bundle on Windows Server.
+2. Provision PostgreSQL and create the museum database/user.
+3. Configure `ConnectionStrings__MuseumDatabase` as a Windows environment variable or secure app setting.
+4. Publish the web app from the repository root:
+
+```text
+dotnet publish src\MuseumSystem.Web\MuseumSystem.Web.csproj -c Release -o .\publish\MuseumSystem.Web
+```
+
+5. Run migration before first production start:
+
+```text
+dotnet ef database update --project src\MuseumSystem.Infrastructure --startup-project src\MuseumSystem.Web
+```
+
+6. Host the published app behind IIS or the approved Windows service runner.
+
+### Backup/Restore Drill
+
+Before first real Excel commit and before any production migration, perform a PostgreSQL backup:
+
+```text
+pg_dump --format=custom --file museum-before-change.dump "%MuseumDatabaseConnectionString%"
+```
+
+Restore drill on a non-production database:
+
+```text
+createdb museum_restore_drill
+pg_restore --dbname museum_restore_drill --clean --if-exists museum-before-change.dump
+```
+
+Expected result: restore completes, the app starts against the restored database, and artifact search plus movement history are readable.

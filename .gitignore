@@ -18,6 +18,7 @@ publish/
 # Local configuration
 .env
 .env.*
+!.env.example
 *.local.json
 
 # OS / editor

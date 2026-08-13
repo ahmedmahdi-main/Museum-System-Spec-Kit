@@ -18,7 +18,7 @@
 
 **Testing**: اختبارات وحدة لقواعد الدومين، اختبارات تكامل للتخزين وعمليات الخدمات، اختبارات واجهة/قبول لمسارات الموظف الأساسية
 
-**Target Platform**: Windows Server أولاً، مع إمكانية تشغيل اختيارية عبر Docker لاحقاً دون أن يكون Docker شرطاً
+**Target Platform**: Windows Server أولاً، مع دعم تشغيل اختياري عبر Docker Compose دون أن يكون Docker شرطاً
 
 **Project Type**: تطبيق ويب مؤسسي داخلي بواجهة عربية RTL
 
@@ -328,7 +328,8 @@ OutOfStorage --DocumentedCorrection--> allowed only for documented current-locat
 4. Seed initial roles and permissions only; do not seed museum artifact data except controlled test fixtures.
 5. Deploy to Windows Server using published app artifacts and configured PostgreSQL instance.
 6. Before first real Excel commit, take database backup and run import preview/validation with staff review.
-7. Docker support may be added later as optional packaging, not as a required runtime path.
+7. Docker Compose is supported as an optional packaging/runtime path with only `MuseumSystem.Web` and PostgreSQL, a persistent PostgreSQL volume, environment-based configuration, and database health checks.
+8. Direct Windows Server deployment remains supported and does not depend on Docker.
 
 ## Technical Risks
 
@@ -374,9 +375,16 @@ OutOfStorage --DocumentedCorrection--> allowed only for documented current-locat
 
 - Acceptance scenarios, RTL usability review, backup/restore drill, performance checks against success criteria.
 
+### Phase G - Optional Docker Compose Packaging
+
+- Optional multi-stage Docker image for `MuseumSystem.Web`.
+- Optional Docker Compose file with only the web application and PostgreSQL.
+- Environment-based PostgreSQL connection settings, no committed secrets, and no additional infrastructure services.
+- Docker remains optional and is not a prerequisite for direct Windows Server deployment.
+
 ## Post-Design Constitution Check
 
-PASS. The design keeps one deployable application and one database, preserves artifact identity and custody history, provides audit and permission boundaries, verifies Excel migration before commit, avoids excluded features and architectural overreach, and remains phaseable for user validation.
+PASS. The design keeps one deployable Modular Monolith application and one PostgreSQL database, preserves artifact identity and custody history, provides audit and permission boundaries, verifies Excel migration before commit, avoids excluded features and architectural overreach, and keeps Docker Compose as optional packaging rather than a required runtime dependency.
 
 ## Complexity Tracking
 
