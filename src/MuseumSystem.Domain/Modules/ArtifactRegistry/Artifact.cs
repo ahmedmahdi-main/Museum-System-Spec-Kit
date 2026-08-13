@@ -130,6 +130,62 @@ public sealed class Artifact
         Touch();
     }
 
+
+    public void CorrectStorageLocation(Location storageLocation)
+    {
+        if (CurrentStatus != ArtifactCurrentStatus.InStorage)
+        {
+            throw new InvalidOperationException("Use Return to receive an out-of-storage artifact into storage.");
+        }
+
+        if (!storageLocation.IsActive || storageLocation.LocationType != LocationType.Storage)
+        {
+            throw new InvalidOperationException("Correction requires an active storage location.");
+        }
+
+        CurrentLocationId = storageLocation.LocationId;
+        CurrentHolderType = null;
+        CurrentHolderName = null;
+        LastKnownStorageLocationId = storageLocation.LocationId;
+        Touch();
+    }
+
+    public void CorrectDisplayLocation(Location displayLocation)
+    {
+        if (CurrentStatus != ArtifactCurrentStatus.OutOfStorage)
+        {
+            throw new InvalidOperationException("Display correction requires an out-of-storage artifact.");
+        }
+
+        if (!displayLocation.IsActive || displayLocation.LocationType != LocationType.DisplayHall)
+        {
+            throw new InvalidOperationException("Correction requires an active display hall location.");
+        }
+
+        CurrentLocationId = displayLocation.LocationId;
+        CurrentHolderType = MovementRecipientType.DisplayHall.ToString();
+        CurrentHolderName = displayLocation.NameArabic;
+        Touch();
+    }
+
+    public void CorrectInternalHolder(MovementRecipientType holderType, string holderName)
+    {
+        if (holderType == MovementRecipientType.DisplayHall)
+        {
+            throw new InvalidOperationException("Display hall correction requires a display location.");
+        }
+
+        if (CurrentStatus != ArtifactCurrentStatus.OutOfStorage)
+        {
+            throw new InvalidOperationException("Holder correction requires an out-of-storage artifact.");
+        }
+
+        CurrentLocationId = null;
+        CurrentHolderType = holderType.ToString();
+        CurrentHolderName = RequireText(holderName, nameof(holderName));
+        Touch();
+    }
+
     private void EnsureInStorage()
     {
         if (CurrentStatus != ArtifactCurrentStatus.InStorage)

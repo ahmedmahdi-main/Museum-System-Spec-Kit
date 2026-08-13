@@ -1,0 +1,76 @@
+@page "/storehouse/documented-correction"
+@attribute [Authorize(Policy = PermissionNames.StorehouseCorrectionsCreate)]
+@rendermode InteractiveServer
+@inject CreateDocumentedCorrectionUseCase CreateDocumentedCorrectionUseCase
+
+<PageTitle>تصحيح موثق</PageTitle>
+
+<section class="page-section">
+    <h2>تصحيح موثق</h2>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="status-message">@message</div>
+    }
+
+    <EditForm Model="this" OnSubmit="SaveAsync" FormName="documented-correction">
+        <div class="form-grid">
+            <label>
+                <span>ReconciliationResultId</span>
+                <InputText @bind-Value="resultIdText" class="form-control" />
+            </label>
+            <label>
+                <span>نوع التصحيح</span>
+                <InputSelect @bind-Value="correctionType" class="form-control">
+                    <option value="@DocumentedCorrectionType.LocationCorrection">تصحيح موقع</option>
+                    <option value="@DocumentedCorrectionType.HolderCorrection">تصحيح عهدة</option>
+                </InputSelect>
+            </label>
+            <label>
+                <span>LocationId جديد</span>
+                <InputText @bind-Value="newLocationIdText" class="form-control" />
+            </label>
+            <label>
+                <span>نوع العهدة الجديدة</span>
+                <InputSelect @bind-Value="newHolderType" class="form-control">
+                    <option value="@MovementRecipientType.DocumentationDivision">التوثيق</option>
+                    <option value="@MovementRecipientType.LaboratoryDivision">المختبر</option>
+                    <option value="@MovementRecipientType.Photographer">المصور</option>
+                </InputSelect>
+            </label>
+            <label>
+                <span>اسم العهدة الجديدة</span>
+                <InputText @bind-Value="newHolderName" class="form-control" />
+            </label>
+            <label>
+                <span>سبب موثق</span>
+                <InputTextArea @bind-Value="reason" class="form-control" />
+            </label>
+            <button type="submit" class="btn-primary">حفظ التصحيح</button>
+        </div>
+    </EditForm>
+</section>
+
+@code {
+    private string resultIdText = string.Empty;
+    private DocumentedCorrectionType correctionType = DocumentedCorrectionType.LocationCorrection;
+    private string? newLocationIdText;
+    private MovementRecipientType newHolderType = MovementRecipientType.DocumentationDivision;
+    private string? newHolderName;
+    private string reason = string.Empty;
+    private string? message;
+
+    private async Task SaveAsync()
+    {
+        if (!Guid.TryParse(resultIdText, out var resultId))
+        {
+            message = "اختر نتيجة تعارض صحيحة.";
+            return;
+        }
+
+        Guid? newLocationId = Guid.TryParse(newLocationIdText, out var parsedLocationId) ? parsedLocationId : null;
+        var holderType = correctionType == DocumentedCorrectionType.HolderCorrection ? newHolderType : (MovementRecipientType?)null;
+        var result = await CreateDocumentedCorrectionUseCase.CreateDocumentedCorrection(new CreateDocumentedCorrectionRequest(resultId, correctionType, newLocationId, holderType, newHolderName, reason));
+        message = result.Succeeded ? "تم حفظ التصحيح الموثق." : result.ConcurrencyConflict ? string.Join(" ", result.Messages) : string.Join(" ", result.ValidationIssues.Select(issue => issue.Message));
+    }
+}

@@ -1,0 +1,147 @@
+@page "/storehouse/reconciliation"
+@attribute [Authorize(Policy = PermissionNames.StorehouseReconciliationManage)]
+@rendermode InteractiveServer
+@inject LocationUseCases LocationUseCases
+@inject StartReconciliationSessionUseCase StartUseCase
+@inject RecordReconciliationItemsUseCase RecordUseCase
+@inject ReviewReconciliationResultsUseCase ReviewUseCase
+
+<PageTitle>الجرد</PageTitle>
+
+<section class="page-section">
+    <h2>الجرد</h2>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="status-message">@message</div>
+    }
+
+    <div class="form-grid">
+        <label>
+            <span>موقع الخزن</span>
+            <InputSelect @bind-Value="locationId" class="form-control">
+                <option value="@Guid.Empty">اختر موقع خزن</option>
+                @foreach (var location in storageLocations)
+                {
+                    <option value="@location.LocationId">@location.NameArabic</option>
+                }
+            </InputSelect>
+        </label>
+        <label>
+            <span>ملاحظة</span>
+            <InputText @bind-Value="note" class="form-control" />
+        </label>
+        <button type="button" class="btn-primary" @onclick="StartAsync">بدء الجرد</button>
+    </div>
+
+    @if (session is not null)
+    {
+        <section class="sub-section">
+            <h3>تسجيل المرصود</h3>
+            <label>
+                <span>MuseumNumber لكل سطر</span>
+                <InputTextArea @bind-Value="observedNumbersText" class="form-control" />
+            </label>
+            <button type="button" class="btn-secondary" @onclick="RecordAsync">تسجيل النتائج</button>
+            <button type="button" class="btn-primary" disabled="@(session.Status != ReconciliationSessionStatus.Completed)" @onclick="ReviewAsync">مراجعة وتأكيد التعارضات</button>
+        </section>
+
+        <section class="sub-section">
+            <h3>نتائج الجرد</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>النوع</th>
+                        <th>الرقم المرصود</th>
+                        <th>ArtifactId</th>
+                        <th>الوصف</th>
+                        <th>مؤكد</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var result in session.Results)
+                    {
+                        <tr>
+                            <td>@ResultTypeText(result.ResultType)</td>
+                            <td>@(result.ObservedMuseumNumber ?? "-")</td>
+                            <td>@(result.ArtifactId?.ToString() ?? "-")</td>
+                            <td>@result.IssueDescription</td>
+                            <td>@(result.IsConfirmed ? "نعم" : "لا")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    }
+</section>
+
+@code {
+    private List<LocationDto> storageLocations = [];
+    private Guid locationId;
+    private string? note;
+    private string observedNumbersText = string.Empty;
+    private ReconciliationSessionDto? session;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        storageLocations = (await LocationUseCases.ListSelectableLocations())
+            .Where(location => location.LocationType == LocationType.Storage)
+            .ToList();
+    }
+
+    private async Task StartAsync()
+    {
+        if (locationId == Guid.Empty)
+        {
+            message = "اختر موقع خزن صالح.";
+            return;
+        }
+
+        var result = await StartUseCase.StartReconciliationSession(new StartReconciliationSessionRequest(locationId, note));
+        session = result.Value ?? session;
+        message = ResultMessage(result.Succeeded, result.Messages, result.ValidationIssues);
+    }
+
+    private async Task RecordAsync()
+    {
+        if (session is null)
+        {
+            return;
+        }
+
+        var result = await RecordUseCase.RecordReconciliationItems(new RecordReconciliationItemsRequest(session.ReconciliationSessionId, ParseObservedNumbers()));
+        session = result.Value ?? session;
+        message = ResultMessage(result.Succeeded, result.Messages, result.ValidationIssues);
+    }
+
+    private async Task ReviewAsync()
+    {
+        if (session is null)
+        {
+            return;
+        }
+
+        var result = await ReviewUseCase.ReviewReconciliationResults(session.ReconciliationSessionId);
+        session = result.Value ?? session;
+        message = ResultMessage(result.Succeeded, result.Messages, result.ValidationIssues);
+    }
+
+    private IReadOnlyList<string> ParseObservedNumbers() => observedNumbersText
+        .Split(['\r', '\n', ',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList();
+
+    private static string ResultMessage(bool succeeded, IReadOnlyList<string> messages, IReadOnlyList<ValidationIssue> issues) =>
+        succeeded ? string.Join(" ", messages) : string.Join(" ", issues.Select(issue => issue.Message));
+
+    private static string ResultTypeText(ReconciliationResultType type) => type switch
+    {
+        ReconciliationResultType.Matched => "مطابق",
+        ReconciliationResultType.Missing => "مفقود",
+        ReconciliationResultType.Extra => "زائد",
+        ReconciliationResultType.Conflict => "تعارض",
+        ReconciliationResultType.NeedsReview => "يحتاج مراجعة",
+        _ => type.ToString()
+    };
+}

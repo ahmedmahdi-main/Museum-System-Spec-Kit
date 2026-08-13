@@ -1,0 +1,45 @@
+@page "/admin/audit"
+@attribute [Authorize(Policy = PermissionNames.AuditView)]
+@rendermode InteractiveServer
+@inject AuditTrailUseCase AuditTrailUseCase
+
+<PageTitle>سجل التدقيق</PageTitle>
+
+<section class="page-section">
+    <h2>سجل التدقيق</h2>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>الوقت</th>
+                <th>الإجراء</th>
+                <th>الوحدة</th>
+                <th>الكيان</th>
+                <th>الملخص</th>
+                <th>التغيير</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var entry in entries)
+            {
+                <tr>
+                    <td>@entry.OccurredAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>@entry.ActionName</td>
+                    <td>@entry.ModuleName</td>
+                    <td>@entry.EntityName</td>
+                    <td>@entry.Summary</td>
+                    <td>@(entry.ChangeSummary ?? "-")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<AuditEntryDto> entries = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        entries = (await AuditTrailUseCase.ListAuditEntries()).ToList();
+    }
+}

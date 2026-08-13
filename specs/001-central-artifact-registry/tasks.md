@@ -157,28 +157,28 @@
 
 ### Reconciliation & Corrections Tests
 
-- [ ] T084 [P] [US6] Add domain tests for reconciliation result classification in `tests/MuseumSystem.Domain.Tests/StorehouseOperations/ReconciliationClassificationTests.cs` (FR-029, SC-007)
-- [ ] T085 [P] [US6] Add domain tests for documented correction rules in `tests/MuseumSystem.Domain.Tests/StorehouseOperations/DocumentedCorrectionTests.cs` (FR-030, BR-006, BR-007)
-- [ ] T086 [P] [US6] Add application tests for reconciliation session lifecycle in `tests/MuseumSystem.Application.Tests/StorehouseOperations/ReconciliationSessionUseCaseTests.cs` (FR-029)
-- [ ] T087 [P] [US6] Add application tests proving correction does not substitute for return in `tests/MuseumSystem.Application.Tests/StorehouseOperations/CreateDocumentedCorrectionUseCaseTests.cs` (FR-030, BR-006, BR-007, BR-009)
-- [ ] T088 [P] [US6] Add integration tests for append-only correction and audit records in `tests/MuseumSystem.Integration.Tests/StorehouseOperations/CorrectionAuditPersistenceTests.cs` (FR-030, BR-006, BR-007, Constitution IX)
-- [ ] T089 [P] [US6] Add web acceptance tests for reconciliation and correction workflow in `tests/MuseumSystem.Web.AcceptanceTests/Storehouse/ReconciliationCorrectionFlowTests.cs` (FR-029, FR-030, SC-007)
+- [x] T084 [P] [US6] Add domain tests for reconciliation result classification in `tests/MuseumSystem.Domain.Tests/StorehouseOperations/ReconciliationClassificationTests.cs` (FR-029, SC-007)
+- [x] T085 [P] [US6] Add domain tests for documented correction rules in `tests/MuseumSystem.Domain.Tests/StorehouseOperations/DocumentedCorrectionTests.cs` (FR-030, BR-006, BR-007)
+- [x] T086 [P] [US6] Add application tests for reconciliation session lifecycle in `tests/MuseumSystem.Application.Tests/StorehouseOperations/ReconciliationSessionUseCaseTests.cs` (FR-029)
+- [x] T087 [P] [US6] Add application tests proving correction does not substitute for return in `tests/MuseumSystem.Application.Tests/StorehouseOperations/CreateDocumentedCorrectionUseCaseTests.cs` (FR-030, BR-006, BR-007, BR-009)
+- [x] T088 [P] [US6] Add integration tests for append-only correction and audit records in `tests/MuseumSystem.Integration.Tests/StorehouseOperations/CorrectionAuditPersistenceTests.cs` (FR-030, BR-006, BR-007, Constitution IX)
+- [x] T089 [P] [US6] Add web acceptance tests for reconciliation and correction workflow in `tests/MuseumSystem.Web.AcceptanceTests/Storehouse/ReconciliationCorrectionFlowTests.cs` (FR-029, FR-030, SC-007)
 
 ### Reconciliation & Corrections Implementation
 
-- [ ] T090 [P] [US6] Create `ReconciliationSession` entity in `src/MuseumSystem.Domain/Modules/StorehouseOperations/ReconciliationSession.cs` (FR-029)
-- [ ] T091 [P] [US6] Create `ReconciliationResult` entity in `src/MuseumSystem.Domain/Modules/StorehouseOperations/ReconciliationResult.cs` (FR-029, SC-007)
-- [ ] T092 [P] [US6] Create `DocumentedCorrection` entity in `src/MuseumSystem.Domain/Modules/StorehouseOperations/DocumentedCorrection.cs` (FR-030, BR-006, BR-007)
-- [ ] T093 [US6] Implement reconciliation classification rules in `src/MuseumSystem.Domain/Modules/StorehouseOperations/ReconciliationRules.cs` (FR-029, SC-007)
-- [ ] T094 [US6] Implement documented correction domain rules in `src/MuseumSystem.Domain/Modules/StorehouseOperations/DocumentedCorrectionRules.cs` (FR-030, BR-006, BR-007)
-- [ ] T095 [US6] Add reconciliation and correction persistence configuration in `src/MuseumSystem.Infrastructure/Persistence/Configurations/ReconciliationCorrectionConfiguration.cs` (FR-029, FR-030)
-- [ ] T096 [US6] Implement `StartReconciliationSession` in `src/MuseumSystem.Application/Modules/StorehouseOperations/StartReconciliationSessionUseCase.cs` (FR-029)
-- [ ] T097 [US6] Implement `RecordReconciliationItems` in `src/MuseumSystem.Application/Modules/StorehouseOperations/RecordReconciliationItemsUseCase.cs` (FR-029, SC-007)
-- [ ] T098 [US6] Implement `ReviewReconciliationResults` in `src/MuseumSystem.Application/Modules/StorehouseOperations/ReviewReconciliationResultsUseCase.cs` (FR-029, SC-007)
-- [ ] T099 [US6] Implement `CreateDocumentedCorrection` with audit write in `src/MuseumSystem.Application/Modules/StorehouseOperations/CreateDocumentedCorrectionUseCase.cs` (FR-030, BR-006, BR-007, Constitution IX)
-- [ ] T100 [US6] Create reconciliation page in `src/MuseumSystem.Web/Components/Pages/Storehouse/Reconciliation.razor` (FR-029, SC-007)
-- [ ] T101 [US6] Create documented correction dialog in `src/MuseumSystem.Web/Components/Pages/Storehouse/DocumentedCorrectionDialog.razor` (FR-030, BR-006, BR-007)
-- [ ] T102 Create audit view page in `src/MuseumSystem.Web/Components/Pages/Admin/AuditTrail.razor` (Plan Authorization Boundaries, Constitution IX)
+- [x] T090 [P] [US6] Create `ReconciliationSession` entity in `src/MuseumSystem.Domain/Modules/StorehouseOperations/ReconciliationSession.cs` (FR-029)
+- [x] T091 [P] [US6] Create `ReconciliationResult` entity in `src/MuseumSystem.Domain/Modules/StorehouseOperations/ReconciliationResult.cs` (FR-029, SC-007)
+- [x] T092 [P] [US6] Create `DocumentedCorrection` entity in `src/MuseumSystem.Domain/Modules/StorehouseOperations/DocumentedCorrection.cs` (FR-030, BR-006, BR-007)
+- [x] T093 [US6] Implement reconciliation classification rules in `src/MuseumSystem.Domain/Modules/StorehouseOperations/ReconciliationRules.cs` (FR-029, SC-007)
+- [x] T094 [US6] Implement documented correction domain rules in `src/MuseumSystem.Domain/Modules/StorehouseOperations/DocumentedCorrectionRules.cs` (FR-030, BR-006, BR-007)
+- [x] T095 [US6] Add reconciliation and correction persistence configuration in `src/MuseumSystem.Infrastructure/Persistence/Configurations/ReconciliationCorrectionConfiguration.cs` (FR-029, FR-030)
+- [x] T096 [US6] Implement `StartReconciliationSession` in `src/MuseumSystem.Application/Modules/StorehouseOperations/StartReconciliationSessionUseCase.cs` (FR-029)
+- [x] T097 [US6] Implement `RecordReconciliationItems` in `src/MuseumSystem.Application/Modules/StorehouseOperations/RecordReconciliationItemsUseCase.cs` (FR-029, SC-007)
+- [x] T098 [US6] Implement `ReviewReconciliationResults` in `src/MuseumSystem.Application/Modules/StorehouseOperations/ReviewReconciliationResultsUseCase.cs` (FR-029, SC-007)
+- [x] T099 [US6] Implement `CreateDocumentedCorrection` with audit write in `src/MuseumSystem.Application/Modules/StorehouseOperations/CreateDocumentedCorrectionUseCase.cs` (FR-030, BR-006, BR-007, Constitution IX)
+- [x] T100 [US6] Create reconciliation page in `src/MuseumSystem.Web/Components/Pages/Storehouse/Reconciliation.razor` (FR-029, SC-007)
+- [x] T101 [US6] Create documented correction dialog in `src/MuseumSystem.Web/Components/Pages/Storehouse/DocumentedCorrectionDialog.razor` (FR-030, BR-006, BR-007)
+- [x] T102 Create audit view page in `src/MuseumSystem.Web/Components/Pages/Admin/AuditTrail.razor` (Plan Authorization Boundaries, Constitution IX)
 
 ## Phase 6: Hardening & UAT
 
