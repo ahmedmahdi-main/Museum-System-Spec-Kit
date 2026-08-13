@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using MuseumSystem.Application;
 using MuseumSystem.Application.Modules.IdentityAccess;
 using MuseumSystem.Infrastructure;
 using MuseumSystem.Web.Components;
@@ -9,7 +10,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddIdentityAccessApplication();
+builder.Services.AddMuseumApplication();
 builder.Services.AddAuthorization(options => options.AddMuseumPolicies());
 builder.Services.AddMuseumInfrastructure(builder.Configuration);
 

@@ -1,0 +1,114 @@
+@page "/storehouse/locations"
+@attribute [Authorize(Policy = PermissionNames.StorehouseLocationsManage)]
+@rendermode InteractiveServer
+@inject LocationUseCases LocationUseCases
+
+<PageTitle>المواقع</PageTitle>
+
+<section class="page-section">
+    <h2>إدارة مواقع الخزن وقاعات العرض</h2>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="status-message">@message</div>
+    }
+
+    <EditForm Model="this" OnSubmit="SaveLocationAsync" FormName="save-location">
+        <div class="form-grid">
+            <label>
+                <span>اسم الموقع</span>
+                <InputText @bind-Value="nameArabic" class="form-control" />
+            </label>
+            <label>
+                <span>نوع الموقع</span>
+                <InputSelect @bind-Value="locationType" class="form-control">
+                    <option value="@LocationType.Storage">موقع خزن</option>
+                    <option value="@LocationType.DisplayHall">قاعة عرض</option>
+                </InputSelect>
+            </label>
+            <button type="submit" class="btn-primary">@(editingLocationId is null ? "إضافة الموقع" : "حفظ التعديل")</button>
+            @if (editingLocationId is not null)
+            {
+                <button type="button" class="btn-secondary" @onclick="CancelEdit">إلغاء</button>
+            }
+        </div>
+    </EditForm>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>الاسم</th>
+                <th>النوع</th>
+                <th>الحالة</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var location in locations)
+            {
+                <tr>
+                    <td>@location.NameArabic</td>
+                    <td>@location.LocationType</td>
+                    <td>@(location.IsActive ? "نشط" : "معطل")</td>
+                    <td>
+                        <button class="btn-secondary" @onclick="() => EditLocation(location)">تعديل</button>
+                        @if (location.IsActive)
+                        {
+                            <button class="btn-secondary" @onclick="() => DisableLocationAsync(location.LocationId)">تعطيل</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<LocationDto> locations = [];
+    private string nameArabic = string.Empty;
+    private LocationType locationType = LocationType.Storage;
+    private Guid? editingLocationId;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task SaveLocationAsync()
+    {
+        if (editingLocationId is null)
+        {
+            var result = await LocationUseCases.CreateLocation(new CreateLocationRequest(nameArabic, locationType));
+            message = result.Succeeded ? "تمت إضافة الموقع." : string.Join(" ", result.ValidationIssues.Select(i => i.Message));
+            if (result.Succeeded) CancelEdit();
+        }
+        else
+        {
+            var result = await LocationUseCases.UpdateLocation(new UpdateLocationRequest(editingLocationId.Value, nameArabic, locationType));
+            message = result.Succeeded ? "تم حفظ تعديل الموقع." : string.Join(" ", result.ValidationIssues.Select(i => i.Message));
+            if (result.Succeeded) CancelEdit();
+        }
+        await ReloadAsync();
+    }
+
+    private void EditLocation(LocationDto location)
+    {
+        editingLocationId = location.LocationId;
+        nameArabic = location.NameArabic;
+        locationType = location.LocationType;
+    }
+
+    private void CancelEdit()
+    {
+        editingLocationId = null;
+        nameArabic = string.Empty;
+        locationType = LocationType.Storage;
+    }
+
+    private async Task DisableLocationAsync(Guid locationId)
+    {
+        var result = await LocationUseCases.DisableLocationForNewUse(locationId);
+        message = result.Succeeded ? "تم تعطيل الموقع." : string.Join(" ", result.ValidationIssues.Select(i => i.Message));
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync() => locations = (await LocationUseCases.ListLocations()).ToList();
+}

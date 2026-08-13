@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using MuseumSystem.Application.Common.Persistence;
 using MuseumSystem.Infrastructure.Identity;
 using MuseumSystem.Infrastructure.Persistence;
 
@@ -15,6 +16,7 @@ public static class DependencyInjection
             ?? throw new InvalidOperationException("Connection string 'MuseumDatabase' is not configured.");
 
         services.AddDbContext<MuseumDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddScoped<IMuseumDbContext>(provider => provider.GetRequiredService<MuseumDbContext>());
 
         services.AddIdentityCore<ApplicationUser>()
             .AddRoles<ApplicationRole>()
