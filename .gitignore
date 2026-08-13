@@ -1,0 +1,32 @@
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.rsuser
+packages/
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# Build output
+artifacts/
+publish/
+
+# Local configuration
+.env
+.env.*
+*.local.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.tmp
+*.swp
+
+# Logs
+*.log

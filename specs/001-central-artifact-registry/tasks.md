@@ -26,30 +26,30 @@
 
 ### Foundation Tests
 
-- [ ] T001 [P] Add solution smoke test that verifies all projects load in `tests/MuseumSystem.Integration.Tests/Foundation/SolutionSmokeTests.cs` (Plan Phase A, Constitution III)
-- [ ] T002 [P] Add authorization policy registration tests for planned permissions in `tests/MuseumSystem.Application.Tests/IdentityAccess/PermissionPolicyTests.cs` (Plan Authorization Boundaries, Constitution IX)
-- [ ] T003 [P] Add audit actor context unit tests in `tests/MuseumSystem.Application.Tests/Audit/AuditActorContextTests.cs` (Plan audit foundation, Constitution IX)
-- [ ] T004 [P] Add RTL shell acceptance placeholder test in `tests/MuseumSystem.Web.AcceptanceTests/Foundation/RtlShellTests.cs` (Plan Staff UX, Constitution IV)
+- [x] T001 [P] Add solution smoke test that verifies all projects load in `tests/MuseumSystem.Integration.Tests/Foundation/SolutionSmokeTests.cs` (Plan Phase A, Constitution III)
+- [x] T002 [P] Add authorization policy registration tests for planned permissions in `tests/MuseumSystem.Application.Tests/IdentityAccess/PermissionPolicyTests.cs` (Plan Authorization Boundaries, Constitution IX)
+- [x] T003 [P] Add audit actor context unit tests in `tests/MuseumSystem.Application.Tests/Audit/AuditActorContextTests.cs` (Plan audit foundation, Constitution IX)
+- [x] T004 [P] Add RTL shell acceptance placeholder test in `tests/MuseumSystem.Web.AcceptanceTests/Foundation/RtlShellTests.cs` (Plan Staff UX, Constitution IV)
 
 ### Foundation Implementation
 
-- [ ] T005 Create `Museum-System.sln` and add planned projects in `Museum-System.sln` (Plan Phase A, Constitution III)
-- [ ] T006 [P] Create Blazor Web App project structure in `src/MuseumSystem.Web/MuseumSystem.Web.csproj` (Plan Phase A)
-- [ ] T007 [P] Create domain class library structure in `src/MuseumSystem.Domain/MuseumSystem.Domain.csproj` (Plan Phase A)
-- [ ] T008 [P] Create application class library structure in `src/MuseumSystem.Application/MuseumSystem.Application.csproj` (Plan Phase A)
-- [ ] T009 [P] Create infrastructure class library structure in `src/MuseumSystem.Infrastructure/MuseumSystem.Infrastructure.csproj` (Plan Phase A)
-- [ ] T010 [P] Create test project structure in `tests/MuseumSystem.Domain.Tests/MuseumSystem.Domain.Tests.csproj` (Plan Testing Strategy, Constitution XIII)
-- [ ] T011 [P] Create application and integration test project files in `tests/MuseumSystem.Application.Tests/MuseumSystem.Application.Tests.csproj` and `tests/MuseumSystem.Integration.Tests/MuseumSystem.Integration.Tests.csproj` (Plan Testing Strategy, Constitution XIII)
-- [ ] T012 [P] Create web acceptance test project file in `tests/MuseumSystem.Web.AcceptanceTests/MuseumSystem.Web.AcceptanceTests.csproj` (Plan Testing Strategy, Constitution XIII)
-- [ ] T013 Configure project references from Web to Application/Infrastructure and from Application to Domain in `src/MuseumSystem.Web/MuseumSystem.Web.csproj` and `src/MuseumSystem.Application/MuseumSystem.Application.csproj` (Plan Module Boundaries, Constitution III)
-- [ ] T014 Configure EF Core, Npgsql, ASP.NET Core Identity, and ClosedXML package references in `src/MuseumSystem.Infrastructure/MuseumSystem.Infrastructure.csproj` and `src/MuseumSystem.Web/MuseumSystem.Web.csproj` (Research decisions, Plan Technical Context)
-- [ ] T015 Create shared result contract `UseCaseResult` in `src/MuseumSystem.Application/Common/UseCaseResult.cs` (Application Use Case Contracts, Plan Validation Boundaries)
-- [ ] T016 Create audit abstractions in `src/MuseumSystem.Application/Common/Audit/IAuditActorContext.cs` and `src/MuseumSystem.Application/Common/Audit/IAuditWriter.cs` (Plan audit foundation, Constitution IX)
-- [ ] T017 Create EF Core `MuseumDbContext` shell and module configuration folders in `src/MuseumSystem.Infrastructure/Persistence/MuseumDbContext.cs` (Plan Phase A)
-- [ ] T018 Create Identity user, role, and permission seed placeholders in `src/MuseumSystem.Infrastructure/Identity/IdentitySeed.cs` (Plan Authorization Boundaries, Constitution IX)
-- [ ] T019 Create authenticated Arabic RTL Blazor layout shell in `src/MuseumSystem.Web/Components/Layout/MainLayout.razor` and `src/MuseumSystem.Web/wwwroot/css/app.css` (Plan Staff UX, Constitution IV)
-- [ ] T020 Configure environment/appsettings PostgreSQL connection placeholders in `src/MuseumSystem.Web/appsettings.json` (Plan Technical Context, Constitution XII)
-- [ ] T021 Register module services without cross-module shortcuts in `src/MuseumSystem.Web/Program.cs` (Plan Module Boundaries, Constitution III)
+- [x] T005 Create `Museum-System.sln` and add planned projects in `Museum-System.sln` (Plan Phase A, Constitution III)
+- [x] T006 [P] Create Blazor Web App project structure in `src/MuseumSystem.Web/MuseumSystem.Web.csproj` (Plan Phase A)
+- [x] T007 [P] Create domain class library structure in `src/MuseumSystem.Domain/MuseumSystem.Domain.csproj` (Plan Phase A)
+- [x] T008 [P] Create application class library structure in `src/MuseumSystem.Application/MuseumSystem.Application.csproj` (Plan Phase A)
+- [x] T009 [P] Create infrastructure class library structure in `src/MuseumSystem.Infrastructure/MuseumSystem.Infrastructure.csproj` (Plan Phase A)
+- [x] T010 [P] Create test project structure in `tests/MuseumSystem.Domain.Tests/MuseumSystem.Domain.Tests.csproj` (Plan Testing Strategy, Constitution XIII)
+- [x] T011 [P] Create application and integration test project files in `tests/MuseumSystem.Application.Tests/MuseumSystem.Application.Tests.csproj` and `tests/MuseumSystem.Integration.Tests/MuseumSystem.Integration.Tests.csproj` (Plan Testing Strategy, Constitution XIII)
+- [x] T012 [P] Create web acceptance test project file in `tests/MuseumSystem.Web.AcceptanceTests/MuseumSystem.Web.AcceptanceTests.csproj` (Plan Testing Strategy, Constitution XIII)
+- [x] T013 Configure project references from Web to Application/Infrastructure and from Application to Domain in `src/MuseumSystem.Web/MuseumSystem.Web.csproj` and `src/MuseumSystem.Application/MuseumSystem.Application.csproj` (Plan Module Boundaries, Constitution III)
+- [x] T014 Configure EF Core, Npgsql, ASP.NET Core Identity, and ClosedXML package references in `src/MuseumSystem.Infrastructure/MuseumSystem.Infrastructure.csproj` and `src/MuseumSystem.Web/MuseumSystem.Web.csproj` (Research decisions, Plan Technical Context)
+- [x] T015 Create shared result contract `UseCaseResult` in `src/MuseumSystem.Application/Common/UseCaseResult.cs` (Application Use Case Contracts, Plan Validation Boundaries)
+- [x] T016 Create audit abstractions in `src/MuseumSystem.Application/Common/Audit/IAuditActorContext.cs` and `src/MuseumSystem.Application/Common/Audit/IAuditWriter.cs` (Plan audit foundation, Constitution IX)
+- [x] T017 Create EF Core `MuseumDbContext` shell and module configuration folders in `src/MuseumSystem.Infrastructure/Persistence/MuseumDbContext.cs` (Plan Phase A)
+- [x] T018 Create Identity user, role, and permission seed placeholders in `src/MuseumSystem.Infrastructure/Identity/IdentitySeed.cs` (Plan Authorization Boundaries, Constitution IX)
+- [x] T019 Create authenticated Arabic RTL Blazor layout shell in `src/MuseumSystem.Web/Components/Layout/MainLayout.razor` and `src/MuseumSystem.Web/wwwroot/css/app.css` (Plan Staff UX, Constitution IV)
+- [x] T020 Configure environment/appsettings PostgreSQL connection placeholders in `src/MuseumSystem.Web/appsettings.json` (Plan Technical Context, Constitution XII)
+- [x] T021 Register module services without cross-module shortcuts in `src/MuseumSystem.Web/Program.cs` (Plan Module Boundaries, Constitution III)
 
 ## Phase 2: Artifact Registry
 

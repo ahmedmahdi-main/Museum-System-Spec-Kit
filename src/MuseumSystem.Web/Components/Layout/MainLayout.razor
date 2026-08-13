@@ -1,0 +1,43 @@
+@inherits LayoutComponentBase
+
+<div class="app-shell">
+    <aside class="app-sidebar" aria-label="التنقل الرئيسي">
+        <a class="brand" href="/">
+            <span class="brand-title">Museum-System</span>
+            <span class="brand-subtitle">نظام إدارة القطع المتحفية</span>
+        </a>
+        <nav class="nav-list" aria-label="أقسام النظام">
+            <a href="/" class="nav-link">الرئيسية</a>
+            <span class="nav-link is-disabled">سجل القطع</span>
+            <span class="nav-link is-disabled">عمليات المخزن</span>
+            <span class="nav-link is-disabled">الاستيراد</span>
+        </nav>
+    </aside>
+
+    <div class="app-main">
+        <header class="top-bar">
+            <div>
+                <p class="eyebrow">المرحلة الأولى</p>
+                <h1>الأساس التشغيلي</h1>
+            </div>
+            <AuthorizeView>
+                <Authorized>
+                    <span class="auth-chip">@context.User.Identity?.Name</span>
+                </Authorized>
+                <NotAuthorized>
+                    <span class="auth-chip">غير مسجل</span>
+                </NotAuthorized>
+            </AuthorizeView>
+        </header>
+
+        <main class="content" tabindex="-1">
+            @Body
+        </main>
+    </div>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    حدث خطأ غير متوقع.
+    <a href="." class="reload">إعادة التحميل</a>
+    <span class="dismiss">×</span>
+</div>
