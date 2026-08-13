@@ -13,6 +13,7 @@ public sealed class MuseumDbContext(DbContextOptions<MuseumDbContext> options)
     public DbSet<ArtifactCategory> ArtifactCategories => Set<ArtifactCategory>();
     public DbSet<Artifact> Artifacts => Set<Artifact>();
     public DbSet<Location> Locations => Set<Location>();
+    public DbSet<MovementRecord> MovementRecords => Set<MovementRecord>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -22,3 +23,4 @@ public sealed class MuseumDbContext(DbContextOptions<MuseumDbContext> options)
         builder.ApplyConfigurationsFromAssembly(typeof(MuseumDbContext).Assembly);
     }
 }
+

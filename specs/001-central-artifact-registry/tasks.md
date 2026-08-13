@@ -95,30 +95,30 @@
 
 ### Storehouse Operations Tests
 
-- [ ] T046 [P] [US4] Add domain tests for delivery state transitions in `tests/MuseumSystem.Domain.Tests/StorehouseOperations/MovementStateTransitionTests.cs` (FR-018, FR-019, FR-020, FR-021, BR-008)
-- [ ] T047 [P] [US4] Add domain tests for `CurrentLocation`, `CurrentHolder`, and `LastKnownStorageLocation` rules in `tests/MuseumSystem.Domain.Tests/StorehouseOperations/CurrentStateRulesTests.cs` (FR-007, FR-008, FR-009, BR-008)
-- [ ] T048 [P] [US4] Add application tests for bulk delivery atomicity in `tests/MuseumSystem.Application.Tests/StorehouseOperations/DeliverArtifactsUseCaseTests.cs` (FR-027, FR-028, BR-010, SC-010)
-- [ ] T049 [P] [US5] Add application tests for return validation and location updates in `tests/MuseumSystem.Application.Tests/StorehouseOperations/ReturnArtifactsUseCaseTests.cs` (FR-022, FR-023, FR-024, BR-009)
-- [ ] T050 [P] [US4] Add integration tests for optimistic concurrency on artifact state changes in `tests/MuseumSystem.Integration.Tests/StorehouseOperations/StorehouseConcurrencyTests.cs` (Plan Testing Strategy, Research: Optimistic Concurrency)
-- [ ] T051 [P] Add web acceptance tests for delivery and return workflows in `tests/MuseumSystem.Web.AcceptanceTests/Storehouse/DeliveryReturnFlowTests.cs` (FR-018, FR-022, SC-003, SC-004, SC-008)
+- [x] T046 [P] [US4] Add domain tests for delivery state transitions in `tests/MuseumSystem.Domain.Tests/StorehouseOperations/MovementStateTransitionTests.cs` (FR-018, FR-019, FR-020, FR-021, BR-008)
+- [x] T047 [P] [US4] Add domain tests for `CurrentLocation`, `CurrentHolder`, and `LastKnownStorageLocation` rules in `tests/MuseumSystem.Domain.Tests/StorehouseOperations/CurrentStateRulesTests.cs` (FR-007, FR-008, FR-009, BR-008)
+- [x] T048 [P] [US4] Add application tests for bulk delivery atomicity in `tests/MuseumSystem.Application.Tests/StorehouseOperations/DeliverArtifactsUseCaseTests.cs` (FR-027, FR-028, BR-010, SC-010)
+- [x] T049 [P] [US5] Add application tests for return validation and location updates in `tests/MuseumSystem.Application.Tests/StorehouseOperations/ReturnArtifactsUseCaseTests.cs` (FR-022, FR-023, FR-024, BR-009)
+- [x] T050 [P] [US4] Add integration tests for optimistic concurrency on artifact state changes in `tests/MuseumSystem.Integration.Tests/StorehouseOperations/StorehouseConcurrencyTests.cs` (Plan Testing Strategy, Research: Optimistic Concurrency)
+- [x] T051 [P] Add web acceptance tests for delivery and return workflows in `tests/MuseumSystem.Web.AcceptanceTests/Storehouse/DeliveryReturnFlowTests.cs` (FR-018, FR-022, SC-003, SC-004, SC-008)
 
 ### Storehouse Operations Implementation
 
-- [ ] T052 [P] [US4] Create `MovementRecord` entity in `src/MuseumSystem.Domain/Modules/StorehouseOperations/MovementRecord.cs` (FR-020, FR-023, FR-024, FR-025, FR-026)
-- [ ] T053 [P] [US4] Create movement enums and holder value objects in `src/MuseumSystem.Domain/Modules/StorehouseOperations/MovementTypes.cs` (FR-008, FR-018, FR-019, BR-008)
-- [ ] T054 Add artifact state transition methods for deliver/return in `src/MuseumSystem.Domain/Modules/ArtifactRegistry/Artifact.cs` (FR-007, FR-008, FR-009, FR-024)
-- [ ] T055 [US4] Implement current holder and location validation rules in `src/MuseumSystem.Domain/Modules/StorehouseOperations/CurrentStateRules.cs` (FR-007, FR-008, FR-009, BR-008, BR-009)
-- [ ] T056 [US4] Add movement persistence configuration in `src/MuseumSystem.Infrastructure/Persistence/Configurations/MovementRecordConfiguration.cs` (FR-024, FR-025, FR-026)
-- [ ] T057 Create storehouse DTOs in `src/MuseumSystem.Application/Modules/StorehouseOperations/Contracts/StorehouseDtos.cs` (Application Use Case Contracts: Movements)
-- [ ] T058 [US4] Implement `PreviewDeliveryEligibility` in `src/MuseumSystem.Application/Modules/StorehouseOperations/DeliveryEligibilityUseCase.cs` (FR-021, FR-027, FR-028, SC-010)
-- [ ] T059 [US4] Implement atomic `DeliverArtifacts` transaction in `src/MuseumSystem.Application/Modules/StorehouseOperations/DeliverArtifactsUseCase.cs` (FR-018, FR-019, FR-020, FR-024, FR-027, FR-028, BR-010)
-- [ ] T060 [US5] Implement `PreviewReturnEligibility` in `src/MuseumSystem.Application/Modules/StorehouseOperations/ReturnEligibilityUseCase.cs` (FR-022, BR-009)
-- [ ] T061 [US5] Implement atomic `ReturnArtifacts` transaction in `src/MuseumSystem.Application/Modules/StorehouseOperations/ReturnArtifactsUseCase.cs` (FR-022, FR-023, FR-024, FR-027, FR-028, BR-009, BR-010)
-- [ ] T062 [US4] Implement `GetMovementHistory` in `src/MuseumSystem.Application/Modules/StorehouseOperations/MovementHistoryUseCase.cs` (FR-025, FR-026, BR-006, BR-007)
-- [ ] T063 [US4] Create delivery page with bulk eligibility preview in `src/MuseumSystem.Web/Components/Pages/Storehouse/Delivery.razor` (FR-018, FR-019, FR-027, FR-028, SC-003, SC-010)
-- [ ] T064 [US5] Create return page with return location selection in `src/MuseumSystem.Web/Components/Pages/Storehouse/Return.razor` (FR-022, FR-023, FR-024, BR-009, SC-004)
-- [ ] T065 [US3] Add movement history panel to artifact details in `src/MuseumSystem.Web/Components/Pages/Artifacts/Details.razor` (FR-017, FR-026, SC-005)
-- [ ] T066 [US4] Wire storehouse services and authorization policies in `src/MuseumSystem.Web/Program.cs` (Plan Authorization Boundaries, Constitution IX)
+- [x] T052 [P] [US4] Create `MovementRecord` entity in `src/MuseumSystem.Domain/Modules/StorehouseOperations/MovementRecord.cs` (FR-020, FR-023, FR-024, FR-025, FR-026)
+- [x] T053 [P] [US4] Create movement enums and holder value objects in `src/MuseumSystem.Domain/Modules/StorehouseOperations/MovementTypes.cs` (FR-008, FR-018, FR-019, BR-008)
+- [x] T054 Add artifact state transition methods for deliver/return in `src/MuseumSystem.Domain/Modules/ArtifactRegistry/Artifact.cs` (FR-007, FR-008, FR-009, FR-024)
+- [x] T055 [US4] Implement current holder and location validation rules in `src/MuseumSystem.Domain/Modules/StorehouseOperations/CurrentStateRules.cs` (FR-007, FR-008, FR-009, BR-008, BR-009)
+- [x] T056 [US4] Add movement persistence configuration in `src/MuseumSystem.Infrastructure/Persistence/Configurations/MovementRecordConfiguration.cs` (FR-024, FR-025, FR-026)
+- [x] T057 Create storehouse DTOs in `src/MuseumSystem.Application/Modules/StorehouseOperations/Contracts/StorehouseDtos.cs` (Application Use Case Contracts: Movements)
+- [x] T058 [US4] Implement `PreviewDeliveryEligibility` in `src/MuseumSystem.Application/Modules/StorehouseOperations/DeliveryEligibilityUseCase.cs` (FR-021, FR-027, FR-028, SC-010)
+- [x] T059 [US4] Implement atomic `DeliverArtifacts` transaction in `src/MuseumSystem.Application/Modules/StorehouseOperations/DeliverArtifactsUseCase.cs` (FR-018, FR-019, FR-020, FR-024, FR-027, FR-028, BR-010)
+- [x] T060 [US5] Implement `PreviewReturnEligibility` in `src/MuseumSystem.Application/Modules/StorehouseOperations/ReturnEligibilityUseCase.cs` (FR-022, BR-009)
+- [x] T061 [US5] Implement atomic `ReturnArtifacts` transaction in `src/MuseumSystem.Application/Modules/StorehouseOperations/ReturnArtifactsUseCase.cs` (FR-022, FR-023, FR-024, FR-027, FR-028, BR-009, BR-010)
+- [x] T062 [US4] Implement `GetMovementHistory` in `src/MuseumSystem.Application/Modules/StorehouseOperations/MovementHistoryUseCase.cs` (FR-025, FR-026, BR-006, BR-007)
+- [x] T063 [US4] Create delivery page with bulk eligibility preview in `src/MuseumSystem.Web/Components/Pages/Storehouse/Delivery.razor` (FR-018, FR-019, FR-027, FR-028, SC-003, SC-010)
+- [x] T064 [US5] Create return page with return location selection in `src/MuseumSystem.Web/Components/Pages/Storehouse/Return.razor` (FR-022, FR-023, FR-024, BR-009, SC-004)
+- [x] T065 [US3] Add movement history panel to artifact details in `src/MuseumSystem.Web/Components/Pages/Artifacts/Details.razor` (FR-017, FR-026, SC-005)
+- [x] T066 [US4] Wire storehouse services and authorization policies in `src/MuseumSystem.Web/Program.cs` (Plan Authorization Boundaries, Constitution IX)
 
 ## Phase 4: Excel Import
 

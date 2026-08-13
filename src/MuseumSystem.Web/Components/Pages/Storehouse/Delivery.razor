@@ -1,0 +1,140 @@
+@page "/storehouse/delivery"
+@attribute [Authorize(Policy = PermissionNames.StorehouseDeliver)]
+@rendermode InteractiveServer
+@inject DeliveryEligibilityUseCase EligibilityUseCase
+@inject DeliverArtifactsUseCase DeliverUseCase
+@inject LocationUseCases LocationUseCases
+
+<PageTitle>تسليم القطع</PageTitle>
+
+<section class="page-section">
+    <h2>تسليم القطع</h2>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="status-message">@message</div>
+    }
+
+    <EditForm Model="this" OnSubmit="PreviewAsync" FormName="preview-delivery">
+        <div class="form-grid">
+            <label>
+                <span>ArtifactId لكل سطر</span>
+                <InputTextArea @bind-Value="artifactIdsText" class="form-control" />
+            </label>
+            <label>
+                <span>الجهة</span>
+                <InputSelect @bind-Value="recipientType" class="form-control">
+                    <option value="@MovementRecipientType.DocumentationDivision">التوثيق</option>
+                    <option value="@MovementRecipientType.LaboratoryDivision">المختبر</option>
+                    <option value="@MovementRecipientType.Photographer">المصور</option>
+                    <option value="@MovementRecipientType.DisplayHall">قاعة العرض</option>
+                </InputSelect>
+            </label>
+            @if (recipientType == MovementRecipientType.DisplayHall)
+            {
+                <label>
+                    <span>قاعة العرض</span>
+                    <InputSelect @bind-Value="destinationLocationId" class="form-control">
+                        <option value="">اختر قاعة عرض</option>
+                        @foreach (var location in displayLocations)
+                        {
+                            <option value="@location.LocationId">@location.NameArabic</option>
+                        }
+                    </InputSelect>
+                </label>
+            }
+            else
+            {
+                <label>
+                    <span>اسم الجهة المستلمة</span>
+                    <InputText @bind-Value="recipientName" class="form-control" />
+                </label>
+            }
+            <label>
+                <span>سبب التسليم</span>
+                <InputText @bind-Value="purpose" class="form-control" />
+            </label>
+            <label>
+                <span>ملاحظة</span>
+                <InputText @bind-Value="note" class="form-control" />
+            </label>
+            <button type="submit" class="btn-secondary">معاينة</button>
+            <button type="button" class="btn-primary" disabled="@(!canCommit)" @onclick="DeliverAsync">تسليم</button>
+        </div>
+    </EditForm>
+
+    @if (previewItems.Count > 0)
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>القطعة</th>
+                    <th>الحالة</th>
+                    <th>السبب</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in previewItems)
+                {
+                    <tr>
+                        <td>@(string.IsNullOrWhiteSpace(item.MuseumNumber) ? item.ArtifactId : item.MuseumNumber)</td>
+                        <td>@(item.IsEligible ? "مؤهلة" : "غير مؤهلة")</td>
+                        <td>@item.Message</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+@code {
+    private string artifactIdsText = string.Empty;
+    private MovementRecipientType recipientType = MovementRecipientType.DocumentationDivision;
+    private string recipientName = string.Empty;
+    private Guid? destinationLocationId;
+    private string purpose = string.Empty;
+    private string? note;
+    private string? message;
+    private bool canCommit;
+    private List<ArtifactEligibilityDto> previewItems = [];
+    private List<LocationDto> displayLocations = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        displayLocations = (await LocationUseCases.ListSelectableLocations())
+            .Where(location => location.LocationType == LocationType.DisplayHall)
+            .ToList();
+    }
+
+    private async Task PreviewAsync()
+    {
+        var ids = ParseArtifactIds();
+        if (ids.Count == 0)
+        {
+            message = "أدخل قطعة واحدة على الأقل.";
+            canCommit = false;
+            previewItems.Clear();
+            return;
+        }
+
+        var result = await EligibilityUseCase.PreviewDeliveryEligibility(new DeliveryEligibilityRequest(ids, recipientType, destinationLocationId));
+        previewItems = result.Value?.Artifacts.ToList() ?? [];
+        canCommit = result.Value?.CanCommit == true;
+        message = result.Value?.Message ?? string.Join(" ", result.ValidationIssues.Select(i => i.Message));
+    }
+
+    private async Task DeliverAsync()
+    {
+        var result = await DeliverUseCase.DeliverArtifacts(new DeliverArtifactsRequest(ParseArtifactIds(), recipientType, recipientName, destinationLocationId, purpose, note));
+        message = result.Succeeded ? "تم التسليم." : result.ConcurrencyConflict ? string.Join(" ", result.Messages) : string.Join(" ", result.ValidationIssues.Select(i => i.Message));
+        canCommit = false;
+        await PreviewAsync();
+    }
+
+    private List<Guid> ParseArtifactIds() => artifactIdsText
+        .Split(['\r', '\n', ',', ';', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Select(value => Guid.TryParse(value, out var id) ? id : Guid.Empty)
+        .Where(id => id != Guid.Empty)
+        .Distinct()
+        .ToList();
+}

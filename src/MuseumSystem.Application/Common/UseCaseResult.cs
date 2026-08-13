@@ -32,4 +32,7 @@ public sealed record UseCaseResult<T>(
 
     public static UseCaseResult<T> Failure(params ValidationIssue[] issues) =>
         new(false, default, [], issues);
+
+    public static UseCaseResult<T> Conflict(string message) =>
+        new(false, default, [message], [], true);
 }

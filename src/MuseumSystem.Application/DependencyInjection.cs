@@ -14,6 +14,12 @@ public static class DependencyInjection
         services.AddScoped<ArtifactWriteUseCases>();
         services.AddScoped<ArtifactReadUseCases>();
         services.AddScoped<LocationUseCases>();
+        services.AddScoped<MovementHistoryUseCase>();
+        services.AddScoped<ReturnArtifactsUseCase>();
+        services.AddScoped<ReturnEligibilityUseCase>();
+        services.AddScoped<DeliverArtifactsUseCase>();
+        services.AddScoped<DeliveryEligibilityUseCase>();
         return services;
     }
 }
+

@@ -52,7 +52,7 @@ public sealed class Artifact
     public Guid? LastKnownStorageLocationId { get; private set; }
     public Location? LastKnownStorageLocation { get; private set; }
     public Guid? CreatedFromImportBatchId { get; private set; }
-    public uint ConcurrencyToken { get; private set; }
+    public int ConcurrencyToken { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public string? CreatedBy { get; private set; }
     public DateTimeOffset? LastModifiedAt { get; private set; }
@@ -64,12 +64,83 @@ public sealed class Artifact
     public void UpdateBasicDescription(string basicDescription)
     {
         BasicDescription = NormalizeDescription(basicDescription);
-        LastModifiedAt = DateTimeOffset.UtcNow;
+        Touch();
     }
 
     public void RefreshMuseumNumber(string categoryCode)
     {
         MuseumNumberDisplay = MuseumNumber.Create(categoryCode, ItemNumber).DisplayValue;
+        Touch();
+    }
+
+    public void DeliverToInternalHolder(MovementRecipientType recipientType, string recipientName)
+    {
+        if (recipientType == MovementRecipientType.DisplayHall)
+        {
+            throw new InvalidOperationException("Display hall delivery requires a display location.");
+        }
+
+        EnsureInStorage();
+        LastKnownStorageLocationId = CurrentLocationId ?? LastKnownStorageLocationId;
+        CurrentStatus = ArtifactCurrentStatus.OutOfStorage;
+        CurrentLocationId = null;
+        CurrentHolderType = recipientType.ToString();
+        CurrentHolderName = RequireText(recipientName, nameof(recipientName));
+        Touch();
+    }
+
+    public void DeliverToDisplayHall(Location displayLocation)
+    {
+        EnsureInStorage();
+        if (!displayLocation.IsActive || displayLocation.LocationType != LocationType.DisplayHall)
+        {
+            throw new InvalidOperationException("Display delivery requires an active display hall location.");
+        }
+
+        LastKnownStorageLocationId = CurrentLocationId ?? LastKnownStorageLocationId;
+        CurrentStatus = ArtifactCurrentStatus.OutOfStorage;
+        CurrentLocationId = displayLocation.LocationId;
+        CurrentHolderType = MovementRecipientType.DisplayHall.ToString();
+        CurrentHolderName = displayLocation.NameArabic;
+        Touch();
+    }
+
+    public void ReturnToStorage(Location returnLocation)
+    {
+        if (CurrentStatus != ArtifactCurrentStatus.OutOfStorage)
+        {
+            throw new InvalidOperationException("Only out-of-storage artifacts can be returned.");
+        }
+
+        if (!returnLocation.IsActive || returnLocation.LocationType != LocationType.Storage)
+        {
+            throw new InvalidOperationException("Return requires an active storage location.");
+        }
+
+        CurrentStatus = ArtifactCurrentStatus.InStorage;
+        CurrentLocationId = returnLocation.LocationId;
+        CurrentHolderType = null;
+        CurrentHolderName = null;
+        LastKnownStorageLocationId = returnLocation.LocationId;
+        Touch();
+    }
+
+    private void EnsureInStorage()
+    {
+        if (CurrentStatus != ArtifactCurrentStatus.InStorage)
+        {
+            throw new InvalidOperationException("Only in-storage artifacts can be delivered.");
+        }
+
+        if (CurrentLocationId is null)
+        {
+            throw new InvalidOperationException("In-storage artifacts must have a current storage location.");
+        }
+    }
+
+    private void Touch()
+    {
+        ConcurrencyToken++;
         LastModifiedAt = DateTimeOffset.UtcNow;
     }
 
@@ -83,11 +154,13 @@ public sealed class Artifact
         return value;
     }
 
-    private static string NormalizeDescription(string value)
+    private static string NormalizeDescription(string value) => RequireText(value, nameof(value));
+
+    private static string RequireText(string value, string paramName)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            throw new ArgumentException("A basic description is required.", nameof(value));
+            throw new ArgumentException("A value is required.", paramName);
         }
 
         return value.Trim();

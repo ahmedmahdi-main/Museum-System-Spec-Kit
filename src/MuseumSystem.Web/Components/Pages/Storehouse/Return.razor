@@ -1,0 +1,122 @@
+@page "/storehouse/return"
+@attribute [Authorize(Policy = PermissionNames.StorehouseReturn)]
+@rendermode InteractiveServer
+@inject ReturnEligibilityUseCase EligibilityUseCase
+@inject ReturnArtifactsUseCase ReturnUseCase
+@inject LocationUseCases LocationUseCases
+
+<PageTitle>استلام القطع</PageTitle>
+
+<section class="page-section">
+    <h2>استلام القطع</h2>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="status-message">@message</div>
+    }
+
+    <EditForm Model="this" OnSubmit="PreviewAsync" FormName="preview-return">
+        <div class="form-grid">
+            <label>
+                <span>ArtifactId لكل سطر</span>
+                <InputTextArea @bind-Value="artifactIdsText" class="form-control" />
+            </label>
+            <label>
+                <span>موقع خزن الاستلام</span>
+                <InputSelect @bind-Value="returnLocationId" class="form-control">
+                    <option value="">اختر موقع خزن</option>
+                    @foreach (var location in storageLocations)
+                    {
+                        <option value="@location.LocationId">@location.NameArabic</option>
+                    }
+                </InputSelect>
+            </label>
+            <label>
+                <span>ملاحظة</span>
+                <InputText @bind-Value="note" class="form-control" />
+            </label>
+            <button type="submit" class="btn-secondary">معاينة</button>
+            <button type="button" class="btn-primary" disabled="@(!canCommit)" @onclick="ReturnAsync">استلام</button>
+        </div>
+    </EditForm>
+
+    @if (previewItems.Count > 0)
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>القطعة</th>
+                    <th>الحالة</th>
+                    <th>السبب</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in previewItems)
+                {
+                    <tr>
+                        <td>@(string.IsNullOrWhiteSpace(item.MuseumNumber) ? item.ArtifactId : item.MuseumNumber)</td>
+                        <td>@(item.IsEligible ? "مؤهلة" : "غير مؤهلة")</td>
+                        <td>@item.Message</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+@code {
+    private string artifactIdsText = string.Empty;
+    private Guid returnLocationId;
+    private string? note;
+    private string? message;
+    private bool canCommit;
+    private List<ArtifactEligibilityDto> previewItems = [];
+    private List<LocationDto> storageLocations = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        storageLocations = (await LocationUseCases.ListSelectableLocations())
+            .Where(location => location.LocationType == LocationType.Storage)
+            .ToList();
+    }
+
+    private async Task PreviewAsync()
+    {
+        var ids = ParseArtifactIds();
+        if (ids.Count == 0)
+        {
+            message = "أدخل قطعة واحدة على الأقل.";
+            canCommit = false;
+            previewItems.Clear();
+            return;
+        }
+
+        if (returnLocationId == Guid.Empty)
+        {
+            message = "اختر موقع خزن صالح.";
+            canCommit = false;
+            previewItems.Clear();
+            return;
+        }
+
+        var result = await EligibilityUseCase.PreviewReturnEligibility(new ReturnEligibilityRequest(ids, returnLocationId));
+        previewItems = result.Value?.Artifacts.ToList() ?? [];
+        canCommit = result.Value?.CanCommit == true;
+        message = result.Value?.Message ?? string.Join(" ", result.ValidationIssues.Select(i => i.Message));
+    }
+
+    private async Task ReturnAsync()
+    {
+        var result = await ReturnUseCase.ReturnArtifacts(new ReturnArtifactsRequest(ParseArtifactIds(), returnLocationId, note));
+        message = result.Succeeded ? "تم الاستلام." : result.ConcurrencyConflict ? string.Join(" ", result.Messages) : string.Join(" ", result.ValidationIssues.Select(i => i.Message));
+        canCommit = false;
+        await PreviewAsync();
+    }
+
+    private List<Guid> ParseArtifactIds() => artifactIdsText
+        .Split(['\r', '\n', ',', ';', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Select(value => Guid.TryParse(value, out var id) ? id : Guid.Empty)
+        .Where(id => id != Guid.Empty)
+        .Distinct()
+        .ToList();
+}

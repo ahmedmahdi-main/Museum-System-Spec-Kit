@@ -9,6 +9,8 @@ public interface IMuseumDbContext
     DbSet<ArtifactCategory> ArtifactCategories { get; }
     DbSet<Artifact> Artifacts { get; }
     DbSet<Location> Locations { get; }
+    DbSet<MovementRecord> MovementRecords { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
+
