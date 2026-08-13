@@ -105,6 +105,11 @@ public sealed class Artifact
         Touch();
     }
 
+    public void MarkCreatedFromImportBatch(Guid importBatchId)
+    {
+        CreatedFromImportBatchId = importBatchId;
+        Touch();
+    }
     public void ReturnToStorage(Location returnLocation)
     {
         if (CurrentStatus != ArtifactCurrentStatus.OutOfStorage)

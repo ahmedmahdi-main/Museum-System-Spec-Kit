@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MuseumSystem.Application.Common.Persistence;
 using MuseumSystem.Domain.Modules.ArtifactRegistry;
 using MuseumSystem.Domain.Modules.StorehouseOperations;
+using MuseumSystem.Domain.Modules.Import;
 using MuseumSystem.Infrastructure.Identity;
 
 namespace MuseumSystem.Infrastructure.Persistence;
@@ -14,6 +15,8 @@ public sealed class MuseumDbContext(DbContextOptions<MuseumDbContext> options)
     public DbSet<Artifact> Artifacts => Set<Artifact>();
     public DbSet<Location> Locations => Set<Location>();
     public DbSet<MovementRecord> MovementRecords => Set<MovementRecord>();
+    public DbSet<ImportBatch> ImportBatches => Set<ImportBatch>();
+    public DbSet<ImportRow> ImportRows => Set<ImportRow>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -23,4 +26,3 @@ public sealed class MuseumDbContext(DbContextOptions<MuseumDbContext> options)
         builder.ApplyConfigurationsFromAssembly(typeof(MuseumDbContext).Assembly);
     }
 }
-

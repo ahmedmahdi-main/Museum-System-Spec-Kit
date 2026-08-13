@@ -1,0 +1,168 @@
+@page "/imports/excel"
+@attribute [Authorize(Policy = PermissionNames.ImportsPreview)]
+@rendermode InteractiveServer
+@inject UploadImportFileForPreviewUseCase UploadUseCase
+@inject ValidateImportBatchUseCase ValidateUseCase
+@inject CommitImportBatchUseCase CommitUseCase
+@inject CancelImportBatchUseCase CancelUseCase
+
+<PageTitle>استيراد Excel</PageTitle>
+
+<section class="page-section">
+    <h2>استيراد Excel</h2>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="status-message">@message</div>
+    }
+
+    <div class="form-grid">
+        <label>
+            <span>رفع ملف .xlsx</span>
+            <InputFile OnChange="OnFileSelected" />
+        </label>
+        <button type="button" class="btn-primary" disabled="@(selectedFile is null)" @onclick="UploadAsync">رفع للمعاينة</button>
+        <button type="button" class="btn-secondary" disabled="@(currentBatch is null)" @onclick="ValidateAsync">تحقق</button>
+        <AuthorizeView Policy="@PermissionNames.ImportsCommit">
+            <Authorized>
+                <button type="button" class="btn-primary" disabled="@(!CanCommit)" @onclick="CommitAsync">اعتماد</button>
+            </Authorized>
+        </AuthorizeView>
+        <button type="button" class="btn-secondary" disabled="@(currentBatch is null || IsFinal)" @onclick="CancelAsync">إلغاء</button>
+    </div>
+
+    @if (currentBatch is not null)
+    {
+        <section class="sub-section">
+            <h3>معاينة الدفعة</h3>
+            <dl class="details-list">
+                <dt>الملف</dt><dd>@currentBatch.FileName</dd>
+                <dt>الحالة</dt><dd>@StatusText(currentBatch.Status)</dd>
+                <dt>الصفوف</dt><dd>@currentBatch.TotalRows</dd>
+                <dt>مقبولة</dt><dd>@currentBatch.AcceptedRows</dd>
+                <dt>مرفوضة</dt><dd>@currentBatch.RejectedRows</dd>
+            </dl>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>الصف</th>
+                        <th>CategoryCode</th>
+                        <th>ItemNumber</th>
+                        <th>الموقع</th>
+                        <th>الوصف</th>
+                        <th>الحالة</th>
+                        <th>أخطاء الصف</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in currentBatch.Rows)
+                    {
+                        <tr>
+                            <td>@row.RowNumber</td>
+                            <td>@row.CategoryValue</td>
+                            <td>@row.ItemNumberValue</td>
+                            <td>@row.LocationValue</td>
+                            <td>@row.DescriptionValue</td>
+                            <td>@RowStatusText(row.Status)</td>
+                            <td>@(string.IsNullOrWhiteSpace(row.Issues) ? "-" : row.Issues)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    }
+</section>
+
+@code {
+    private const long MaxUploadBytes = 10 * 1024 * 1024;
+
+    private IBrowserFile? selectedFile;
+    private ImportBatchDto? currentBatch;
+    private string? message;
+
+    private bool CanCommit => currentBatch?.Status == ImportBatchStatus.ReadyToCommit;
+    private bool IsFinal => currentBatch?.Status is ImportBatchStatus.Committed or ImportBatchStatus.Cancelled;
+
+    private void OnFileSelected(InputFileChangeEventArgs args)
+    {
+        selectedFile = args.File;
+        message = selectedFile.Name.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase)
+            ? "تم اختيار الملف. اضغط رفع للمعاينة."
+            : "ارفع ملف Excel بصيغة .xlsx فقط.";
+    }
+
+    private async Task UploadAsync()
+    {
+        if (selectedFile is null)
+        {
+            message = "اختر ملف Excel أولاً.";
+            return;
+        }
+
+        await using var stream = selectedFile.OpenReadStream(MaxUploadBytes);
+        var result = await UploadUseCase.UploadImportFileForPreview(new UploadImportFileForPreviewRequest(selectedFile.Name, stream));
+        currentBatch = result.Value ?? currentBatch;
+        message = ResultMessage(result.Succeeded, result.Messages, result.ValidationIssues);
+    }
+
+    private async Task ValidateAsync()
+    {
+        if (currentBatch is null)
+        {
+            return;
+        }
+
+        var result = await ValidateUseCase.ValidateImportBatch(currentBatch.ImportBatchId);
+        currentBatch = result.Value ?? currentBatch;
+        message = ResultMessage(result.Succeeded, result.Messages, result.ValidationIssues);
+    }
+
+    private async Task CommitAsync()
+    {
+        if (currentBatch is null)
+        {
+            return;
+        }
+
+        var result = await CommitUseCase.CommitImportBatch(currentBatch.ImportBatchId);
+        message = result.Succeeded ? result.Value!.Message : result.ConcurrencyConflict ? string.Join(" ", result.Messages) : string.Join(" ", result.ValidationIssues.Select(i => i.Message));
+        if (result.Succeeded)
+        {
+            currentBatch = currentBatch with { Status = ImportBatchStatus.Committed };
+        }
+    }
+
+    private async Task CancelAsync()
+    {
+        if (currentBatch is null)
+        {
+            return;
+        }
+
+        var result = await CancelUseCase.CancelImportBatch(currentBatch.ImportBatchId);
+        currentBatch = result.Value ?? currentBatch;
+        message = ResultMessage(result.Succeeded, result.Messages, result.ValidationIssues);
+    }
+
+    private static string ResultMessage(bool succeeded, IReadOnlyList<string> messages, IReadOnlyList<ValidationIssue> issues) =>
+        succeeded ? string.Join(" ", messages) : string.Join(" ", issues.Select(issue => issue.Message));
+
+    private static string StatusText(ImportBatchStatus status) => status switch
+    {
+        ImportBatchStatus.Previewed => "معاينة",
+        ImportBatchStatus.ValidatedWithErrors => "تم التحقق مع أخطاء",
+        ImportBatchStatus.ReadyToCommit => "جاهزة للاعتماد",
+        ImportBatchStatus.Committed => "معتمدة",
+        ImportBatchStatus.Cancelled => "ملغاة",
+        _ => status.ToString()
+    };
+
+    private static string RowStatusText(ImportRowStatus status) => status switch
+    {
+        ImportRowStatus.Accepted => "مقبول",
+        ImportRowStatus.Rejected => "مرفوض",
+        ImportRowStatus.NeedsReview => "يحتاج مراجعة",
+        _ => status.ToString()
+    };
+}

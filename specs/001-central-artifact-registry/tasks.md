@@ -128,26 +128,26 @@
 
 ### Excel Import Tests
 
-- [ ] T067 [P] [US2] Add ClosedXML adapter parsing tests in `tests/MuseumSystem.Integration.Tests/Import/ExcelImportReaderTests.cs` (FR-010, Research: ClosedXML)
-- [ ] T068 [P] [US2] Add application tests proving preview does not mutate artifact/location tables in `tests/MuseumSystem.Application.Tests/Import/UploadImportFileForPreviewTests.cs` (FR-012, SC-009)
-- [ ] T069 [P] [US2] Add application tests for row validation statuses in `tests/MuseumSystem.Application.Tests/Import/ValidateImportBatchTests.cs` (FR-011, FR-013, FR-014, BR-011)
-- [ ] T070 [P] [US2] Add application tests for explicit commit refusal and commit success in `tests/MuseumSystem.Application.Tests/Import/CommitImportBatchTests.cs` (FR-011, FR-012, BR-012)
-- [ ] T071 [P] [US2] Add integration tests for `ImportBatch` concurrency token in `tests/MuseumSystem.Integration.Tests/Import/ImportBatchConcurrencyTests.cs` (Plan Testing Strategy, Research: Optimistic Concurrency)
-- [ ] T072 [P] [US2] Add web acceptance tests for preview, validation, and commit flow in `tests/MuseumSystem.Web.AcceptanceTests/Import/ExcelImportFlowTests.cs` (FR-011, SC-006)
+- [x] T067 [P] [US2] Add ClosedXML adapter parsing tests in `tests/MuseumSystem.Integration.Tests/Import/ExcelImportReaderTests.cs` (FR-010, Research: ClosedXML)
+- [x] T068 [P] [US2] Add application tests proving preview does not mutate artifact/location tables in `tests/MuseumSystem.Application.Tests/Import/UploadImportFileForPreviewTests.cs` (FR-012, SC-009)
+- [x] T069 [P] [US2] Add application tests for row validation statuses in `tests/MuseumSystem.Application.Tests/Import/ValidateImportBatchTests.cs` (FR-011, FR-013, FR-014, BR-011)
+- [x] T070 [P] [US2] Add application tests for explicit commit refusal and commit success in `tests/MuseumSystem.Application.Tests/Import/CommitImportBatchTests.cs` (FR-011, FR-012, BR-012)
+- [x] T071 [P] [US2] Add integration tests for `ImportBatch` concurrency token in `tests/MuseumSystem.Integration.Tests/Import/ImportBatchConcurrencyTests.cs` (Plan Testing Strategy, Research: Optimistic Concurrency)
+- [x] T072 [P] [US2] Add web acceptance tests for preview, validation, and commit flow in `tests/MuseumSystem.Web.AcceptanceTests/Import/ExcelImportFlowTests.cs` (FR-011, SC-006)
 
 ### Excel Import Implementation
 
-- [ ] T073 [P] [US2] Create `ImportBatch` and `ImportRow` entities in `src/MuseumSystem.Domain/Modules/Import/ImportBatch.cs` and `src/MuseumSystem.Domain/Modules/Import/ImportRow.cs` (FR-010)
-- [ ] T074 [US2] Implement import lifecycle rules in `src/MuseumSystem.Domain/Modules/Import/ImportBatchRules.cs` (FR-011, FR-012, BR-012)
-- [ ] T075 [US2] Add import persistence configuration in `src/MuseumSystem.Infrastructure/Persistence/Configurations/ImportConfiguration.cs` (FR-010)
-- [ ] T076 [US2] Implement ClosedXML `.xlsx` reader adapter in `src/MuseumSystem.Infrastructure/Excel/ClosedXmlImportReader.cs` (FR-010, Research: ClosedXML)
-- [ ] T077 [US2] Create import DTOs and row issue contracts in `src/MuseumSystem.Application/Modules/Import/Contracts/ImportDtos.cs` (Application Use Case Contracts: Excel Import)
-- [ ] T078 [US2] Implement `UploadImportFileForPreview` without artifact mutation in `src/MuseumSystem.Application/Modules/Import/UploadImportFileForPreviewUseCase.cs` (FR-012)
-- [ ] T079 [US2] Implement `ValidateImportBatch` with accepted/rejected/needs-review statuses in `src/MuseumSystem.Application/Modules/Import/ValidateImportBatchUseCase.cs` (FR-011, FR-013, FR-014, BR-011)
-- [ ] T080 [US2] Implement atomic `CommitImportBatch` in `src/MuseumSystem.Application/Modules/Import/CommitImportBatchUseCase.cs` (FR-011, FR-012, BR-012)
-- [ ] T081 [US2] Implement `CancelImportBatch` in `src/MuseumSystem.Application/Modules/Import/CancelImportBatchUseCase.cs` (FR-011, BR-012)
-- [ ] T082 [US2] Create Excel import page with upload, preview, validation, and commit states in `src/MuseumSystem.Web/Components/Pages/Imports/ExcelImport.razor` (FR-011, SC-006)
-- [ ] T083 [US2] Wire import services and `Imports.Preview`/`Imports.Commit` policies in `src/MuseumSystem.Web/Program.cs` (Plan Authorization Boundaries, Constitution IX)
+- [x] T073 [P] [US2] Create `ImportBatch` and `ImportRow` entities in `src/MuseumSystem.Domain/Modules/Import/ImportBatch.cs` and `src/MuseumSystem.Domain/Modules/Import/ImportRow.cs` (FR-010)
+- [x] T074 [US2] Implement import lifecycle rules in `src/MuseumSystem.Domain/Modules/Import/ImportBatchRules.cs` (FR-011, FR-012, BR-012)
+- [x] T075 [US2] Add import persistence configuration in `src/MuseumSystem.Infrastructure/Persistence/Configurations/ImportConfiguration.cs` (FR-010)
+- [x] T076 [US2] Implement ClosedXML `.xlsx` reader adapter in `src/MuseumSystem.Infrastructure/Excel/ClosedXmlImportReader.cs` (FR-010, Research: ClosedXML)
+- [x] T077 [US2] Create import DTOs and row issue contracts in `src/MuseumSystem.Application/Modules/Import/Contracts/ImportDtos.cs` (Application Use Case Contracts: Excel Import)
+- [x] T078 [US2] Implement `UploadImportFileForPreview` without artifact mutation in `src/MuseumSystem.Application/Modules/Import/UploadImportFileForPreviewUseCase.cs` (FR-012)
+- [x] T079 [US2] Implement `ValidateImportBatch` with accepted/rejected/needs-review statuses in `src/MuseumSystem.Application/Modules/Import/ValidateImportBatchUseCase.cs` (FR-011, FR-013, FR-014, BR-011)
+- [x] T080 [US2] Implement atomic `CommitImportBatch` in `src/MuseumSystem.Application/Modules/Import/CommitImportBatchUseCase.cs` (FR-011, FR-012, BR-012)
+- [x] T081 [US2] Implement `CancelImportBatch` in `src/MuseumSystem.Application/Modules/Import/CancelImportBatchUseCase.cs` (FR-011, BR-012)
+- [x] T082 [US2] Create Excel import page with upload, preview, validation, and commit states in `src/MuseumSystem.Web/Components/Pages/Imports/ExcelImport.razor` (FR-011, SC-006)
+- [x] T083 [US2] Wire import services and `Imports.Preview`/`Imports.Commit` policies in `src/MuseumSystem.Web/Program.cs` (Plan Authorization Boundaries, Constitution IX)
 
 ## Phase 5: Reconciliation & Corrections
 

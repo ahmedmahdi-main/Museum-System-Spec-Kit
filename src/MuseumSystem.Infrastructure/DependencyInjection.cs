@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MuseumSystem.Application.Common.Persistence;
+using MuseumSystem.Application.Modules.Import;
+using MuseumSystem.Infrastructure.Excel;
 using MuseumSystem.Infrastructure.Identity;
 using MuseumSystem.Infrastructure.Persistence;
 
@@ -17,6 +19,7 @@ public static class DependencyInjection
 
         services.AddDbContext<MuseumDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<IMuseumDbContext>(provider => provider.GetRequiredService<MuseumDbContext>());
+        services.AddScoped<IExcelImportReader, ClosedXmlImportReader>();
 
         services.AddIdentityCore<ApplicationUser>()
             .AddRoles<ApplicationRole>()
