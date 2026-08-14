@@ -8,6 +8,10 @@ public static class CurrentStateRules
 
     public static bool CanReturn(Artifact artifact) => artifact.CurrentStatus == ArtifactCurrentStatus.OutOfStorage;
 
+    public static bool IsHeldBy(Artifact artifact, MovementRecipientType holderType) =>
+        artifact.CurrentStatus == ArtifactCurrentStatus.OutOfStorage &&
+        string.Equals(artifact.CurrentHolderType, holderType.ToString(), StringComparison.Ordinal);
+
     public static bool IsValidStorageLocation(Location location) => location.IsActive && location.LocationType == LocationType.Storage;
 
     public static bool IsValidDisplayLocation(Location location) => location.IsActive && location.LocationType == LocationType.DisplayHall;

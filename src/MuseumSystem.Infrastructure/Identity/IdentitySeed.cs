@@ -9,6 +9,7 @@ public static class IdentitySeed
     public const string RegistryManagerRole = MuseumRoleNames.RegistryManager;
     public const string InventoryOfficerRole = MuseumRoleNames.InventoryOfficer;
     public const string ViewerRole = MuseumRoleNames.Viewer;
+    public const string DocumentationStaffRole = MuseumRoleNames.DocumentationStaff;
 
     public static IReadOnlyList<string> RequiredPermissions => PermissionNames.All;
 

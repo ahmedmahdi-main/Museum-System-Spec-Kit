@@ -356,7 +356,7 @@ UX constraints:
 
 ## Migration and Compatibility
 
-Feature 002 requires one additive EF Core migration that adds Documentation tables, indexes, foreign keys, JSONB columns, and new permission seed data. Existing Feature 001 tables and workflows must not be renamed or behaviorally changed.
+Feature 002 requires one additive EF Core migration that adds Documentation tables, indexes, foreign keys, and JSONB columns. The migration is schema-only; Documentation permissions and role presets are added through the existing `PermissionNames`, `MuseumRolePresets`, and `IdentitySeed` code paths. Existing Feature 001 tables and workflows must not be renamed or behaviorally changed.
 
 Required integration points:
 - Add Documentation DbSets to `IMuseumDbContext` and `MuseumDbContext`.

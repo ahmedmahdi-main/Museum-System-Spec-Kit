@@ -36,60 +36,60 @@
 
 ### A1. Repository Inspection and Custody Integration
 
-- [ ] T001 Inspect Feature 001 artifact/category and museum-number behavior in `src/MuseumSystem.Domain/Modules/ArtifactRegistry/Artifact.cs` and `src/MuseumSystem.Domain/Modules/ArtifactRegistry/ArtifactCategory.cs`
-- [ ] T002 Inspect Feature 001 Storehouse recipient and holder behavior for `MovementRecipientType.DocumentationDivision` in `src/MuseumSystem.Domain/Modules/StorehouseOperations/MovementTypes.cs` and `src/MuseumSystem.Application/Modules/StorehouseOperations/DeliverArtifactsUseCase.cs`
-- [ ] T003 Inspect Feature 001 current-state and concurrency conventions in `src/MuseumSystem.Domain/Modules/StorehouseOperations/CurrentStateRules.cs`, `src/MuseumSystem.Domain/Modules/ArtifactRegistry/Artifact.cs`, and `src/MuseumSystem.Infrastructure/Persistence/Configurations/ArtifactRegistryConfiguration.cs`
-- [ ] T004 Inspect existing audit writer and audit test conventions in `src/MuseumSystem.Infrastructure/Audit/AuditWriter.cs` and `tests/MuseumSystem.Application.Tests/Audit/SensitiveWriteAuditTests.cs`
-- [ ] T005 Inspect existing permission constants, policies, role presets, and seed behavior in `src/MuseumSystem.Application/Modules/IdentityAccess/PermissionNames.cs`, `src/MuseumSystem.Application/Modules/IdentityAccess/Permissions.cs`, and `src/MuseumSystem.Infrastructure/Identity/IdentitySeed.cs`
-- [ ] T006 Inspect actual existing Blazor conventions in `src/MuseumSystem.Web/Components/Pages/Storehouse/Delivery.razor`, `src/MuseumSystem.Web/Components/Pages/Storehouse/Return.razor`, `src/MuseumSystem.Web/Components/Pages/Imports/ExcelImport.razor`, `src/MuseumSystem.Web/Components/Pages/Admin/AuditTrail.razor`, `src/MuseumSystem.Web/Components/Shared/ValidationSummary.razor`, `src/MuseumSystem.Web/Components/Layout/NavMenu.razor`, and `src/MuseumSystem.Web/Components/Routes.razor`
-- [ ] T007 Record the canonical Documentation custody availability decision and helper location in `specs/002-dynamic-artifact-documentation/research.md`
+- [X] T001 Inspect Feature 001 artifact/category and museum-number behavior in `src/MuseumSystem.Domain/Modules/ArtifactRegistry/Artifact.cs` and `src/MuseumSystem.Domain/Modules/ArtifactRegistry/ArtifactCategory.cs`
+- [X] T002 Inspect Feature 001 Storehouse recipient and holder behavior for `MovementRecipientType.DocumentationDivision` in `src/MuseumSystem.Domain/Modules/StorehouseOperations/MovementTypes.cs` and `src/MuseumSystem.Application/Modules/StorehouseOperations/DeliverArtifactsUseCase.cs`
+- [X] T003 Inspect Feature 001 current-state and concurrency conventions in `src/MuseumSystem.Domain/Modules/StorehouseOperations/CurrentStateRules.cs`, `src/MuseumSystem.Domain/Modules/ArtifactRegistry/Artifact.cs`, and `src/MuseumSystem.Infrastructure/Persistence/Configurations/ArtifactRegistryConfiguration.cs`
+- [X] T004 Inspect existing audit writer and audit test conventions in `src/MuseumSystem.Infrastructure/Audit/AuditWriter.cs` and `tests/MuseumSystem.Application.Tests/Audit/SensitiveWriteAuditTests.cs`
+- [X] T005 Inspect existing permission constants, policies, role presets, and seed behavior in `src/MuseumSystem.Application/Modules/IdentityAccess/PermissionNames.cs`, `src/MuseumSystem.Application/Modules/IdentityAccess/Permissions.cs`, and `src/MuseumSystem.Infrastructure/Identity/IdentitySeed.cs`
+- [X] T006 Inspect actual existing Blazor conventions in `src/MuseumSystem.Web/Components/Pages/Storehouse/Delivery.razor`, `src/MuseumSystem.Web/Components/Pages/Storehouse/Return.razor`, `src/MuseumSystem.Web/Components/Pages/Imports/ExcelImport.razor`, `src/MuseumSystem.Web/Components/Pages/Admin/AuditTrail.razor`, `src/MuseumSystem.Web/Components/Shared/ValidationSummary.razor`, `src/MuseumSystem.Web/Components/Layout/NavMenu.razor`, and `src/MuseumSystem.Web/Components/Routes.razor`
+- [X] T007 Record the canonical Documentation custody availability decision and helper location in `specs/002-dynamic-artifact-documentation/research.md`
 
 ### A2. Domain Primitives and Rules
 
-- [ ] T008 [P] Add domain tests for supported documentation field types in `tests/MuseumSystem.Domain.Tests/Documentation/DocumentationFieldTypeTests.cs`
-- [ ] T009 [P] Add domain tests for template field key and option key uniqueness in `tests/MuseumSystem.Domain.Tests/Documentation/DocumentationTemplateVersionTests.cs`
-- [ ] T010 [P] Add domain tests for template lifecycle Draft/Active/Retired, no-more-than-one Active version, and zero-active allowance in `tests/MuseumSystem.Domain.Tests/Documentation/DocumentationTemplateLifecycleTests.cs`
-- [ ] T011 [P] Add domain tests for used template version immutability except retirement in `tests/MuseumSystem.Domain.Tests/Documentation/UsedTemplateVersionImmutabilityTests.cs`
-- [ ] T012 [P] Add domain tests for DocumentationRecord Draft/Completed lifecycle and one-record-per-artifact invariant in `tests/MuseumSystem.Domain.Tests/Documentation/DocumentationRecordTests.cs`
-- [ ] T013 [P] Add domain tests for dynamic value validation across Text, MultilineText, Number, Date, Boolean, SingleSelect, and MultiSelect in `tests/MuseumSystem.Domain.Tests/Documentation/DocumentationValueValidationTests.cs`
-- [ ] T014 [P] Add domain tests for `CurrentStateRules.IsHeldBy(artifact, MovementRecipientType.DocumentationDivision)` and Documentation availability without using `CurrentHolderName` in `tests/MuseumSystem.Domain.Tests/Documentation/DocumentationAvailabilityRulesTests.cs`
-- [ ] T015 Create Documentation domain module marker in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationModule.cs`
-- [ ] T016 [P] Create Documentation enums in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationEnums.cs`
-- [ ] T017 [P] Create dynamic value model and typed validation helpers in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationFieldValue.cs`
-- [ ] T018 [P] Create `DocumentationTemplate` aggregate in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationTemplate.cs`
-- [ ] T019 [P] Create `DocumentationTemplateVersion` entity with lifecycle and concurrency token in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationTemplateVersion.cs`
-- [ ] T020 [P] Create `DocumentationTemplateField` entity in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationTemplateField.cs`
-- [ ] T021 [P] Create `DocumentationTemplateFieldOption` entity in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationTemplateFieldOption.cs`
-- [ ] T022 [P] Create `DocumentationRecord` entity with Draft/Completed lifecycle and Revision 1 baseline fields in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationRecord.cs`
-- [ ] T023 [P] Create `DocumentationRevision` entity with authoritative revision numbering and mandatory reason in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationRevision.cs`
-- [ ] T024 Implement template field and option validation rules in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationTemplateRules.cs`
-- [ ] T025 Implement dynamic value validation against exact template version in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationValueRules.cs`
-- [ ] T026 Add read-only holder helper `IsHeldBy(Artifact, MovementRecipientType)` to centralize Feature 001 holder interpretation in `src/MuseumSystem.Domain/Modules/StorehouseOperations/CurrentStateRules.cs`
-- [ ] T027 Implement Documentation availability rule by delegating to `CurrentStateRules.IsHeldBy(artifact, MovementRecipientType.DocumentationDivision)` in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationAvailabilityRules.cs`
+- [X] T008 [P] Add domain tests for supported documentation field types in `tests/MuseumSystem.Domain.Tests/Documentation/DocumentationFieldTypeTests.cs`
+- [X] T009 [P] Add domain tests for template field key and option key uniqueness in `tests/MuseumSystem.Domain.Tests/Documentation/DocumentationTemplateVersionTests.cs`
+- [X] T010 [P] Add domain tests for template lifecycle Draft/Active/Retired, no-more-than-one Active version, and zero-active allowance in `tests/MuseumSystem.Domain.Tests/Documentation/DocumentationTemplateLifecycleTests.cs`
+- [X] T011 [P] Add domain tests for used template version immutability except retirement in `tests/MuseumSystem.Domain.Tests/Documentation/UsedTemplateVersionImmutabilityTests.cs`
+- [X] T012 [P] Add domain tests for DocumentationRecord Draft/Completed lifecycle and one-record-per-artifact invariant in `tests/MuseumSystem.Domain.Tests/Documentation/DocumentationRecordTests.cs`
+- [X] T013 [P] Add domain tests for dynamic value validation across Text, MultilineText, Number, Date, Boolean, SingleSelect, and MultiSelect in `tests/MuseumSystem.Domain.Tests/Documentation/DocumentationValueValidationTests.cs`
+- [X] T014 [P] Add domain tests for `CurrentStateRules.IsHeldBy(artifact, MovementRecipientType.DocumentationDivision)` and Documentation availability without using `CurrentHolderName` in `tests/MuseumSystem.Domain.Tests/Documentation/DocumentationAvailabilityRulesTests.cs`
+- [X] T015 Create Documentation domain module marker in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationModule.cs`
+- [X] T016 [P] Create Documentation enums in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationEnums.cs`
+- [X] T017 [P] Create dynamic value model and typed validation helpers in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationFieldValue.cs`
+- [X] T018 [P] Create `DocumentationTemplate` aggregate in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationTemplate.cs`
+- [X] T019 [P] Create `DocumentationTemplateVersion` entity with lifecycle and concurrency token in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationTemplateVersion.cs`
+- [X] T020 [P] Create `DocumentationTemplateField` entity in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationTemplateField.cs`
+- [X] T021 [P] Create `DocumentationTemplateFieldOption` entity in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationTemplateFieldOption.cs`
+- [X] T022 [P] Create `DocumentationRecord` entity with Draft/Completed lifecycle and Revision 1 baseline fields in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationRecord.cs`
+- [X] T023 [P] Create `DocumentationRevision` entity with authoritative revision numbering and mandatory reason in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationRevision.cs`
+- [X] T024 Implement template field and option validation rules in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationTemplateRules.cs`
+- [X] T025 Implement dynamic value validation against exact template version in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationValueRules.cs`
+- [X] T026 Add read-only holder helper `IsHeldBy(Artifact, MovementRecipientType)` to centralize Feature 001 holder interpretation in `src/MuseumSystem.Domain/Modules/StorehouseOperations/CurrentStateRules.cs`
+- [X] T027 Implement Documentation availability rule by delegating to `CurrentStateRules.IsHeldBy(artifact, MovementRecipientType.DocumentationDivision)` in `src/MuseumSystem.Domain/Modules/Documentation/DocumentationAvailabilityRules.cs`
 
 ### A3. Permissions and Role Presets
 
-- [ ] T028 [P] Add application permission policy tests for all Documentation permissions and the DocumentationStaff role preset in `tests/MuseumSystem.Application.Tests/IdentityAccess/PermissionPolicyTests.cs`
-- [ ] T029 Add Documentation permission constants to existing `PermissionNames.All` in `src/MuseumSystem.Application/Modules/IdentityAccess/PermissionNames.cs`
-- [ ] T030 Add `DocumentationStaff` role preset with `Documentation.View`, `Documentation.Create`, `Documentation.Edit`, `Documentation.Complete`, `Documentation.History.View`, and `Documentation.Templates.View` while keeping `Documentation.Templates.Manage` Admin-only by default in `src/MuseumSystem.Application/Modules/IdentityAccess/Permissions.cs`
-- [ ] T031 Update existing Identity seed behavior for Documentation permissions and `DocumentationStaff` role in `src/MuseumSystem.Infrastructure/Identity/IdentitySeed.cs`
+- [X] T028 [P] Add application permission policy tests for all Documentation permissions and the DocumentationStaff role preset in `tests/MuseumSystem.Application.Tests/IdentityAccess/PermissionPolicyTests.cs`
+- [X] T029 Add Documentation permission constants to existing `PermissionNames.All` in `src/MuseumSystem.Application/Modules/IdentityAccess/PermissionNames.cs`
+- [X] T030 Add `DocumentationStaff` role preset with `Documentation.View`, `Documentation.Create`, `Documentation.Edit`, `Documentation.Complete`, `Documentation.History.View`, and `Documentation.Templates.View` while keeping `Documentation.Templates.Manage` Admin-only by default in `src/MuseumSystem.Application/Modules/IdentityAccess/Permissions.cs`
+- [X] T031 Update existing Identity seed behavior for Documentation permissions and `DocumentationStaff` role in `src/MuseumSystem.Infrastructure/Identity/IdentitySeed.cs`
 
 ### A4. Persistence and PostgreSQL Infrastructure
 
-- [ ] T032 Add Documentation DbSets to `src/MuseumSystem.Application/Common/Persistence/IMuseumDbContext.cs`
-- [ ] T033 Add Documentation DbSets to `src/MuseumSystem.Infrastructure/Persistence/MuseumDbContext.cs`
-- [ ] T034 Create EF configuration for templates, versions, fields, options, active-version constraint, and concurrency tokens in `src/MuseumSystem.Infrastructure/Persistence/Configurations/DocumentationTemplateConfiguration.cs`
-- [ ] T035 Create EF configuration for records, revisions, JSONB value columns, one-record-per-artifact constraint, foreign keys, and concurrency tokens in `src/MuseumSystem.Infrastructure/Persistence/Configurations/DocumentationRecordConfiguration.cs`
-- [ ] T036 Create reusable PostgreSQL integration-test fixture and connection configuration in `tests/MuseumSystem.Integration.Tests/Documentation/PostgresDocumentationTestFixture.cs`
-- [ ] T037 Add PostgreSQL integration-test dependencies/configuration needed by the fixture without making Docker a production requirement in `tests/MuseumSystem.Integration.Tests/MuseumSystem.Integration.Tests.csproj`
-- [ ] T038 Create additive EF Core migration for Documentation schema only in `src/MuseumSystem.Infrastructure/Persistence/Migrations/`
-- [ ] T039 [P] Add PostgreSQL migration application test for Documentation schema using the shared fixture in `tests/MuseumSystem.Integration.Tests/Documentation/DocumentationMigrationTests.cs`
-- [ ] T040 [P] Add PostgreSQL JSONB mapping round-trip tests for Documentation values and revision snapshots using the shared fixture in `tests/MuseumSystem.Integration.Tests/Documentation/DocumentationJsonbPersistenceTests.cs`
-- [ ] T041 [P] Add PostgreSQL uniqueness tests for one DocumentationRecord per Artifact using the shared fixture in `tests/MuseumSystem.Integration.Tests/Documentation/DocumentationRecordConstraintTests.cs`
-- [ ] T042 [P] Add PostgreSQL active-template constraint and activation-race tests using the shared fixture in `tests/MuseumSystem.Integration.Tests/Documentation/DocumentationTemplateConstraintTests.cs`
-- [ ] T043 [P] Add PostgreSQL foreign-key tests for Artifact and ArtifactCategory restrictive delete behavior using the shared fixture in `tests/MuseumSystem.Integration.Tests/Documentation/DocumentationForeignKeyTests.cs`
-- [ ] T044 [P] Add PostgreSQL optimistic concurrency tests for DocumentationRecord and DocumentationTemplateVersion tokens using the shared fixture in `tests/MuseumSystem.Integration.Tests/Documentation/DocumentationConcurrencyTests.cs`
-- [ ] T045 [P] Add Feature 001 regression tests proving Documentation migration does not break artifact search, Storehouse movement, or return workflows in `tests/MuseumSystem.Integration.Tests/Documentation/Feature001RegressionTests.cs`
+- [X] T032 Add Documentation DbSets to `src/MuseumSystem.Application/Common/Persistence/IMuseumDbContext.cs`
+- [X] T033 Add Documentation DbSets to `src/MuseumSystem.Infrastructure/Persistence/MuseumDbContext.cs`
+- [X] T034 Create EF configuration for templates, versions, fields, options, active-version constraint, and concurrency tokens in `src/MuseumSystem.Infrastructure/Persistence/Configurations/DocumentationTemplateConfiguration.cs`
+- [X] T035 Create EF configuration for records, revisions, JSONB value columns, one-record-per-artifact constraint, foreign keys, and concurrency tokens in `src/MuseumSystem.Infrastructure/Persistence/Configurations/DocumentationRecordConfiguration.cs`
+- [X] T036 Create reusable PostgreSQL integration-test fixture and connection configuration in `tests/MuseumSystem.Integration.Tests/Documentation/PostgresDocumentationTestFixture.cs`
+- [X] T037 Add PostgreSQL integration-test dependencies/configuration needed by the fixture without making Docker a production requirement in `tests/MuseumSystem.Integration.Tests/MuseumSystem.Integration.Tests.csproj`
+- [X] T038 Create additive EF Core migration for Documentation schema only in `src/MuseumSystem.Infrastructure/Persistence/Migrations/`
+- [X] T039 [P] Add PostgreSQL migration application test for Documentation schema using the shared fixture in `tests/MuseumSystem.Integration.Tests/Documentation/DocumentationMigrationTests.cs`
+- [X] T040 [P] Add PostgreSQL JSONB mapping round-trip tests for Documentation values and revision snapshots using the shared fixture in `tests/MuseumSystem.Integration.Tests/Documentation/DocumentationJsonbPersistenceTests.cs`
+- [X] T041 [P] Add PostgreSQL uniqueness tests for one DocumentationRecord per Artifact using the shared fixture in `tests/MuseumSystem.Integration.Tests/Documentation/DocumentationRecordConstraintTests.cs`
+- [X] T042 [P] Add PostgreSQL active-template constraint and activation-race tests using the shared fixture in `tests/MuseumSystem.Integration.Tests/Documentation/DocumentationTemplateConstraintTests.cs`
+- [X] T043 [P] Add PostgreSQL foreign-key tests for Artifact and ArtifactCategory restrictive delete behavior using the shared fixture in `tests/MuseumSystem.Integration.Tests/Documentation/DocumentationForeignKeyTests.cs`
+- [X] T044 [P] Add PostgreSQL optimistic concurrency tests for DocumentationRecord and DocumentationTemplateVersion tokens using the shared fixture in `tests/MuseumSystem.Integration.Tests/Documentation/DocumentationConcurrencyTests.cs`
+- [X] T045 [P] Add Feature 001 regression tests proving Documentation migration does not break artifact search, Storehouse movement, or return workflows in `tests/MuseumSystem.Integration.Tests/Documentation/Feature001RegressionTests.cs`
 
 **Checkpoint**: Phase A foundation is complete when domain, permission, persistence, migration, PostgreSQL fixture-backed tests, and Feature 001 regression tests pass.
 

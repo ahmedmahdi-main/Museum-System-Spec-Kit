@@ -3,6 +3,7 @@ using MuseumSystem.Domain.Modules.ArtifactRegistry;
 using MuseumSystem.Domain.Modules.StorehouseOperations;
 using MuseumSystem.Domain.Modules.Import;
 using MuseumSystem.Domain.Modules.IdentityAccess;
+using MuseumSystem.Domain.Modules.Documentation;
 
 namespace MuseumSystem.Application.Common.Persistence;
 
@@ -18,6 +19,12 @@ public interface IMuseumDbContext
     DbSet<ReconciliationResult> ReconciliationResults { get; }
     DbSet<DocumentedCorrection> DocumentedCorrections { get; }
     DbSet<AuditEntry> AuditEntries { get; }
+    DbSet<DocumentationTemplate> DocumentationTemplates { get; }
+    DbSet<DocumentationTemplateVersion> DocumentationTemplateVersions { get; }
+    DbSet<DocumentationTemplateField> DocumentationTemplateFields { get; }
+    DbSet<DocumentationTemplateFieldOption> DocumentationTemplateFieldOptions { get; }
+    DbSet<DocumentationRecord> DocumentationRecords { get; }
+    DbSet<DocumentationRevision> DocumentationRevisions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

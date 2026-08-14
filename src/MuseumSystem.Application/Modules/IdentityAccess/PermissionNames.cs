@@ -16,6 +16,13 @@ public static class PermissionNames
     public const string StorehouseCorrectionsCreate = "Storehouse.Corrections.Create";
     public const string AuditView = "Audit.View";
     public const string IdentityManage = "Identity.Manage";
+    public const string DocumentationView = "Documentation.View";
+    public const string DocumentationCreate = "Documentation.Create";
+    public const string DocumentationEdit = "Documentation.Edit";
+    public const string DocumentationComplete = "Documentation.Complete";
+    public const string DocumentationHistoryView = "Documentation.History.View";
+    public const string DocumentationTemplatesView = "Documentation.Templates.View";
+    public const string DocumentationTemplatesManage = "Documentation.Templates.Manage";
 
     public static IReadOnlyList<string> All { get; } =
     [
@@ -29,7 +36,14 @@ public static class PermissionNames
         StorehouseReconciliationManage,
         StorehouseCorrectionsCreate,
         AuditView,
-        IdentityManage
+        IdentityManage,
+        DocumentationView,
+        DocumentationCreate,
+        DocumentationEdit,
+        DocumentationComplete,
+        DocumentationHistoryView,
+        DocumentationTemplatesView,
+        DocumentationTemplatesManage
     ];
 }
 

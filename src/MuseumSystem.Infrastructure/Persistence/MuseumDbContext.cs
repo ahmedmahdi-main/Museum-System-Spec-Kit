@@ -5,6 +5,7 @@ using MuseumSystem.Domain.Modules.ArtifactRegistry;
 using MuseumSystem.Domain.Modules.StorehouseOperations;
 using MuseumSystem.Domain.Modules.Import;
 using MuseumSystem.Domain.Modules.IdentityAccess;
+using MuseumSystem.Domain.Modules.Documentation;
 using MuseumSystem.Infrastructure.Identity;
 
 namespace MuseumSystem.Infrastructure.Persistence;
@@ -22,6 +23,12 @@ public sealed class MuseumDbContext(DbContextOptions<MuseumDbContext> options)
     public DbSet<ReconciliationResult> ReconciliationResults => Set<ReconciliationResult>();
     public DbSet<DocumentedCorrection> DocumentedCorrections => Set<DocumentedCorrection>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
+    public DbSet<DocumentationTemplate> DocumentationTemplates => Set<DocumentationTemplate>();
+    public DbSet<DocumentationTemplateVersion> DocumentationTemplateVersions => Set<DocumentationTemplateVersion>();
+    public DbSet<DocumentationTemplateField> DocumentationTemplateFields => Set<DocumentationTemplateField>();
+    public DbSet<DocumentationTemplateFieldOption> DocumentationTemplateFieldOptions => Set<DocumentationTemplateFieldOption>();
+    public DbSet<DocumentationRecord> DocumentationRecords => Set<DocumentationRecord>();
+    public DbSet<DocumentationRevision> DocumentationRevisions => Set<DocumentationRevision>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
