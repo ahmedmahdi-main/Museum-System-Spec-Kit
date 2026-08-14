@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MuseumSystem.Application.Common;
+using MuseumSystem.Application.Common.Audit;
 using MuseumSystem.Application.Common.Persistence;
 using MuseumSystem.Application.Modules.Import.Contracts;
 using MuseumSystem.Domain.Modules.ArtifactRegistry;
@@ -8,7 +9,7 @@ using MuseumSystem.Domain.Modules.StorehouseOperations;
 
 namespace MuseumSystem.Application.Modules.Import;
 
-public sealed class CommitImportBatchUseCase(IMuseumDbContext dbContext)
+public sealed class CommitImportBatchUseCase(IMuseumDbContext dbContext, IAuditWriter? auditWriter = null)
 {
     public async Task<UseCaseResult<ImportCommitDto>> CommitImportBatch(Guid importBatchId, CancellationToken cancellationToken = default)
     {
@@ -87,6 +88,15 @@ public sealed class CommitImportBatchUseCase(IMuseumDbContext dbContext)
             return UseCaseResult<ImportCommitDto>.Conflict("تعذر الاعتماد لأن الدفعة تغيرت. أعد المحاولة.");
         }
 
-        return UseCaseResult<ImportCommitDto>.Success(new ImportCommitDto(batch.ImportBatchId, acceptedRows.Count, "تم اعتماد الصفوف المقبولة."));
+        await WriteAuditAsync(batch.ImportBatchId, acceptedRows.Count, cancellationToken);
+        return UseCaseResult<ImportCommitDto>.Success(new ImportCommitDto(batch.ImportBatchId, acceptedRows.Count, "?? ?????? ?????? ????????."));
     }
+    private Task WriteAuditAsync(Guid importBatchId, int createdArtifacts, CancellationToken cancellationToken) =>
+        auditWriter?.WriteAsync(new AuditWriteRequest(
+            "Import.CommitImportBatch",
+            "Import",
+            nameof(ImportBatch),
+            importBatchId.ToString(),
+            $"Committed import batch with {createdArtifacts} created artifact(s).",
+            $"CreatedArtifacts={createdArtifacts}"), cancellationToken) ?? Task.CompletedTask;
 }

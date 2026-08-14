@@ -1,12 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using MuseumSystem.Application.Common;
+using MuseumSystem.Application.Common.Audit;
 using MuseumSystem.Application.Common.Persistence;
 using MuseumSystem.Application.Modules.ArtifactRegistry.Contracts;
 using MuseumSystem.Domain.Modules.ArtifactRegistry;
 
 namespace MuseumSystem.Application.Modules.ArtifactRegistry;
 
-public sealed class CategoryUseCases(IMuseumDbContext dbContext)
+public sealed class CategoryUseCases(IMuseumDbContext dbContext, IAuditWriter? auditWriter = null)
 {
     public async Task<UseCaseResult<CategoryDto>> CreateCategory(CreateCategoryRequest request, CancellationToken cancellationToken = default)
     {
@@ -19,6 +20,7 @@ public sealed class CategoryUseCases(IMuseumDbContext dbContext)
         var category = ArtifactCategory.Create(code, request.NameArabic, request.Description);
         dbContext.ArtifactCategories.Add(category);
         await dbContext.SaveChangesAsync(cancellationToken);
+        await WriteAuditAsync("ArtifactCategory.Create", category.CategoryId, $"Created artifact category {category.CategoryCode}.", null, cancellationToken);
         return UseCaseResult<CategoryDto>.Success(ToDto(category));
     }
 
@@ -45,6 +47,7 @@ public sealed class CategoryUseCases(IMuseumDbContext dbContext)
 
         category.Update(code, request.NameArabic, request.Description);
         await dbContext.SaveChangesAsync(cancellationToken);
+        await WriteAuditAsync("ArtifactCategory.Update", category.CategoryId, $"Updated artifact category {category.CategoryCode}.", "Category metadata updated.", cancellationToken);
         return UseCaseResult<CategoryDto>.Success(ToDto(category));
     }
 
@@ -58,6 +61,7 @@ public sealed class CategoryUseCases(IMuseumDbContext dbContext)
 
         category.DisableForNewUse();
         await dbContext.SaveChangesAsync(cancellationToken);
+        await WriteAuditAsync("ArtifactCategory.DisableForNewUse", category.CategoryId, $"Disabled artifact category {category.CategoryCode} for new use.", null, cancellationToken);
         return UseCaseResult.Success("تم تعطيل الفئة للاستخدام الجديد.");
     }
 
@@ -69,4 +73,13 @@ public sealed class CategoryUseCases(IMuseumDbContext dbContext)
 
     private static CategoryDto ToDto(ArtifactCategory category) =>
         new(category.CategoryId, category.CategoryCode, category.NameArabic, category.Description, category.IsActive);
+
+    private Task WriteAuditAsync(string actionName, Guid categoryId, string summary, string? changeSummary, CancellationToken cancellationToken) =>
+        auditWriter?.WriteAsync(new AuditWriteRequest(
+            actionName,
+            "ArtifactRegistry",
+            nameof(ArtifactCategory),
+            categoryId.ToString(),
+            summary,
+            changeSummary), cancellationToken) ?? Task.CompletedTask;
 }

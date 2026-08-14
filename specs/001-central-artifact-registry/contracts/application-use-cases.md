@@ -78,7 +78,7 @@
 - الاسم مطلوب.
 - النوع مطلوب.
 
-**Authorization**: `Locations.Manage`
+**Authorization**: `Storehouse.Locations.Manage`
 
 ### DisableLocationForNewUse
 
@@ -89,7 +89,7 @@
 **Success**:
 - الموقع لا يظهر كاختيار جديد، لكنه يبقى في التاريخ.
 
-**Authorization**: `Locations.Manage`
+**Authorization**: `Storehouse.Locations.Manage`
 
 ## Movements
 
@@ -106,7 +106,7 @@
 - كل القطع يجب أن تكون داخل المخزن.
 - الجهة المستلمة ضمن القائمة المدعومة.
 
-**Authorization**: `Movements.Deliver`
+**Authorization**: `Storehouse.Deliver`
 
 ### DeliverArtifacts
 
@@ -127,7 +127,7 @@
 - إذا كانت أي قطعة غير مؤهلة، تفشل العملية كاملة ولا تتغير أي قطعة.
 - إذا حدث concurrency conflict، تعرض الواجهة أن حالة قطعة تغيرت ويجب إعادة المراجعة.
 
-**Authorization**: `Movements.Deliver`
+**Authorization**: `Storehouse.Deliver`
 
 ### PreviewReturnEligibility
 
@@ -142,7 +142,7 @@
 - كل القطع يجب أن تكون خارج المخزن.
 - موقع العودة موقع خزن صالح ونشط.
 
-**Authorization**: `Movements.Return`
+**Authorization**: `Storehouse.Return`
 
 ### ReturnArtifacts
 
@@ -160,7 +160,7 @@
 **Failure**:
 - تفشل العملية كاملة إذا وجدت قطعة غير مؤهلة.
 
-**Authorization**: `Movements.Return`
+**Authorization**: `Storehouse.Return`
 
 ## Excel Import
 
@@ -227,7 +227,7 @@
 **Success**:
 - إنشاء جلسة جرد Draft للموقع.
 
-**Authorization**: `Reconciliation.Manage`
+**Authorization**: `Storehouse.Reconciliation.Manage`
 
 ### RecordReconciliationItems
 
@@ -238,7 +238,7 @@
 **Success**:
 - تصنيف النتائج إلى Matched, Missing, Extra, Conflict, NeedsReview.
 
-**Authorization**: `Reconciliation.Manage`
+**Authorization**: `Storehouse.Reconciliation.Manage`
 
 ### CreateDocumentedCorrection
 
@@ -258,4 +258,4 @@
 - السبب مطلوب.
 - التصحيح لا يحذف ولا يعدل MovementRecord سابق.
 
-**Authorization**: `Corrections.Create`
+**Authorization**: `Storehouse.Corrections.Create`

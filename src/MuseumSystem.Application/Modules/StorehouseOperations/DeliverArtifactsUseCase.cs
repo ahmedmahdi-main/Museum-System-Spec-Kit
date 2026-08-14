@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MuseumSystem.Application.Common;
+using MuseumSystem.Application.Common.Audit;
 using MuseumSystem.Application.Common.Persistence;
 using MuseumSystem.Application.Modules.StorehouseOperations.Contracts;
 using MuseumSystem.Domain.Modules.ArtifactRegistry;
@@ -7,7 +8,7 @@ using MuseumSystem.Domain.Modules.StorehouseOperations;
 
 namespace MuseumSystem.Application.Modules.StorehouseOperations;
 
-public sealed class DeliverArtifactsUseCase(IMuseumDbContext dbContext)
+public sealed class DeliverArtifactsUseCase(IMuseumDbContext dbContext, IAuditWriter? auditWriter = null)
 {
     public async Task<UseCaseResult<MovementOperationDto>> DeliverArtifacts(DeliverArtifactsRequest request, CancellationToken cancellationToken = default)
     {
@@ -60,7 +61,8 @@ public sealed class DeliverArtifactsUseCase(IMuseumDbContext dbContext)
             return UseCaseResult<MovementOperationDto>.Conflict("تعذر الحفظ لأن حالة قطعة تغيرت. أعد المحاولة.");
         }
 
-        return UseCaseResult<MovementOperationDto>.Success(new MovementOperationDto(groupId, ids, "تم التسليم."));
+        await WriteAuditAsync(groupId, ids.Count, request.RecipientType, cancellationToken);
+        return UseCaseResult<MovementOperationDto>.Success(new MovementOperationDto(groupId, ids, "?? ???????."));
     }
 
     private async Task<UseCaseResult<DeliveryTarget>> ResolveDeliveryTargetAsync(DeliverArtifactsRequest request, CancellationToken cancellationToken)
@@ -93,6 +95,15 @@ public sealed class DeliverArtifactsUseCase(IMuseumDbContext dbContext)
 
         return UseCaseResult<DeliveryTarget>.Success(new DeliveryTarget(request.RecipientName.Trim(), null));
     }
+
+    private Task WriteAuditAsync(Guid movementGroupId, int artifactCount, MovementRecipientType recipientType, CancellationToken cancellationToken) =>
+        auditWriter?.WriteAsync(new AuditWriteRequest(
+            "Movement.DeliverArtifacts",
+            "StorehouseOperations",
+            nameof(MovementRecord),
+            movementGroupId.ToString(),
+            $"Delivered {artifactCount} artifact(s).",
+            $"RecipientType={recipientType}; ArtifactCount={artifactCount}"), cancellationToken) ?? Task.CompletedTask;
 
     private sealed record DeliveryTarget(string RecipientName, Location? DisplayLocation);
 }

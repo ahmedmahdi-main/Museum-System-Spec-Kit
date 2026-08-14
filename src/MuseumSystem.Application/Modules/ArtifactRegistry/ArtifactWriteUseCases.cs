@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MuseumSystem.Application.Common;
+using MuseumSystem.Application.Common.Audit;
 using MuseumSystem.Application.Common.Persistence;
 using MuseumSystem.Application.Modules.ArtifactRegistry.Contracts;
 using MuseumSystem.Domain.Modules.ArtifactRegistry;
@@ -7,7 +8,7 @@ using MuseumSystem.Domain.Modules.StorehouseOperations;
 
 namespace MuseumSystem.Application.Modules.ArtifactRegistry;
 
-public sealed class ArtifactWriteUseCases(IMuseumDbContext dbContext)
+public sealed class ArtifactWriteUseCases(IMuseumDbContext dbContext, IAuditWriter? auditWriter = null)
 {
     public async Task<UseCaseResult<ArtifactDetailsDto>> CreateArtifact(CreateArtifactRequest request, CancellationToken cancellationToken = default)
     {
@@ -32,6 +33,7 @@ public sealed class ArtifactWriteUseCases(IMuseumDbContext dbContext)
         var artifact = ArtifactFactory.Create(category, request.ItemNumber, request.BasicDescription, location);
         dbContext.Artifacts.Add(artifact);
         await dbContext.SaveChangesAsync(cancellationToken);
+        await WriteAuditAsync("Artifact.Create", artifact.ArtifactId, $"Created artifact {artifact.MuseumNumberDisplay}.", $"CategoryId={artifact.CategoryId}; ItemNumber={artifact.ItemNumber}; InitialLocationId={artifact.CurrentLocationId}", cancellationToken);
 
         return UseCaseResult<ArtifactDetailsDto>.Success(ToDetailsDto(artifact, category, location));
     }
@@ -50,6 +52,7 @@ public sealed class ArtifactWriteUseCases(IMuseumDbContext dbContext)
 
         artifact.UpdateBasicDescription(request.BasicDescription);
         await dbContext.SaveChangesAsync(cancellationToken);
+        await WriteAuditAsync("Artifact.UpdateBasicInfo", artifact.ArtifactId, $"Updated artifact {artifact.MuseumNumberDisplay} basic information.", "BasicDescription updated.", cancellationToken);
         return UseCaseResult<ArtifactDetailsDto>.Success(ToDetailsDto(artifact, artifact.Category, artifact.CurrentLocation));
     }
 
@@ -67,5 +70,14 @@ public sealed class ArtifactWriteUseCases(IMuseumDbContext dbContext)
             artifact.CurrentHolderType,
             artifact.CurrentHolderName,
             artifact.LastKnownStorageLocationId);
+
+    private Task WriteAuditAsync(string actionName, Guid artifactId, string summary, string? changeSummary, CancellationToken cancellationToken) =>
+        auditWriter?.WriteAsync(new AuditWriteRequest(
+            actionName,
+            "ArtifactRegistry",
+            nameof(Artifact),
+            artifactId.ToString(),
+            summary,
+            changeSummary), cancellationToken) ?? Task.CompletedTask;
 }
 

@@ -217,6 +217,14 @@
 - [x] T117 Create root `docker-compose.yml` with only `MuseumSystem.Web`, PostgreSQL, a persistent PostgreSQL volume, environment-based connection string, PostgreSQL health check, and dependency/startup configuration; add `.env.example` without real secrets (Plan Migration / Deployment Approach, Constitution XI, Constitution XIV)
 - [x] T118 Verify `docker compose config`, `docker compose build`, `docker compose up`, and application connectivity to PostgreSQL; document Docker start/stop commands in `specs/001-central-artifact-registry/quickstart.md` (Plan Migration / Deployment Approach, Constitution XI)
 
+## Phase 8: Closing Patch Before Merge
+
+**Goal**: Close final audit and contract consistency findings without changing architecture or adding new feature scope.
+
+- [x] T119 Extend audit coverage for current sensitive write use cases using the existing `IAuditWriter`/`AuditWriter` path only: artifact categories, artifacts, locations, delivery, return, and Excel commit; keep existing documented correction audit.
+- [x] T120 Add application/integration tests proving successful sensitive writes create suitable `AuditEntry` records and failed writes do not create false success audit entries.
+- [x] T121 Align Storehouse permission names in `specs/001-central-artifact-registry/contracts/application-use-cases.md` with the names used in plan and implementation.
+- [x] T122 Re-review feature 001 after the closing patch and confirm no Critical or High findings remain.
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MuseumSystem.Application.Common;
+using MuseumSystem.Application.Common.Audit;
 using MuseumSystem.Application.Common.Persistence;
 using MuseumSystem.Application.Modules.StorehouseOperations.Contracts;
 using MuseumSystem.Domain.Modules.ArtifactRegistry;
@@ -7,7 +8,7 @@ using MuseumSystem.Domain.Modules.StorehouseOperations;
 
 namespace MuseumSystem.Application.Modules.StorehouseOperations;
 
-public sealed class ReturnArtifactsUseCase(IMuseumDbContext dbContext)
+public sealed class ReturnArtifactsUseCase(IMuseumDbContext dbContext, IAuditWriter? auditWriter = null)
 {
     public async Task<UseCaseResult<MovementOperationDto>> ReturnArtifacts(ReturnArtifactsRequest request, CancellationToken cancellationToken = default)
     {
@@ -52,6 +53,15 @@ public sealed class ReturnArtifactsUseCase(IMuseumDbContext dbContext)
             return UseCaseResult<MovementOperationDto>.Conflict("تعذر الحفظ لأن حالة قطعة تغيرت. أعد المحاولة.");
         }
 
-        return UseCaseResult<MovementOperationDto>.Success(new MovementOperationDto(groupId, ids, "تم الاستلام."));
+        await WriteAuditAsync(groupId, ids.Count, returnLocation.LocationId, cancellationToken);
+        return UseCaseResult<MovementOperationDto>.Success(new MovementOperationDto(groupId, ids, "?? ????????."));
     }
+    private Task WriteAuditAsync(Guid movementGroupId, int artifactCount, Guid returnLocationId, CancellationToken cancellationToken) =>
+        auditWriter?.WriteAsync(new AuditWriteRequest(
+            "Movement.ReturnArtifacts",
+            "StorehouseOperations",
+            nameof(MovementRecord),
+            movementGroupId.ToString(),
+            $"Returned {artifactCount} artifact(s) to storage.",
+            $"ReturnLocationId={returnLocationId}; ArtifactCount={artifactCount}"), cancellationToken) ?? Task.CompletedTask;
 }

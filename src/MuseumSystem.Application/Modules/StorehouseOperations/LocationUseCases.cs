@@ -1,18 +1,20 @@
 using Microsoft.EntityFrameworkCore;
 using MuseumSystem.Application.Common;
+using MuseumSystem.Application.Common.Audit;
 using MuseumSystem.Application.Common.Persistence;
 using MuseumSystem.Application.Modules.ArtifactRegistry.Contracts;
 using MuseumSystem.Domain.Modules.StorehouseOperations;
 
 namespace MuseumSystem.Application.Modules.StorehouseOperations;
 
-public sealed class LocationUseCases(IMuseumDbContext dbContext)
+public sealed class LocationUseCases(IMuseumDbContext dbContext, IAuditWriter? auditWriter = null)
 {
     public async Task<UseCaseResult<LocationDto>> CreateLocation(CreateLocationRequest request, CancellationToken cancellationToken = default)
     {
         var location = Location.Create(request.NameArabic, request.LocationType, request.ParentLocationId);
         dbContext.Locations.Add(location);
         await dbContext.SaveChangesAsync(cancellationToken);
+        await WriteAuditAsync("Location.Create", location.LocationId, $"Created {location.LocationType} location.", $"ParentLocationId={location.ParentLocationId}", cancellationToken);
         return UseCaseResult<LocationDto>.Success(ToDto(location));
     }
 
@@ -26,6 +28,7 @@ public sealed class LocationUseCases(IMuseumDbContext dbContext)
 
         location.Update(request.NameArabic, request.LocationType, request.ParentLocationId);
         await dbContext.SaveChangesAsync(cancellationToken);
+        await WriteAuditAsync("Location.Update", location.LocationId, $"Updated {location.LocationType} location.", $"ParentLocationId={location.ParentLocationId}", cancellationToken);
         return UseCaseResult<LocationDto>.Success(ToDto(location));
     }
 
@@ -39,6 +42,7 @@ public sealed class LocationUseCases(IMuseumDbContext dbContext)
 
         location.DisableForNewUse();
         await dbContext.SaveChangesAsync(cancellationToken);
+        await WriteAuditAsync("Location.DisableForNewUse", location.LocationId, $"Disabled {location.LocationType} location for new use.", null, cancellationToken);
         return UseCaseResult.Success("تم تعطيل الموقع للاستخدام الجديد.");
     }
 
@@ -59,4 +63,13 @@ public sealed class LocationUseCases(IMuseumDbContext dbContext)
 
     private static LocationDto ToDto(Location location) =>
         new(location.LocationId, location.NameArabic, location.LocationType, location.ParentLocationId, location.IsActive);
+
+    private Task WriteAuditAsync(string actionName, Guid locationId, string summary, string? changeSummary, CancellationToken cancellationToken) =>
+        auditWriter?.WriteAsync(new AuditWriteRequest(
+            actionName,
+            "StorehouseOperations",
+            nameof(Location),
+            locationId.ToString(),
+            summary,
+            changeSummary), cancellationToken) ?? Task.CompletedTask;
 }
