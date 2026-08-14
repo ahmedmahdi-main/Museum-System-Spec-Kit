@@ -201,12 +201,9 @@ Draft
 
 Active
   -> Retire -> Retired, possibly leaving zero Active versions temporarily
-
-Draft
-  -> Discard/Delete only if unused and allowed by template management rules
 ```
 
-Used versions are immutable except retirement status.
+Used versions are immutable except retirement status. Draft versions may remain Draft until a future business requirement defines deletion or discard behavior.
 
 ## Integrity Constraints
 

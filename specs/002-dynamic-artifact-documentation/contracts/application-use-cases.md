@@ -176,8 +176,9 @@ All write use cases that change Documentation state should accept the actor iden
 - DocumentationRecordId.
 
 **Success**:
-- Baseline completion summary as Revision 1.
-- Ordered correction revisions with revision number, non-empty correction reason, author, timestamp, and changed field summary.
+- One coherent sequence beginning with Revision 1 as the first successful completion baseline.
+- Revision 1 shows completion author, completion timestamp, and baseline documented values interpreted through the bound Template Version; it has no correction reason because it is not a correction.
+- Revision 2 and later entries show correction revision number, mandatory non-empty correction reason, correction author, correction timestamp, and changed field summary.
 
 **Validation/Failure**:
 - Record not found.
@@ -192,12 +193,8 @@ All write use cases that change Documentation state should accept the actor iden
 - RevisionNumber.
 
 **Success**:
-- Bound template version labels/options.
-- Previous values.
-- New values.
-- Field-level change summary.
-- Non-empty correction reason.
-- Author and timestamp.
+- For Revision 1: completion baseline documented values interpreted through bound template version labels/options, completion author, and completion timestamp; no correction reason is returned because Revision 1 is not a correction.
+- For Revision 2 and later: previous values, new values, field-level change summary, mandatory non-empty correction reason, correction author, and correction timestamp, interpreted through bound template version labels/options.
 
 **Validation/Failure**:
 - Record or revision not found.

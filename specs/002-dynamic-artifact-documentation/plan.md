@@ -278,7 +278,7 @@ Role preset recommendations:
 - Template manager role or Admin/RegistryManager extension: template management.
 - Viewer: Documentation.View only if the museum permits documentation visibility.
 
-Use cases enforce permissions through existing Blazor `[Authorize(Policy = ...)]` and application-layer authorization test coverage. Sensitive writes produce audit entries using the existing audit writer.
+Application contracts declare the permissions required by each Documentation operation. ASP.NET Core authorization policies and Blazor/action boundaries enforce those permissions using the existing Museum-System authorization model: routable pages use `[Authorize(Policy = ...)]`, and operations requiring permissions stronger or different from the containing page use action-level ASP.NET Core authorization checks. Do not introduce a Feature-002-specific application authorization subsystem; if repository inspection finds an existing generic application authorization abstraction during implementation, it may be reused, but Feature 002 must not invent a parallel authorization architecture. Completion specifically requires both `Documentation.Edit`, because field values are persisted, and `Documentation.Complete`, because the Draft changes to Completed. Sensitive writes produce audit entries using the existing audit writer.
 
 ## Blazor UX Plan
 
@@ -326,7 +326,7 @@ UX constraints:
 - Create Documentation resolves active template from artifact category automatically.
 - Create fails when no active template exists.
 - Create and Draft edit fail when artifact is not available to Documentation.
-- Complete fails when required values are missing or the user lacks either `Documentation.Edit` or `Documentation.Complete`.
+- Complete validates required values in the use case, while existing ASP.NET Core authorization policy coverage proves the Complete action is denied when the user lacks either `Documentation.Edit` or `Documentation.Complete`.
 - Complete succeeds without changing custody or movement records.
 - Correct Completed succeeds regardless of current custody only when a non-empty staff-facing Reason is provided and creates the next authoritative revision.
 - Template activation affects new records only; activating while another version is Active atomically retires the previous Active version.
@@ -413,11 +413,17 @@ Compatibility checks:
 - Add history read use case and Blazor history view.
 - Ensure corrections do not require current custody and do not affect movement.
 
-### Phase E - Concurrency, Authorization, and Hardening
+### Phase E - Documentation Permissions / Authorization
+
+- Complete authorization matrix tests.
+- Apply routable page policies and action-level authorization checks through the existing ASP.NET Core authorization model.
+- Verify role presets, navigation visibility, and permission boundaries.
+
+### Phase F - Concurrency and Final Verification
 
 - Add stale-save handling across records and templates.
-- Complete authorization matrix tests.
 - Add integration/acceptance coverage for edge cases and success criteria.
+- Run final quickstart, traceability, and scope-boundary verification.
 
 ## Post-Design Constitution Check
 

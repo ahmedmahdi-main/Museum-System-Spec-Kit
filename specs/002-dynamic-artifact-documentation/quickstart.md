@@ -23,6 +23,14 @@ dotnet test Museum-System.sln
 
 Feature-specific test filtering can be added during implementation, for example by namespace or test trait, without changing this plan.
 
+## Manual Acceptance Measurements
+
+These checkpoints validate human timing and usability success criteria during guided UAT; do not replace them with fabricated automated tests.
+
+- **SC-001**: At least 95% of guided Documentation attempts can locate an eligible Artifact by Museum Number and open its documentation form in under 30 seconds.
+- **SC-008**: Staff can identify the Documentation revision sequence/history in under 1 minute during guided acceptance validation.
+- **SC-010**: At least 90% of participating Documentation staff rate the digital workflow as no more burdensome than the current paper workflow after guided validation.
+
 ## Scenario 1: Template Setup for an Artifact Category
 
 1. Sign in as a user with `Documentation.Templates.Manage`.

@@ -100,6 +100,7 @@ Museum staff only access documentation and template capabilities that match thei
 1. **Given** a user has permission to view documentation but not edit it, **When** they open a Documentation Record, **Then** they can inspect permitted content but cannot create, edit, complete, or revise the record.
 2. **Given** a user lacks permission to view documentation history, **When** they open a Completed Documentation Record, **Then** history and revision details are not available to them.
 3. **Given** a user lacks template management permission, **When** they view a template, **Then** they cannot create versions, activate versions, retire versions, or change fields.
+4. **Given** a user can edit documentation but lacks completion permission, or can complete documentation but lacks edit permission, **When** they attempt to Complete a Draft, **Then** the action is blocked because completion requires both `Documentation.Edit` and `Documentation.Complete`.
 
 ### Edge Cases
 
@@ -151,8 +152,8 @@ Museum staff only access documentation and template capabilities that match thei
 - **FR-029**: New Documentation Records MUST use the currently active template version for the artifact category at the time the record is created.
 - **FR-030**: Existing Documentation Records MUST remain bound to the exact template version under which they were created, even after a newer version is activated.
 - **FR-031**: The system MUST allow authorized Documentation staff to correct or update a Completed Documentation Record regardless of the artifact's current custody state.
-- **FR-032**: Every post-completion modification MUST create a new traceable historical revision; Draft edits before first completion update the Draft without formal revision history.
-- **FR-033**: The system MUST preserve enough revision history to answer what the documentation previously contained, what changed, who changed it, and when it changed.
+- **FR-032**: Every post-completion modification MUST create a new traceable historical revision; Draft edits before first completion update the Draft without formal revision history. Revision 1 is the initial completion baseline and has no correction reason because it is not a correction; Revision 2 and later correction revisions MUST include a non-empty staff-facing correction reason.
+- **FR-033**: The system MUST preserve enough revision history to answer what the documentation previously contained, what changed, who changed it, why it changed for correction revisions, and when it changed. The correction reason MUST be persisted with the resulting authoritative correction revision and visible in Documentation history and revision details.
 - **FR-034**: Authorized users MUST be able to inspect the history of a Documentation Record.
 - **FR-035**: Documentation history MUST clearly identify successive revisions with author and timestamp information.
 - **FR-036**: The feature MUST provide one coherent Documentation capability and MUST NOT model manual and electronic documentation as separate documentation domains.
@@ -162,7 +163,7 @@ Museum staff only access documentation and template capabilities that match thei
 - **FR-040**: The system MUST distinguish Documentation workflow state from physical custody and movement state in all user-facing status and actions.
 - **FR-041**: The primary employee workflow MUST minimize duplicate entry by reusing artifact data already maintained in the central artifact registry.
 - **FR-042**: The primary employee workflow MUST support the sequence: enter or search Museum Number, view artifact details, open documentation, fill the dynamic form, then Save Draft or Complete.
-- **FR-043**: The system MUST distinguish authorization for viewing documentation, creating documentation, editing documentation, completing documentation, viewing documentation history, viewing templates, and managing templates.
+- **FR-043**: The system MUST distinguish authorization for viewing documentation, creating documentation, editing documentation, completing documentation, viewing documentation history, viewing templates, and managing templates. Save Draft requires `Documentation.Edit`; Correct Completed Documentation requires `Documentation.Edit`; Complete requires both `Documentation.Edit` and `Documentation.Complete`; viewing history requires `Documentation.History.View`; viewing templates requires `Documentation.Templates.View`; managing templates requires `Documentation.Templates.Manage`.
 - **FR-044**: The feature MUST NOT include artifact creation, core artifact editing, general artifact category administration, Storehouse location management, custody management, movement management, laboratory operations, conservation or maintenance, exhibition management, loans, external archive integration, notifications, general reporting, PDF or Word export, printing, barcode or QR functionality, OCR, artificial intelligence features, authentication redesign, authorization infrastructure redesign, or general audit infrastructure redesign.
 - **FR-045**: The system MUST provide clear user feedback when a requested documentation action is blocked by custody, missing template, required field validation, status, or authorization.
 - **FR-046**: The system MUST prevent stale saves to a Documentation Record; when another user has saved changes first, the later user MUST review the latest record before saving their own changes.
