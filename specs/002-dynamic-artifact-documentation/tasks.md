@@ -200,7 +200,7 @@
 
 ### Implementation for User Story 4
 
-- [ ] T114 [P] [US4] Create correction and revision DTO contracts in `src/MuseumSystem.Application/Modules/Documentation/Contracts/DocumentationRevisionDtos.cs`
+- [X] T114 [P] [US4] Create correction and revision DTO contracts in `src/MuseumSystem.Application/Modules/Documentation/Contracts/DocumentationRevisionDtos.cs`
 - [ ] T115 [US4] Implement field-level change summary generation using bound template metadata in `src/MuseumSystem.Application/Modules/Documentation/DocumentationChangeSummaryService.cs`
 - [ ] T116 [US4] Implement `CorrectCompletedDocumentation` with mandatory Reason, value validation, Completed-state preservation, Revision 2+ numbering, metadata, audit, and no custody check in `src/MuseumSystem.Application/Modules/Documentation/CorrectCompletedDocumentationUseCase.cs`
 - [ ] T117 [US4] Implement `GetDocumentationHistory` with Revision 1 baseline summary and ordered correction revisions in `src/MuseumSystem.Application/Modules/Documentation/GetDocumentationHistoryUseCase.cs`
