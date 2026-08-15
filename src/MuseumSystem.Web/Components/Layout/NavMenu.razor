@@ -25,6 +25,25 @@
                 <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
             </NavLink>
         </div>
+        <AuthorizeView Policy="@PermissionNames.DocumentationTemplatesView">
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="documentation/templates">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Documentation Templates
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView Policy="@PermissionNames.DocumentationTemplatesManage">
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="documentation/templates">
+                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Manage Templates
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
     </nav>
 </div>
 

@@ -1,0 +1,265 @@
+@page "/documentation/templates/{VersionId:guid}/edit"
+@attribute [Authorize(Policy = PermissionNames.DocumentationTemplatesManage)]
+@rendermode InteractiveServer
+@inject TemplateQueryUseCases TemplateQueries
+@inject SaveTemplateVersionDraftUseCase SaveDraftUseCase
+@inject ActivateTemplateVersionUseCase ActivateUseCase
+@inject NavigationManager Navigation
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Draft Template Editor</PageTitle>
+
+<section class="page-section">
+    <h2>Draft Template Editor</h2>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="status-message">@message</div>
+    }
+
+    @if (version is not null)
+    {
+        <p class="muted">@version.ArtifactCategoryCode - @version.ArtifactCategoryName</p>
+        <p>@version.TemplateName v@version.VersionNumber - @version.Status</p>
+
+        @if (version.IsReadOnly)
+        {
+            <p>Used or non-Draft template versions are read-only. Create a new Draft version to change fields or options.</p>
+            <a class="btn-secondary" href="@DetailsHref">View Details</a>
+        }
+        else
+        {
+            <EditForm Model="this" OnSubmit="SaveAsync" FormName="save-template-version-draft">
+                @foreach (var field in fields)
+                {
+                    <section class="page-section">
+                        <div class="form-grid">
+                            <label>
+                                <span>Field Key</span>
+                                <InputText @bind-Value="field.FieldKey" class="form-control" />
+                            </label>
+                            <label>
+                                <span>Label</span>
+                                <InputText @bind-Value="field.Label" class="form-control" />
+                            </label>
+                            <label>
+                                <span>Field Type</span>
+                                <InputSelect @bind-Value="field.FieldType" class="form-control">
+                                    @foreach (var fieldType in supportedFieldTypes)
+                                    {
+                                        <option value="@fieldType">@fieldType</option>
+                                    }
+                                </InputSelect>
+                            </label>
+                            <label>
+                                <span>Display Order</span>
+                                <InputNumber @bind-Value="field.DisplayOrder" class="form-control" />
+                            </label>
+                            <label>
+                                <span>Section</span>
+                                <InputText @bind-Value="field.Section" class="form-control" />
+                            </label>
+                            <label>
+                                <span>Help Text</span>
+                                <InputText @bind-Value="field.HelpText" class="form-control" />
+                            </label>
+                            <label>
+                                <span>Required</span>
+                                <InputCheckbox @bind-Value="field.IsRequired" />
+                            </label>
+                            <button type="button" class="btn-secondary" @onclick="() => RemoveField(field)">Remove Field</button>
+                        </div>
+
+                        @if (IsSelect(field.FieldType))
+                        {
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Option Key</th>
+                                        <th>Label</th>
+                                        <th>Order</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var option in field.Options)
+                                    {
+                                        <tr>
+                                            <td><InputText @bind-Value="option.OptionKey" class="form-control" /></td>
+                                            <td><InputText @bind-Value="option.Label" class="form-control" /></td>
+                                            <td><InputNumber @bind-Value="option.DisplayOrder" class="form-control" /></td>
+                                            <td><button type="button" class="btn-secondary" @onclick="() => field.Options.Remove(option)">Remove</button></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                            <button type="button" class="btn-secondary" @onclick="() => AddOption(field)">Add Option</button>
+                        }
+                    </section>
+                }
+
+                <button type="button" class="btn-secondary" @onclick="AddField">Add Field</button>
+                <button type="submit" class="btn-primary">Save Draft</button>
+                <button type="button" class="btn-secondary" @onclick="ActivateAsync">Activate Draft</button>
+            </EditForm>
+        }
+    }
+</section>
+
+@code {
+    [Parameter] public Guid VersionId { get; set; }
+
+    private static readonly DocumentationFieldType[] supportedFieldTypes = Enum.GetValues<DocumentationFieldType>();
+
+    private DocumentationTemplateVersionDetailsDto? version;
+    private List<FieldEditorModel> fields = [];
+    private string? message;
+
+    private string DetailsHref => $"documentation/templates/{VersionId}";
+
+    protected override async Task OnParametersSetAsync() => await ReloadAsync();
+
+    private async Task SaveAsync()
+    {
+        if (!await IsAuthorizedAsync(PermissionNames.DocumentationTemplatesManage))
+        {
+            message = "You are not authorized to manage documentation templates.";
+            return;
+        }
+
+        if (version is null)
+        {
+            return;
+        }
+
+        var result = await SaveDraftUseCase.SaveTemplateVersionDraft(new SaveTemplateVersionDraftRequest(
+            VersionId,
+            version.ConcurrencyToken,
+            fields.Select(field => new DocumentationTemplateFieldInputDto(
+                field.FieldKey,
+                field.Label,
+                field.FieldType,
+                field.IsRequired,
+                field.DisplayOrder,
+                field.Section,
+                field.HelpText,
+                IsSelect(field.FieldType)
+                    ? field.Options.Select(option => new DocumentationTemplateFieldOptionInputDto(option.OptionKey, option.Label, option.DisplayOrder)).ToList()
+                    : [])).ToList()));
+
+        message = FormatResult(result);
+        if (result.Succeeded)
+        {
+            await ReloadAsync();
+        }
+    }
+
+    private async Task ActivateAsync()
+    {
+        if (!await IsAuthorizedAsync(PermissionNames.DocumentationTemplatesManage))
+        {
+            message = "You are not authorized to activate documentation templates.";
+            return;
+        }
+
+        if (version is null)
+        {
+            return;
+        }
+
+        var result = await ActivateUseCase.ActivateTemplateVersion(new ActivateTemplateVersionRequest(VersionId, version.ConcurrencyToken));
+        message = FormatResult(result);
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo($"documentation/templates/{VersionId}");
+        }
+    }
+
+    private async Task ReloadAsync()
+    {
+        var result = await TemplateQueries.ViewTemplateVersion(VersionId);
+        if (!result.Succeeded)
+        {
+            message = string.Join(" ", result.ValidationIssues.Select(issue => issue.Message));
+            return;
+        }
+
+        version = result.Value!;
+        fields = version.Fields.Select(field => new FieldEditorModel
+        {
+            FieldKey = field.FieldKey,
+            Label = field.Label,
+            FieldType = field.FieldType,
+            IsRequired = field.IsRequired,
+            DisplayOrder = field.DisplayOrder,
+            Section = field.Section,
+            HelpText = field.HelpText,
+            Options = field.Options.Select(option => new OptionEditorModel
+            {
+                OptionKey = option.OptionKey,
+                Label = option.Label,
+                DisplayOrder = option.DisplayOrder
+            }).ToList()
+        }).ToList();
+    }
+
+    private void AddField()
+    {
+        fields.Add(new FieldEditorModel
+        {
+            FieldKey = $"field_{fields.Count + 1}",
+            Label = "New Field",
+            FieldType = DocumentationFieldType.Text,
+            DisplayOrder = fields.Count == 0 ? 1 : fields.Max(field => field.DisplayOrder) + 1,
+            Section = "Main"
+        });
+    }
+
+    private static void AddOption(FieldEditorModel field)
+    {
+        field.Options.Add(new OptionEditorModel
+        {
+            OptionKey = $"option_{field.Options.Count + 1}",
+            Label = "New Option",
+            DisplayOrder = field.Options.Count == 0 ? 1 : field.Options.Max(option => option.DisplayOrder) + 1
+        });
+    }
+
+    private void RemoveField(FieldEditorModel field) => fields.Remove(field);
+
+    private async Task<bool> IsAuthorizedAsync(string policy)
+    {
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        return (await AuthorizationService.AuthorizeAsync(state.User, policy)).Succeeded;
+    }
+
+    private static bool IsSelect(DocumentationFieldType fieldType) =>
+        fieldType is DocumentationFieldType.SingleSelect or DocumentationFieldType.MultiSelect;
+
+    private static string FormatResult<T>(UseCaseResult<T> result) =>
+        result.Succeeded
+            ? string.Join(" ", result.Messages.DefaultIfEmpty("Saved."))
+            : result.ConcurrencyConflict
+                ? string.Join(" ", result.Messages)
+                : string.Join(" ", result.ValidationIssues.Select(issue => issue.Message));
+
+    private sealed class FieldEditorModel
+    {
+        public string FieldKey { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public DocumentationFieldType FieldType { get; set; } = DocumentationFieldType.Text;
+        public bool IsRequired { get; set; }
+        public int DisplayOrder { get; set; } = 1;
+        public string Section { get; set; } = "Main";
+        public string? HelpText { get; set; }
+        public List<OptionEditorModel> Options { get; set; } = [];
+    }
+
+    private sealed class OptionEditorModel
+    {
+        public string OptionKey { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public int DisplayOrder { get; set; } = 1;
+    }
+}

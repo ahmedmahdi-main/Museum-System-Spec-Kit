@@ -1,0 +1,73 @@
+@page "/documentation/templates/{VersionId:guid}"
+@attribute [Authorize(Policy = PermissionNames.DocumentationTemplatesView)]
+@rendermode InteractiveServer
+@inject TemplateQueryUseCases TemplateQueries
+
+<PageTitle>Template Version Details</PageTitle>
+
+<section class="page-section">
+    <h2>Template Version Details</h2>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="status-message">@message</div>
+    }
+
+    @if (version is not null)
+    {
+        <p class="muted">@version.ArtifactCategoryCode - @version.ArtifactCategoryName</p>
+        <p>@version.TemplateName v@version.VersionNumber - @version.Status</p>
+        <p>@(version.IsReadOnly ? "Read-only for historical use except retirement status." : "Draft definitions can be edited by template managers.")</p>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Section</th>
+                    <th>Key</th>
+                    <th>Label</th>
+                    <th>Type</th>
+                    <th>Required</th>
+                    <th>Help</th>
+                    <th>Options</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var field in version.Fields)
+                {
+                    <tr>
+                        <td>@field.DisplayOrder</td>
+                        <td>@field.Section</td>
+                        <td>@field.FieldKey</td>
+                        <td>@field.Label</td>
+                        <td>@field.FieldType</td>
+                        <td>@(field.IsRequired ? "Yes" : "No")</td>
+                        <td>@(field.HelpText ?? "-")</td>
+                        <td>@(field.Options.Count == 0 ? "-" : string.Join(", ", field.Options.OrderBy(option => option.DisplayOrder).Select(option => $"{option.OptionKey}: {option.Label}")))</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+@code {
+    [Parameter] public Guid VersionId { get; set; }
+
+    private DocumentationTemplateVersionDetailsDto? version;
+    private string? message;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var result = await TemplateQueries.ViewTemplateVersion(VersionId);
+        if (result.Succeeded)
+        {
+            version = result.Value;
+            message = null;
+        }
+        else
+        {
+            message = string.Join(" ", result.ValidationIssues.Select(issue => issue.Message));
+        }
+    }
+}

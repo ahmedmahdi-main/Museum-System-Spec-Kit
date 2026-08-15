@@ -14,6 +14,16 @@ public static class DocumentationTemplateRules
             throw new InvalidOperationException("Unsupported documentation field type.");
         }
 
+        if (field.DisplayOrder <= 0)
+        {
+            throw new InvalidOperationException("Field display order must be greater than zero.");
+        }
+
+        foreach (var option in field.Options.Where(option => option.DisplayOrder <= 0))
+        {
+            throw new InvalidOperationException("Option display order must be greater than zero.");
+        }
+
         var duplicateOptionKey = field.Options
             .GroupBy(option => option.OptionKey, StringComparer.Ordinal)
             .FirstOrDefault(group => group.Count() > 1)?.Key;

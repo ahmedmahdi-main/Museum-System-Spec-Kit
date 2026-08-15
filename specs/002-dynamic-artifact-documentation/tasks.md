@@ -101,38 +101,38 @@
 
 ### Tests for User Story 3
 
-- [ ] T046 [P] [US3] Add application tests for `ListDocumentationTemplates` and `ViewTemplateVersion` in `tests/MuseumSystem.Application.Tests/Documentation/TemplateQueryUseCaseTests.cs`
-- [ ] T047 [P] [US3] Add application tests for creating a template family for an existing Artifact Category only in `tests/MuseumSystem.Application.Tests/Documentation/CreateDocumentationTemplateUseCaseTests.cs`
-- [ ] T048 [P] [US3] Add application tests for creating and copying Draft template versions in `tests/MuseumSystem.Application.Tests/Documentation/CreateTemplateVersionDraftUseCaseTests.cs`
-- [ ] T049 [P] [US3] Add application tests for saving Draft version fields/options across all seven supported field types in `tests/MuseumSystem.Application.Tests/Documentation/SaveTemplateVersionDraftUseCaseTests.cs`
-- [ ] T050 [P] [US3] Add application tests for field key uniqueness, option key uniqueness, required fields, sections, help text, display order, and select option validation in `tests/MuseumSystem.Application.Tests/Documentation/TemplateFieldValidationUseCaseTests.cs`
-- [ ] T051 [P] [US3] Add application tests for activating a Draft version and atomically retiring any previous Active version in `tests/MuseumSystem.Application.Tests/Documentation/ActivateTemplateVersionUseCaseTests.cs`
-- [ ] T052 [P] [US3] Add application tests for retiring an Active version without replacement and zero-active state behavior in `tests/MuseumSystem.Application.Tests/Documentation/RetireTemplateVersionUseCaseTests.cs`
-- [ ] T053 [P] [US3] Add application tests for used template version immutability except retirement status in `tests/MuseumSystem.Application.Tests/Documentation/UsedTemplateVersionUseCaseTests.cs`
-- [ ] T054 [P] [US3] Add application tests for stale Template Draft and lifecycle writes using existing `UseCaseResult.Conflict` behavior in `tests/MuseumSystem.Application.Tests/Documentation/TemplateConcurrencyUseCaseTests.cs`
-- [ ] T055 [P] [US3] Add application tests proving template write use cases create audit entries in `tests/MuseumSystem.Application.Tests/Documentation/TemplateAuditUseCaseTests.cs`
-- [ ] T056 [P] [US3] Add lightweight xUnit acceptance tests for template administration source structure and routed page conventions in `tests/MuseumSystem.Web.AcceptanceTests/Documentation/DocumentationTemplateAdminFlowTests.cs`
+- [X] T046 [P] [US3] Add application tests for `ListDocumentationTemplates` and `ViewTemplateVersion` in `tests/MuseumSystem.Application.Tests/Documentation/TemplateQueryUseCaseTests.cs`
+- [X] T047 [P] [US3] Add application tests for creating a template family for an existing Artifact Category only in `tests/MuseumSystem.Application.Tests/Documentation/CreateDocumentationTemplateUseCaseTests.cs`
+- [X] T048 [P] [US3] Add application tests for creating and copying Draft template versions in `tests/MuseumSystem.Application.Tests/Documentation/CreateTemplateVersionDraftUseCaseTests.cs`
+- [X] T049 [P] [US3] Add application tests for saving Draft version fields/options across all seven supported field types in `tests/MuseumSystem.Application.Tests/Documentation/SaveTemplateVersionDraftUseCaseTests.cs`
+- [X] T050 [P] [US3] Add application tests for field key uniqueness, option key uniqueness, required fields, sections, help text, display order, and select option validation in `tests/MuseumSystem.Application.Tests/Documentation/TemplateFieldValidationUseCaseTests.cs`
+- [X] T051 [P] [US3] Add application tests for activating a Draft version and atomically retiring any previous Active version in `tests/MuseumSystem.Application.Tests/Documentation/ActivateTemplateVersionUseCaseTests.cs`
+- [X] T052 [P] [US3] Add application tests for retiring an Active version without replacement and zero-active state behavior in `tests/MuseumSystem.Application.Tests/Documentation/RetireTemplateVersionUseCaseTests.cs`
+- [X] T053 [P] [US3] Add application tests for used template version immutability except retirement status in `tests/MuseumSystem.Application.Tests/Documentation/UsedTemplateVersionUseCaseTests.cs`
+- [X] T054 [P] [US3] Add application tests for stale Template Draft and lifecycle writes using existing `UseCaseResult.Conflict` behavior in `tests/MuseumSystem.Application.Tests/Documentation/TemplateConcurrencyUseCaseTests.cs`
+- [X] T055 [P] [US3] Add application tests proving template write use cases create audit entries in `tests/MuseumSystem.Application.Tests/Documentation/TemplateAuditUseCaseTests.cs`
+- [X] T056 [P] [US3] Add lightweight xUnit acceptance tests for template administration source structure and routed page conventions in `tests/MuseumSystem.Web.AcceptanceTests/Documentation/DocumentationTemplateAdminFlowTests.cs`
 
 ### Implementation for User Story 3
 
-- [ ] T057 [P] [US3] Create template DTO contracts in `src/MuseumSystem.Application/Modules/Documentation/Contracts/DocumentationTemplateDtos.cs`
-- [ ] T058 [P] [US3] Create template field DTO contracts in `src/MuseumSystem.Application/Modules/Documentation/Contracts/DocumentationTemplateFieldDtos.cs`
-- [ ] T059 [US3] Implement `ListDocumentationTemplates` in `src/MuseumSystem.Application/Modules/Documentation/TemplateQueryUseCases.cs`
-- [ ] T060 [US3] Implement `ViewTemplateVersion` with used/read-only indicator in `src/MuseumSystem.Application/Modules/Documentation/TemplateQueryUseCases.cs`
-- [ ] T061 [US3] Implement `CreateDocumentationTemplate` using existing ArtifactCategory references in `src/MuseumSystem.Application/Modules/Documentation/CreateDocumentationTemplateUseCase.cs`
-- [ ] T062 [US3] Implement `CreateTemplateVersionDraft` including copy-from-existing-version behavior in `src/MuseumSystem.Application/Modules/Documentation/CreateTemplateVersionDraftUseCase.cs`
-- [ ] T063 [US3] Implement `SaveTemplateVersionDraft` with seven-field-type validation in `src/MuseumSystem.Application/Modules/Documentation/SaveTemplateVersionDraftUseCase.cs`
-- [ ] T064 [US3] Implement `ActivateTemplateVersion` with atomic retire-previous-active behavior in `src/MuseumSystem.Application/Modules/Documentation/ActivateTemplateVersionUseCase.cs`
-- [ ] T065 [US3] Implement `RetireTemplateVersion` allowing zero Active versions temporarily in `src/MuseumSystem.Application/Modules/Documentation/RetireTemplateVersionUseCase.cs`
-- [ ] T066 [US3] Add template audit writes for create, save Draft, activate, and retire in `src/MuseumSystem.Application/Modules/Documentation/DocumentationAuditActions.cs`
-- [ ] T067 [US3] Register only Phase B template-management use cases using the explicit scoped registration pattern in `src/MuseumSystem.Application/DependencyInjection.cs`
-- [ ] T068 [US3] Add Template Administration route with `Documentation.Templates.View` policy in `src/MuseumSystem.Web/Components/Pages/Documentation/Templates.razor`
-- [ ] T069 [US3] Create Draft template version editor page with `Documentation.Templates.Manage` policy in `src/MuseumSystem.Web/Components/Pages/Documentation/TemplateVersionEditor.razor`
-- [ ] T070 [US3] Create read-only used template version details page with `Documentation.Templates.View` policy in `src/MuseumSystem.Web/Components/Pages/Documentation/TemplateVersionDetails.razor`
-- [ ] T071 [US3] Add supported field type controls, option editing, section, help text, required flag, and display order controls in `src/MuseumSystem.Web/Components/Pages/Documentation/TemplateVersionEditor.razor`
-- [ ] T072 [US3] Add action-level authorization checks for activate/retire/manage operations exposed from template pages in `src/MuseumSystem.Web/Components/Pages/Documentation/Templates.razor` and `src/MuseumSystem.Web/Components/Pages/Documentation/TemplateVersionEditor.razor`
-- [ ] T073 [US3] Add activate and retire actions with clear zero-active and previous-active-retired messages in `src/MuseumSystem.Web/Components/Pages/Documentation/Templates.razor`
-- [ ] T074 [US3] Add Documentation template navigation entry respecting permissions in `src/MuseumSystem.Web/Components/Layout/NavMenu.razor`
+- [X] T057 [P] [US3] Create template DTO contracts in `src/MuseumSystem.Application/Modules/Documentation/Contracts/DocumentationTemplateDtos.cs`
+- [X] T058 [P] [US3] Create template field DTO contracts in `src/MuseumSystem.Application/Modules/Documentation/Contracts/DocumentationTemplateFieldDtos.cs`
+- [X] T059 [US3] Implement `ListDocumentationTemplates` in `src/MuseumSystem.Application/Modules/Documentation/TemplateQueryUseCases.cs`
+- [X] T060 [US3] Implement `ViewTemplateVersion` with used/read-only indicator in `src/MuseumSystem.Application/Modules/Documentation/TemplateQueryUseCases.cs`
+- [X] T061 [US3] Implement `CreateDocumentationTemplate` using existing ArtifactCategory references in `src/MuseumSystem.Application/Modules/Documentation/CreateDocumentationTemplateUseCase.cs`
+- [X] T062 [US3] Implement `CreateTemplateVersionDraft` including copy-from-existing-version behavior in `src/MuseumSystem.Application/Modules/Documentation/CreateTemplateVersionDraftUseCase.cs`
+- [X] T063 [US3] Implement `SaveTemplateVersionDraft` with seven-field-type validation in `src/MuseumSystem.Application/Modules/Documentation/SaveTemplateVersionDraftUseCase.cs`
+- [X] T064 [US3] Implement `ActivateTemplateVersion` with atomic retire-previous-active behavior in `src/MuseumSystem.Application/Modules/Documentation/ActivateTemplateVersionUseCase.cs`
+- [X] T065 [US3] Implement `RetireTemplateVersion` allowing zero Active versions temporarily in `src/MuseumSystem.Application/Modules/Documentation/RetireTemplateVersionUseCase.cs`
+- [X] T066 [US3] Add template audit writes for create, save Draft, activate, and retire in `src/MuseumSystem.Application/Modules/Documentation/DocumentationAuditActions.cs`
+- [X] T067 [US3] Register only Phase B template-management use cases using the explicit scoped registration pattern in `src/MuseumSystem.Application/DependencyInjection.cs`
+- [X] T068 [US3] Add Template Administration route with `Documentation.Templates.View` policy in `src/MuseumSystem.Web/Components/Pages/Documentation/Templates.razor`
+- [X] T069 [US3] Create Draft template version editor page with `Documentation.Templates.Manage` policy in `src/MuseumSystem.Web/Components/Pages/Documentation/TemplateVersionEditor.razor`
+- [X] T070 [US3] Create read-only used template version details page with `Documentation.Templates.View` policy in `src/MuseumSystem.Web/Components/Pages/Documentation/TemplateVersionDetails.razor`
+- [X] T071 [US3] Add supported field type controls, option editing, section, help text, required flag, and display order controls in `src/MuseumSystem.Web/Components/Pages/Documentation/TemplateVersionEditor.razor`
+- [X] T072 [US3] Add action-level authorization checks for activate/retire/manage operations exposed from template pages in `src/MuseumSystem.Web/Components/Pages/Documentation/Templates.razor` and `src/MuseumSystem.Web/Components/Pages/Documentation/TemplateVersionEditor.razor`
+- [X] T073 [US3] Add activate and retire actions with clear zero-active and previous-active-retired messages in `src/MuseumSystem.Web/Components/Pages/Documentation/Templates.razor`
+- [X] T074 [US3] Add Documentation template navigation entry respecting permissions in `src/MuseumSystem.Web/Components/Layout/NavMenu.razor`
 
 **Checkpoint**: US3 is independently testable through Template Administration without creating Documentation Records.
 

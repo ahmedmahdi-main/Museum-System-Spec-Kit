@@ -1,0 +1,214 @@
+@page "/documentation/templates"
+@attribute [Authorize(Policy = PermissionNames.DocumentationTemplatesView)]
+@rendermode InteractiveServer
+@inject TemplateQueryUseCases TemplateQueries
+@inject CreateDocumentationTemplateUseCase CreateTemplateUseCase
+@inject CreateTemplateVersionDraftUseCase CreateDraftUseCase
+@inject ActivateTemplateVersionUseCase ActivateUseCase
+@inject RetireTemplateVersionUseCase RetireUseCase
+@inject CategoryUseCases CategoryUseCases
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Documentation Templates</PageTitle>
+
+<section class="page-section">
+    <h2>Documentation Templates</h2>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="status-message">@message</div>
+    }
+
+    @if (canManage)
+    {
+        <EditForm Model="this" OnSubmit="CreateTemplateAsync" FormName="create-documentation-template">
+            <div class="form-grid">
+                <label>
+                    <span>Artifact Category</span>
+                    <InputSelect @bind-Value="selectedCategoryId" class="form-control">
+                        <option value="">Select category</option>
+                        @foreach (var category in categories)
+                        {
+                            <option value="@category.CategoryId">@category.CategoryCode - @category.NameArabic</option>
+                        }
+                    </InputSelect>
+                </label>
+                <label>
+                    <span>Template Name</span>
+                    <InputText @bind-Value="templateName" class="form-control" />
+                </label>
+                <label>
+                    <span>Description</span>
+                    <InputText @bind-Value="templateDescription" class="form-control" />
+                </label>
+                <button type="submit" class="btn-primary">Create Template Family</button>
+            </div>
+        </EditForm>
+    }
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Template</th>
+                <th>Versions</th>
+                <th>Active</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var template in templates)
+            {
+                <tr>
+                    <td>@template.ArtifactCategoryCode - @template.ArtifactCategoryName</td>
+                    <td>@template.Name</td>
+                    <td>
+                        @foreach (var version in template.Versions)
+                        {
+                            <div>
+                                <a href="@DetailsHref(version.DocumentationTemplateVersionId)">v@version.VersionNumber</a>
+                                <span>@version.Status</span>
+                                @if (version.IsUsed)
+                                {
+                                    <span>used</span>
+                                }
+                            </div>
+                        }
+                    </td>
+                    <td>@(template.ActiveVersion is null ? "No Active version" : $"v{template.ActiveVersion.VersionNumber}")</td>
+                    <td>
+                        @if (canManage)
+                        {
+                            <button type="button" class="btn-secondary" @onclick="() => CreateDraftAsync(template.DocumentationTemplateId, null)">New Draft</button>
+                            @if (template.LatestVersion is not null)
+                            {
+                                <button type="button" class="btn-secondary" @onclick="() => CreateDraftAsync(template.DocumentationTemplateId, template.LatestVersion.DocumentationTemplateVersionId)">Copy Latest</button>
+                            }
+                            @foreach (var version in template.Versions)
+                            {
+                                <div>
+                                    @if (version.Status == DocumentationTemplateVersionStatus.Draft)
+                                    {
+                                        <a class="btn-secondary" href="@EditorHref(version.DocumentationTemplateVersionId)">Edit v@version.VersionNumber</a>
+                                        <button type="button" class="btn-secondary" @onclick="() => ActivateAsync(version)">Activate</button>
+                                    }
+                                    @if (version.Status == DocumentationTemplateVersionStatus.Active)
+                                    {
+                                        <button type="button" class="btn-secondary" @onclick="() => RetireAsync(version)">Retire v@version.VersionNumber</button>
+                                    }
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <span>View only</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<CategoryDto> categories = [];
+    private List<DocumentationTemplateListItemDto> templates = [];
+    private Guid? selectedCategoryId;
+    private string templateName = string.Empty;
+    private string? templateDescription;
+    private string? message;
+    private bool canManage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        categories = (await CategoryUseCases.ListCategories()).ToList();
+        selectedCategoryId = categories.FirstOrDefault()?.CategoryId;
+        canManage = await IsAuthorizedAsync(PermissionNames.DocumentationTemplatesManage);
+        await ReloadAsync();
+    }
+
+    private async Task CreateTemplateAsync()
+    {
+        if (!await IsAuthorizedAsync(PermissionNames.DocumentationTemplatesManage))
+        {
+            message = "You are not authorized to manage documentation templates.";
+            return;
+        }
+
+        if (selectedCategoryId is null)
+        {
+            message = "Select an Artifact Category before creating a template.";
+            return;
+        }
+
+        var result = await CreateTemplateUseCase.CreateDocumentationTemplate(new CreateDocumentationTemplateRequest(selectedCategoryId.Value, templateName, templateDescription));
+        message = FormatResult(result);
+        if (result.Succeeded)
+        {
+            templateName = string.Empty;
+            templateDescription = null;
+            await ReloadAsync();
+        }
+    }
+
+    private async Task CreateDraftAsync(Guid templateId, Guid? sourceVersionId)
+    {
+        if (!await IsAuthorizedAsync(PermissionNames.DocumentationTemplatesManage))
+        {
+            message = "You are not authorized to manage documentation templates.";
+            return;
+        }
+
+        var result = await CreateDraftUseCase.CreateTemplateVersionDraft(new CreateTemplateVersionDraftRequest(templateId, sourceVersionId));
+        message = FormatResult(result);
+        await ReloadAsync();
+    }
+
+    private async Task ActivateAsync(DocumentationTemplateVersionSummaryDto version)
+    {
+        if (!await IsAuthorizedAsync(PermissionNames.DocumentationTemplatesManage))
+        {
+            message = "You are not authorized to activate documentation templates.";
+            return;
+        }
+
+        var result = await ActivateUseCase.ActivateTemplateVersion(new ActivateTemplateVersionRequest(version.DocumentationTemplateVersionId, version.ConcurrencyToken));
+        message = FormatResult(result);
+        await ReloadAsync();
+    }
+
+    private async Task RetireAsync(DocumentationTemplateVersionSummaryDto version)
+    {
+        if (!await IsAuthorizedAsync(PermissionNames.DocumentationTemplatesManage))
+        {
+            message = "You are not authorized to retire documentation templates.";
+            return;
+        }
+
+        var result = await RetireUseCase.RetireTemplateVersion(new RetireTemplateVersionRequest(version.DocumentationTemplateVersionId, version.ConcurrencyToken));
+        message = result.Succeeded
+            ? string.Join(" ", result.Messages.DefaultIfEmpty("Template version retired. The category may now have zero Active versions."))
+            : FormatResult(result);
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync() => templates = (await TemplateQueries.ListDocumentationTemplates()).ToList();
+
+    private async Task<bool> IsAuthorizedAsync(string policy)
+    {
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        return (await AuthorizationService.AuthorizeAsync(state.User, policy)).Succeeded;
+    }
+
+    private static string DetailsHref(Guid versionId) => $"documentation/templates/{versionId}";
+
+    private static string EditorHref(Guid versionId) => $"documentation/templates/{versionId}/edit";
+
+    private static string FormatResult<T>(UseCaseResult<T> result) =>
+        result.Succeeded
+            ? string.Join(" ", result.Messages.DefaultIfEmpty("Saved."))
+            : result.ConcurrencyConflict
+                ? string.Join(" ", result.Messages)
+                : string.Join(" ", result.ValidationIssues.Select(issue => issue.Message));
+}

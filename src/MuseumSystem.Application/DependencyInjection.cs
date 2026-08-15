@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using MuseumSystem.Application.Modules.Audit;
 using MuseumSystem.Application.Modules.ArtifactRegistry;
+using MuseumSystem.Application.Modules.Documentation;
 using MuseumSystem.Application.Modules.IdentityAccess;
 using MuseumSystem.Application.Modules.Import;
 using MuseumSystem.Application.Modules.StorehouseOperations;
@@ -26,6 +27,12 @@ public static class DependencyInjection
         services.AddScoped<ValidateImportBatchUseCase>();
         services.AddScoped<UploadImportFileForPreviewUseCase>();
         services.AddScoped<AuditTrailUseCase>();
+        services.AddScoped<TemplateQueryUseCases>();
+        services.AddScoped<CreateDocumentationTemplateUseCase>();
+        services.AddScoped<CreateTemplateVersionDraftUseCase>();
+        services.AddScoped<SaveTemplateVersionDraftUseCase>();
+        services.AddScoped<ActivateTemplateVersionUseCase>();
+        services.AddScoped<RetireTemplateVersionUseCase>();
         services.AddScoped<CreateDocumentedCorrectionUseCase>();
         services.AddScoped<ReviewReconciliationResultsUseCase>();
         services.AddScoped<RecordReconciliationItemsUseCase>();
