@@ -32,8 +32,8 @@ public sealed class DocumentationTemplateAdminFlowTests
         Assert.Contains(nameof(PermissionNames.DocumentationTemplatesView), nav);
         Assert.Contains(nameof(PermissionNames.DocumentationTemplatesManage), nav);
 
-        Assert.False(File.Exists(Path.Combine(pagesRoot, "Index.razor")));
-        Assert.False(File.Exists(Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Documentation", "DynamicDocumentationForm.razor")));
+        Assert.True(File.Exists(Path.Combine(pagesRoot, "Index.razor")));
+        Assert.True(File.Exists(Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Documentation", "DynamicDocumentationForm.razor")));
     }
 
     private static int CountOccurrences(string text, string value)

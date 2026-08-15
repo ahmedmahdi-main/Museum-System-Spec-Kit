@@ -3,6 +3,7 @@ using MuseumSystem.Application.Common.Audit;
 using MuseumSystem.Application.Modules.Documentation.Contracts;
 using MuseumSystem.Domain.Modules.ArtifactRegistry;
 using MuseumSystem.Domain.Modules.Documentation;
+using MuseumSystem.Domain.Modules.StorehouseOperations;
 using MuseumSystem.Infrastructure.Persistence;
 
 namespace MuseumSystem.Application.Tests.Documentation;
@@ -39,6 +40,36 @@ internal static class DocumentationApplicationTestHost
         return draft;
     }
 
+
+    public static Location AddStorageLocation(MuseumDbContext db, string name = "Main Storage")
+    {
+        var location = Location.Create(name, LocationType.Storage);
+        db.Locations.Add(location);
+        return location;
+    }
+
+    public static Artifact AddArtifact(MuseumDbContext db, ArtifactCategory category, Location storage, int itemNumber = 1, string description = "Documented artifact")
+    {
+        var artifact = Artifact.Create(category, itemNumber, description, storage);
+        db.Artifacts.Add(artifact);
+        return artifact;
+    }
+
+    public static void HoldByDocumentation(Artifact artifact) =>
+        artifact.DeliverToInternalHolder(MovementRecipientType.DocumentationDivision, "Documentation");
+
+    public static DocumentationTemplateVersion AddActiveTemplateVersion(MuseumDbContext db, ArtifactCategory category, IReadOnlyList<DocumentationTemplateField>? fields = null)
+    {
+        var template = AddTemplate(db, category);
+        var version = AddDraft(db, template, fields ?? [BasicField()]);
+        template.ActivateVersion(version, "tester");
+        return version;
+    }
+
+    public static IReadOnlyList<DocumentationFieldValueInputDto> RequiredTextValue(string key = "title", string value = "Complete title") =>
+    [
+        new DocumentationFieldValueInputDto { FieldKey = key, TextValue = value }
+    ];
     public static IAuditActorContext ActorContext(string? userId = "user-1", string displayName = "Test Manager") =>
         new TestAuditActorContext(userId, displayName);
 

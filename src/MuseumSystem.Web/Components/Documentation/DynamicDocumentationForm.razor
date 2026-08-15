@@ -1,0 +1,109 @@
+@using System.Globalization
+
+@if (Fields.Count > 0)
+{
+    @foreach (var section in OrderedSections)
+    {
+        <section class="page-section">
+            <h3>@section</h3>
+            <div class="form-grid">
+                @foreach (var field in OrderedFields.Where(field => field.Section == section))
+                {
+                    var value = GetValue(field);
+                    <label>
+                        <span>@field.Label@(field.IsRequired ? " *" : string.Empty)</span>
+                        @switch (field.FieldType)
+                        {
+                            case DocumentationFieldType.Text:
+                                <InputText @bind-Value="value.TextValue" class="form-control" disabled="@IsReadOnly" />
+                                break;
+                            case DocumentationFieldType.MultilineText:
+                                <InputTextArea @bind-Value="value.TextValue" class="form-control" disabled="@IsReadOnly" />
+                                break;
+                            case DocumentationFieldType.Number:
+                                <InputNumber @bind-Value="value.NumberValue" class="form-control" disabled="@IsReadOnly" />
+                                break;
+                            case DocumentationFieldType.Date:
+                                <input type="date" class="form-control" value="@FormatDate(value.DateValue)" disabled="@IsReadOnly" @onchange="args => SetDate(value, args)" />
+                                break;
+                            case DocumentationFieldType.Boolean:
+                                <input type="checkbox" checked="@value.BooleanValue.GetValueOrDefault()" disabled="@IsReadOnly" @onchange="args => value.BooleanValue = args.Value is bool selected ? selected : null" />
+                                break;
+                            case DocumentationFieldType.SingleSelect:
+                                <InputSelect @bind-Value="value.OptionKey" class="form-control" disabled="@IsReadOnly">
+                                    <option value="">Select</option>
+                                    @foreach (var option in field.Options.OrderBy(option => option.DisplayOrder).ThenBy(option => option.OptionKey))
+                                    {
+                                        <option value="@option.OptionKey">@option.Label</option>
+                                    }
+                                </InputSelect>
+                                break;
+                            case DocumentationFieldType.MultiSelect:
+                                <div>
+                                    @foreach (var option in field.Options.OrderBy(option => option.DisplayOrder).ThenBy(option => option.OptionKey))
+                                    {
+                                        <label>
+                                            <input type="checkbox" checked="@value.OptionKeys.Contains(option.OptionKey)" disabled="@IsReadOnly" @onchange="args => SetMultiSelect(value, option.OptionKey, args)" />
+                                            <span>@option.Label</span>
+                                        </label>
+                                    }
+                                </div>
+                                break;
+                        }
+                        @if (!string.IsNullOrWhiteSpace(field.HelpText))
+                        {
+                            <small class="muted">@field.HelpText</small>
+                        }
+                    </label>
+                }
+            </div>
+        </section>
+    }
+}
+
+@code {
+    [Parameter] public IReadOnlyList<DocumentationTemplateFieldDto> Fields { get; set; } = [];
+    [Parameter] public List<DocumentationFieldValueInputDto> Values { get; set; } = [];
+    [Parameter] public bool IsReadOnly { get; set; }
+
+    private IEnumerable<DocumentationTemplateFieldDto> OrderedFields =>
+        Fields.OrderBy(item => item.DisplayOrder).ThenBy(item => item.FieldKey);
+
+    private IEnumerable<string> OrderedSections =>
+        OrderedFields.Select(item => item.Section).Distinct(StringComparer.Ordinal);
+
+    private DocumentationFieldValueInputDto GetValue(DocumentationTemplateFieldDto field)
+    {
+        var value = Values.FirstOrDefault(value => value.FieldKey == field.FieldKey);
+        if (value is not null)
+        {
+            return value;
+        }
+
+        value = new DocumentationFieldValueInputDto { FieldKey = field.FieldKey };
+        Values.Add(value);
+        return value;
+    }
+
+    private static string FormatDate(DateOnly? value) =>
+        value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
+
+    private static void SetDate(DocumentationFieldValueInputDto value, ChangeEventArgs args)
+    {
+        var text = args.Value?.ToString();
+        value.DateValue = DateOnly.TryParseExact(text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) ? date : null;
+    }
+
+    private static void SetMultiSelect(DocumentationFieldValueInputDto value, string optionKey, ChangeEventArgs args)
+    {
+        var selected = args.Value is bool boolValue && boolValue;
+        if (selected && !value.OptionKeys.Contains(optionKey))
+        {
+            value.OptionKeys.Add(optionKey);
+        }
+        else if (!selected)
+        {
+            value.OptionKeys.Remove(optionKey);
+        }
+    }
+}

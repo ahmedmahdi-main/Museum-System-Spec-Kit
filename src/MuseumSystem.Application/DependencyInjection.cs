@@ -28,6 +28,14 @@ public static class DependencyInjection
         services.AddScoped<UploadImportFileForPreviewUseCase>();
         services.AddScoped<AuditTrailUseCase>();
         services.AddScoped<TemplateQueryUseCases>();
+        services.AddScoped<DocumentationAvailabilityService>();
+        services.AddScoped<DocumentationTemplateResolver>();
+        services.AddScoped<SearchDocumentationArtifactUseCase>();
+        services.AddScoped<GetDocumentationWorkspaceUseCase>();
+        services.AddScoped<CreateDocumentationRecordUseCase>();
+        services.AddScoped<GetDocumentationRecordForEditUseCase>();
+        services.AddScoped<SaveDocumentationDraftUseCase>();
+        services.AddScoped<CompleteDocumentationRecordUseCase>();
         services.AddScoped<CreateDocumentationTemplateUseCase>();
         services.AddScoped<CreateTemplateVersionDraftUseCase>();
         services.AddScoped<SaveTemplateVersionDraftUseCase>();

@@ -1,0 +1,160 @@
+@page "/documentation"
+@attribute [Authorize(Policy = PermissionNames.DocumentationView)]
+@rendermode InteractiveServer
+@inject SearchDocumentationArtifactUseCase SearchUseCase
+@inject CreateDocumentationRecordUseCase CreateUseCase
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Documentation Workspace</PageTitle>
+
+<section class="page-section">
+    <h2>Documentation Workspace</h2>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="status-message">@message</div>
+    }
+
+    <EditForm Model="this" OnSubmit="SearchAsync" FormName="documentation-artifact-search">
+        <div class="form-grid">
+            <label>
+                <span>Museum Number</span>
+                <InputText @bind-Value="museumNumber" class="form-control" autofocus />
+            </label>
+            <button type="submit" class="btn-primary">Search</button>
+        </div>
+    </EditForm>
+
+    @if (workspace is not null)
+    {
+        <section class="page-section">
+            <h3>@workspace.Artifact.MuseumNumber</h3>
+            <dl>
+                <dt>Description</dt><dd>@workspace.Artifact.BasicDescription</dd>
+                <dt>Category</dt><dd>@workspace.Artifact.CategoryCode - @workspace.Artifact.CategoryName</dd>
+                <dt>Custody</dt><dd>@CustodyText(workspace.Artifact)</dd>
+                <dt>Documentation</dt><dd>@workspace.DocumentationStatus</dd>
+            </dl>
+
+            @if (!workspace.Artifact.IsAvailableToDocumentation)
+            {
+                <p>The artifact is not currently held by Documentation.</p>
+            }
+            @if (workspace.ActiveTemplateVersion is not null)
+            {
+                <p>Active template v@workspace.ActiveTemplateVersion.VersionNumber</p>
+            }
+
+            @if (workspace.Actions.CanCreate)
+            {
+                <button type="button" class="btn-primary" @onclick="CreateAsync">Create Documentation</button>
+            }
+            else if (workspace.ActiveTemplateVersion is null && workspace.ExistingRecord is null)
+            {
+                <p>No Active documentation template is available for this Artifact Category.</p>
+            }
+            else if (!string.IsNullOrWhiteSpace(workspace.Actions.CreateBlockedReason) && workspace.ExistingRecord is null)
+            {
+                <p>@workspace.Actions.CreateBlockedReason</p>
+            }
+
+            @if (workspace.Actions.CanResumeDraft && workspace.ExistingRecord is not null)
+            {
+                <a class="btn-primary" href="@EditHref(workspace.ExistingRecord.DocumentationRecordId)">Resume Draft</a>
+            }
+            else if (!string.IsNullOrWhiteSpace(workspace.Actions.DraftEditBlockedReason) && workspace.ExistingRecord?.Status == DocumentationRecordStatus.Draft)
+            {
+                <p>@workspace.Actions.DraftEditBlockedReason</p>
+            }
+
+            @if (workspace.Actions.CanViewCompleted && workspace.ExistingRecord is not null)
+            {
+                <a class="btn-secondary" href="@EditHref(workspace.ExistingRecord.DocumentationRecordId)">View Documentation</a>
+            }
+        </section>
+    }
+</section>
+
+@code {
+    private string museumNumber = string.Empty;
+    private string? message;
+    private DocumentationWorkspaceDto? workspace;
+
+    private async Task SearchAsync() => await RefreshWorkspaceAsync(clearMessage: true);
+
+    private async Task RefreshWorkspaceAsync(bool clearMessage)
+    {
+        if (clearMessage)
+        {
+            message = null;
+        }
+
+        var permissions = await GetPermissionsAsync();
+        var result = await SearchUseCase.SearchDocumentationArtifact(new SearchDocumentationArtifactRequest(museumNumber, permissions));
+        if (!result.Succeeded)
+        {
+            workspace = null;
+            if (clearMessage)
+            {
+                message = FormatResult(result);
+            }
+            return;
+        }
+
+        workspace = result.Value;
+    }
+
+    private async Task CreateAsync()
+    {
+        if (!await IsAuthorizedAsync(PermissionNames.DocumentationCreate))
+        {
+            message = "You are not authorized to create documentation records.";
+            return;
+        }
+
+        if (workspace is null || !workspace.Actions.CanCreate)
+        {
+            message = workspace?.Actions.CreateBlockedReason ?? "Create Documentation is not available.";
+            return;
+        }
+
+        var result = await CreateUseCase.CreateDocumentationRecord(new CreateDocumentationRecordRequest(workspace.Artifact.ArtifactId));
+        if (!result.Succeeded)
+        {
+            var failureMessage = FormatResult(result);
+            await RefreshWorkspaceAsync(clearMessage: false);
+            message = failureMessage;
+            return;
+        }
+
+        message = FormatResult(result);
+        Navigation.NavigateTo(EditHref(result.Value!.Record.DocumentationRecordId));
+    }
+
+    private async Task<DocumentationActionPermissionSet> GetPermissionsAsync() => new(
+        await IsAuthorizedAsync(PermissionNames.DocumentationCreate),
+        await IsAuthorizedAsync(PermissionNames.DocumentationEdit),
+        await IsAuthorizedAsync(PermissionNames.DocumentationComplete));
+
+    private async Task<bool> IsAuthorizedAsync(string policy)
+    {
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        return (await AuthorizationService.AuthorizeAsync(state.User, policy)).Succeeded;
+    }
+
+    private static string EditHref(Guid recordId) => $"documentation/records/{recordId}/edit";
+
+    private static string CustodyText(DocumentationArtifactSummaryDto artifact) =>
+        artifact.CurrentStatus == ArtifactCurrentStatus.InStorage
+            ? artifact.CurrentLocationName ?? "In storage"
+            : artifact.CurrentHolderName ?? artifact.CurrentHolderType ?? "Out of storage";
+
+    private static string FormatResult<T>(UseCaseResult<T> result) =>
+        result.Succeeded
+            ? string.Join(" ", result.Messages.DefaultIfEmpty("Saved."))
+            : result.ConcurrencyConflict
+                ? string.Join(" ", result.Messages)
+                : string.Join(" ", result.ValidationIssues.Select(issue => issue.Message));
+}

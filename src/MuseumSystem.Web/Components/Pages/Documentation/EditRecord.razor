@@ -1,0 +1,151 @@
+@page "/documentation/records/{RecordId:guid}/edit"
+@attribute [Authorize(Policy = PermissionNames.DocumentationView)]
+@rendermode InteractiveServer
+@inject GetDocumentationRecordForEditUseCase GetRecordUseCase
+@inject SaveDocumentationDraftUseCase SaveDraftUseCase
+@inject CompleteDocumentationRecordUseCase CompleteUseCase
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Documentation Record</PageTitle>
+
+<section class="page-section">
+    <h2>Documentation Record</h2>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="status-message">@message</div>
+    }
+
+    @if (record is not null)
+    {
+        <p>@record.Artifact.MuseumNumber - @record.Artifact.BasicDescription</p>
+        <p>@record.TemplateVersion.TemplateName v@record.TemplateVersion.VersionNumber - @record.Record.Status</p>
+        @if (!record.Artifact.IsAvailableToDocumentation && record.Record.Status == DocumentationRecordStatus.Draft)
+        {
+            <p>The artifact is not currently held by Documentation.</p>
+        }
+        <EditForm Model="values" OnSubmit="SaveDraftAsync" FormName="documentation-record-draft">
+            <DynamicDocumentationForm Fields="record.TemplateVersion.Fields" Values="values" IsReadOnly="IsFormReadOnly" />
+
+            @if (record.Record.Status == DocumentationRecordStatus.Draft)
+            {
+                <button type="submit" class="btn-primary" disabled="@(!record.Actions.CanSaveDraft)">Save Draft</button>
+                <button type="button" class="btn-secondary" disabled="@(!record.Actions.CanComplete)" @onclick="CompleteAsync">Complete</button>
+            }
+            else
+            {
+                <p>Completed documentation is read-only in this phase.</p>
+            }
+        </EditForm>
+
+        @if (!string.IsNullOrWhiteSpace(record.Actions.DraftEditBlockedReason) && record.Record.Status == DocumentationRecordStatus.Draft)
+        {
+            <p>@record.Actions.DraftEditBlockedReason</p>
+        }
+        @if (!string.IsNullOrWhiteSpace(record.Actions.CompleteBlockedReason) && record.Record.Status == DocumentationRecordStatus.Draft)
+        {
+            <p>@record.Actions.CompleteBlockedReason</p>
+        }
+    }
+</section>
+
+@code {
+    [Parameter] public Guid RecordId { get; set; }
+
+    private DocumentationRecordEditDto? record;
+    private List<DocumentationFieldValueInputDto> values = [];
+    private string? message;
+
+    private bool IsFormReadOnly => record is null || record.Record.Status != DocumentationRecordStatus.Draft || !record.Actions.CanSaveDraft;
+
+    protected override async Task OnParametersSetAsync() => await ReloadAsync();
+
+    private async Task SaveDraftAsync()
+    {
+        if (!await IsAuthorizedAsync(PermissionNames.DocumentationEdit))
+        {
+            message = "You are not authorized to edit documentation records.";
+            return;
+        }
+
+        if (record is null || !record.Actions.CanSaveDraft)
+        {
+            message = record?.Actions.DraftEditBlockedReason ?? "Save Draft is not available.";
+            return;
+        }
+
+        var result = await SaveDraftUseCase.SaveDocumentationDraft(new SaveDocumentationDraftRequest(RecordId, record.Record.ConcurrencyToken, values));
+        message = FormatResult(result);
+        if (result.Succeeded)
+        {
+            await ReloadAsync();
+        }
+    }
+
+    private async Task CompleteAsync()
+    {
+        if (!await IsAuthorizedAsync(PermissionNames.DocumentationEdit) || !await IsAuthorizedAsync(PermissionNames.DocumentationComplete))
+        {
+            message = "You are not authorized to complete documentation records.";
+            return;
+        }
+
+        if (record is null || !record.Actions.CanComplete)
+        {
+            message = record?.Actions.CompleteBlockedReason ?? "Complete is not available.";
+            return;
+        }
+
+        var result = await CompleteUseCase.CompleteDocumentationRecord(new CompleteDocumentationRecordRequest(RecordId, record.Record.ConcurrencyToken, values));
+        message = FormatResult(result);
+        if (result.Succeeded)
+        {
+            await ReloadAsync();
+        }
+    }
+
+    private async Task ReloadAsync()
+    {
+        var permissions = await GetPermissionsAsync();
+        var result = await GetRecordUseCase.GetDocumentationRecordForEdit(new GetDocumentationRecordForEditRequest(RecordId, permissions));
+        if (!result.Succeeded)
+        {
+            message = FormatResult(result);
+            return;
+        }
+
+        record = result.Value!;
+        values = ToInputs(record.Values);
+    }
+
+    private async Task<DocumentationActionPermissionSet> GetPermissionsAsync() => new(
+        await IsAuthorizedAsync(PermissionNames.DocumentationCreate),
+        await IsAuthorizedAsync(PermissionNames.DocumentationEdit),
+        await IsAuthorizedAsync(PermissionNames.DocumentationComplete));
+
+    private async Task<bool> IsAuthorizedAsync(string policy)
+    {
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        return (await AuthorizationService.AuthorizeAsync(state.User, policy)).Succeeded;
+    }
+
+    private static List<DocumentationFieldValueInputDto> ToInputs(IReadOnlyList<DocumentationFieldValueDto> source) =>
+        source.Select(value => new DocumentationFieldValueInputDto
+        {
+            FieldKey = value.FieldKey,
+            TextValue = value.TextValue,
+            NumberValue = value.NumberValue,
+            DateValue = value.DateValue,
+            BooleanValue = value.BooleanValue,
+            OptionKey = value.OptionKey,
+            OptionKeys = value.OptionKeys.ToList()
+        }).ToList();
+
+    private static string FormatResult<T>(UseCaseResult<T> result) =>
+        result.Succeeded
+            ? string.Join(" ", result.Messages.DefaultIfEmpty("Saved."))
+            : result.ConcurrencyConflict
+                ? string.Join(" ", result.Messages)
+                : string.Join(" ", result.ValidationIssues.Select(issue => issue.Message));
+}
