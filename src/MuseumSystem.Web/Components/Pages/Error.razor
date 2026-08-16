@@ -1,12 +1,19 @@
 @page "/Error"
-@attribute [Authorize]
+@attribute [AllowAnonymous]
 @using System.Diagnostics
 
 <PageTitle>خطأ</PageTitle>
 
+<section class="page-header">
+    <p class="eyebrow">الخطأ</p>
+    <h1>لم يكتمل الطلب</h1>
+    <p>توقف الإجراء قبل أن يُحفظ، فلم تتغير أي بيانات. أعد المحاولة، وإن تكرر الخطأ فأبلغ الإدارة برقم الطلب أدناه.</p>
+</section>
+
 <section class="page-section">
-    <h2>حدث خطأ أثناء معالجة الطلب</h2>
-    <p class="muted">لم تكتمل العملية. أعد المحاولة أو تواصل مع مسؤول النظام.</p>
+    <div class="form-actions">
+        <a class="btn-primary" href="/">العودة للرئيسية</a>
+    </div>
 
     @if (ShowRequestId)
     {

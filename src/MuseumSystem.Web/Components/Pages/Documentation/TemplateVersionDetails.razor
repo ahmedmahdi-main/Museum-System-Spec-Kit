@@ -3,11 +3,14 @@
 @rendermode InteractiveServer
 @inject TemplateQueryUseCases TemplateQueries
 
-<PageTitle>Template Version Details</PageTitle>
+<PageTitle>تفاصيل إصدار القالب</PageTitle>
+
+<section class="page-header">
+    <p class="eyebrow">قوالب التوثيق</p>
+    <h1>تفاصيل إصدار القالب</h1>
+</section>
 
 <section class="page-section">
-    <h2>Template Version Details</h2>
-
     @if (!string.IsNullOrWhiteSpace(message))
     {
         <div class="status-message">@message</div>
@@ -15,39 +18,55 @@
 
     @if (version is not null)
     {
-        <p class="muted">@version.ArtifactCategoryCode - @version.ArtifactCategoryName</p>
-        <p>@version.TemplateName v@version.VersionNumber - @version.Status</p>
-        <p>@(version.IsReadOnly ? "Read-only for historical use except retirement status." : "Draft definitions can be edited by template managers.")</p>
+        <div class="summary-grid">
+            <div class="summary-item"><span>الفئة</span><strong>@version.ArtifactCategoryCode - @version.ArtifactCategoryName</strong></div>
+            <div class="summary-item"><span>القالب</span><strong>@version.TemplateName</strong></div>
+            <div class="summary-item"><span>الإصدار</span><strong>@version.VersionNumber</strong></div>
+            <div class="summary-item"><span>الحالة</span><strong>@VersionStatusText(version.Status)</strong></div>
+        </div>
 
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Order</th>
-                    <th>Section</th>
-                    <th>Key</th>
-                    <th>Label</th>
-                    <th>Type</th>
-                    <th>Required</th>
-                    <th>Help</th>
-                    <th>Options</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var field in version.Fields)
-                {
-                    <tr>
-                        <td>@field.DisplayOrder</td>
-                        <td>@field.Section</td>
-                        <td>@field.FieldKey</td>
-                        <td>@field.Label</td>
-                        <td>@field.FieldType</td>
-                        <td>@(field.IsRequired ? "Yes" : "No")</td>
-                        <td>@(field.HelpText ?? "-")</td>
-                        <td>@(field.Options.Count == 0 ? "-" : string.Join(", ", field.Options.OrderBy(option => option.DisplayOrder).Select(option => $"{option.OptionKey}: {option.Label}")))</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+        <div class="status-message">
+            @(version.IsReadOnly ? "هذا الإصدار للقراءة فقط حفاظاً على السجلات التاريخية، مع بقاء حالة الإيقاف قابلة للإدارة." : "يمكن لمديري القوالب تحرير تعريفات المسودة.")
+        </div>
+
+        @if (version.Fields.Count == 0)
+        {
+            <div class="status-message">لا يحتوي هذا الإصدار على حقول بعد.</div>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>الترتيب</th>
+                            <th>القسم</th>
+                            <th>المفتاح</th>
+                            <th>التسمية</th>
+                            <th>النوع</th>
+                            <th>مطلوب</th>
+                            <th>المساعدة</th>
+                            <th>الخيارات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var field in version.Fields)
+                        {
+                            <tr>
+                                <td>@field.DisplayOrder</td>
+                                <td>@field.Section</td>
+                                <td>@field.FieldKey</td>
+                                <td>@field.Label</td>
+                                <td>@FieldTypeText(field.FieldType)</td>
+                                <td>@(field.IsRequired ? "نعم" : "لا")</td>
+                                <td>@(field.HelpText ?? "-")</td>
+                                <td>@(field.Options.Count == 0 ? "-" : string.Join("، ", field.Options.OrderBy(option => option.DisplayOrder).Select(option => $"{option.OptionKey}: {option.Label}")))</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
     }
 </section>
 
@@ -70,4 +89,24 @@
             message = string.Join(" ", result.ValidationIssues.Select(issue => issue.Message));
         }
     }
+
+    private static string VersionStatusText(DocumentationTemplateVersionStatus status) => status switch
+    {
+        DocumentationTemplateVersionStatus.Draft => "مسودة",
+        DocumentationTemplateVersionStatus.Active => "نشط",
+        DocumentationTemplateVersionStatus.Retired => "متوقف",
+        _ => status.ToString()
+    };
+
+    private static string FieldTypeText(DocumentationFieldType fieldType) => fieldType switch
+    {
+        DocumentationFieldType.Text => "نص قصير",
+        DocumentationFieldType.MultilineText => "نص متعدد الأسطر",
+        DocumentationFieldType.Number => "رقم",
+        DocumentationFieldType.Date => "تاريخ",
+        DocumentationFieldType.Boolean => "نعم / لا",
+        DocumentationFieldType.SingleSelect => "اختيار واحد",
+        DocumentationFieldType.MultiSelect => "اختيارات متعددة",
+        _ => fieldType.ToString()
+    };
 }

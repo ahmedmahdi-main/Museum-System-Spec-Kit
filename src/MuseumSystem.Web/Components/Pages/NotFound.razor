@@ -1,8 +1,18 @@
 @page "/not-found"
-@attribute [Authorize]
+@attribute [AllowAnonymous]
 @layout MainLayout
 
+<PageTitle>الصفحة غير موجودة</PageTitle>
+
+<section class="page-header">
+    <p class="eyebrow">الرابط</p>
+    <h1>لا توجد صفحة على هذا الرابط</h1>
+    <p>تحقق من الرابط، أو ابدأ من الرئيسية واختر الوحدة المطلوبة.</p>
+</section>
+
 <section class="page-section">
-    <h2>الصفحة غير موجودة</h2>
-    <p class="muted">تعذر العثور على الصفحة المطلوبة.</p>
+    <div class="form-actions">
+        <a class="btn-primary" href="/">العودة للرئيسية</a>
+        <a class="btn-secondary" href="/artifacts">البحث عن القطع</a>
+    </div>
 </section>

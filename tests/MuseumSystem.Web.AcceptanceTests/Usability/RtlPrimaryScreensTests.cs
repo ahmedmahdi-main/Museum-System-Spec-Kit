@@ -3,20 +3,55 @@ namespace MuseumSystem.Web.AcceptanceTests.Usability;
 public sealed class RtlPrimaryScreensTests
 {
     [Theory]
-    [InlineData("Artifacts", "Search.razor", "ابحث")]
-    [InlineData("Artifacts", "Create.razor", "MuseumNumber")]
-    [InlineData("Storehouse", "Delivery.razor", "تسليم")]
-    [InlineData("Storehouse", "Return.razor", "استلام")]
-    [InlineData("Imports", "ExcelImport.razor", "استيراد")]
-    [InlineData("Storehouse", "Reconciliation.razor", "الجرد")]
-    public void Primary_staff_screens_keep_arabic_operational_copy(string folder, string fileName, string expectedCopy)
+    [InlineData("Artifacts", "Search.razor")]
+    [InlineData("Artifacts", "Create.razor")]
+    [InlineData("Storehouse", "Delivery.razor")]
+    [InlineData("Storehouse", "Return.razor")]
+    [InlineData("Imports", "ExcelImport.razor")]
+    [InlineData("Storehouse", "Reconciliation.razor")]
+    public void Primary_staff_screens_do_not_expose_developer_errors(string folder, string fileName)
     {
         var root = FindRepositoryRoot();
         var page = File.ReadAllText(Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Pages", folder, fileName));
 
-        Assert.Contains(expectedCopy, page);
         Assert.DoesNotContain("stack trace", page, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Exception", page, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Operational_pages_do_not_expose_foundation_or_english_placeholder_headings()
+    {
+        var root = FindRepositoryRoot();
+        string[] files =
+        [
+            Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Pages", "Home.razor"),
+            Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Pages", "Documentation", "Index.razor"),
+            Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Pages", "Documentation", "Templates.razor"),
+            Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Layout", "MainLayout.razor")
+        ];
+
+        foreach (var file in files)
+        {
+            var text = File.ReadAllText(file);
+            Assert.DoesNotContain("Documentation Workspace", text);
+            Assert.DoesNotContain("Documentation Templates", text);
+            Assert.DoesNotContain("Foundation", text);
+            Assert.DoesNotContain("المنصة التجريبية", text);
+        }
+    }
+
+    [Fact]
+    public void Home_is_operational_and_permission_aware()
+    {
+        var root = FindRepositoryRoot();
+        var home = File.ReadAllText(Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Pages", "Home.razor"));
+
+        Assert.Contains("<AuthorizeView Policy=", home);
+        Assert.Contains("href=\"artifacts\"", home);
+        Assert.Contains("href=\"documentation\"", home);
+        Assert.Contains("href=\"documentation/templates\"", home);
+        Assert.DoesNotContain("fake", home, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("chart", home, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

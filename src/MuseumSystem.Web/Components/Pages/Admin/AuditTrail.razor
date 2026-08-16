@@ -5,9 +5,20 @@
 
 <PageTitle>سجل التدقيق</PageTitle>
 
-<section class="page-section">
-    <h2>سجل التدقيق</h2>
+<section class="page-header">
+    <p class="eyebrow">الإدارة</p>
+    <h1>سجل التدقيق</h1>
+    <p>العمليات الحساسة في النظام، مرتبة من الأحدث، مع من نفّذها ومتى.</p>
+</section>
 
+<section class="page-section">
+    @if (entries.Count == 0)
+    {
+        <div class="status-message">لا توجد عمليات مسجلة بعد.</div>
+    }
+    else
+    {
+    <div class="table-wrap">
     <table class="data-table">
         <thead>
             <tr>
@@ -33,6 +44,8 @@
             }
         </tbody>
     </table>
+    </div>
+    }
 </section>
 
 @code {

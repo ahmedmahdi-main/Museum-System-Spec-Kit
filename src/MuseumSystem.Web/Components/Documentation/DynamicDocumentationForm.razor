@@ -4,7 +4,7 @@
 {
     @foreach (var section in OrderedSections)
     {
-        <section class="page-section">
+        <section class="card-panel">
             <h3>@section</h3>
             <div class="form-grid">
                 @foreach (var field in OrderedFields.Where(field => field.Section == section))
@@ -27,11 +27,14 @@
                                 <input type="date" class="form-control" value="@FormatDate(value.DateValue)" disabled="@IsReadOnly" @onchange="args => SetDate(value, args)" />
                                 break;
                             case DocumentationFieldType.Boolean:
-                                <input type="checkbox" checked="@value.BooleanValue.GetValueOrDefault()" disabled="@IsReadOnly" @onchange="args => value.BooleanValue = args.Value is bool selected ? selected : null" />
+                                <span class="checkbox-row">
+                                    <input type="checkbox" checked="@value.BooleanValue.GetValueOrDefault()" disabled="@IsReadOnly" @onchange="args => value.BooleanValue = args.Value is bool selected ? selected : null" />
+                                    <span>نعم</span>
+                                </span>
                                 break;
                             case DocumentationFieldType.SingleSelect:
                                 <InputSelect @bind-Value="value.OptionKey" class="form-control" disabled="@IsReadOnly">
-                                    <option value="">Select</option>
+                                    <option value="">اختر</option>
                                     @foreach (var option in field.Options.OrderBy(option => option.DisplayOrder).ThenBy(option => option.OptionKey))
                                     {
                                         <option value="@option.OptionKey">@option.Label</option>
@@ -39,10 +42,10 @@
                                 </InputSelect>
                                 break;
                             case DocumentationFieldType.MultiSelect:
-                                <div>
+                                <div class="field-options">
                                     @foreach (var option in field.Options.OrderBy(option => option.DisplayOrder).ThenBy(option => option.OptionKey))
                                     {
-                                        <label>
+                                        <label class="checkbox-row">
                                             <input type="checkbox" checked="@value.OptionKeys.Contains(option.OptionKey)" disabled="@IsReadOnly" @onchange="args => SetMultiSelect(value, option.OptionKey, args)" />
                                             <span>@option.Label</span>
                                         </label>

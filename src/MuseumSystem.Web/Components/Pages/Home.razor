@@ -1,10 +1,89 @@
 @page "/"
 @attribute [Authorize]
 
-<section class="foundation-panel">
-    <p class="eyebrow">جاهزية Foundation</p>
-    <h2>واجهة RTL محمية ومهيأة للوحدات الداخلية</h2>
-    <p>
-        هذه الشاشة تؤكد إعداد Blazor Web App مع المصادقة، التخطيط العربي، وحدود الوحدات الأساسية قبل بدء سجل القطع.
-    </p>
+<PageTitle>الرئيسية</PageTitle>
+
+<section class="page-header">
+    <p class="eyebrow">المتحف العراقي</p>
+    <h1>نظام إدارة المتحف العراقي</h1>
+    <p>كل إجراء في النظام يبدأ من رقم المتحف: البحث، والتسليم، والاستلام، والتوثيق.</p>
 </section>
+
+<AuthorizeView Policy="@PermissionNames.ArtifactsView">
+    <Authorized>
+        <section class="lookup" aria-labelledby="lookup-title">
+            <p class="lookup-title" id="lookup-title">افتح سجل قطعة</p>
+            <form class="lookup-form" method="get" action="artifacts" data-enhance="false">
+                <input class="lookup-field" type="search" name="q" aria-label="رقم المتحف" placeholder="IM-1247" autofocus />
+                <button type="submit" class="btn-primary">فتح السجل</button>
+            </form>
+            <p class="lookup-hint">اكتب الرقم كما هو مثبت على القطعة أو في بطاقة السجل. يمكن البحث أيضاً بالفئة أو بالوصف الأساسي.</p>
+        </section>
+    </Authorized>
+</AuthorizeView>
+
+<nav class="index" aria-label="وحدات النظام">
+    <AuthorizeView Policy="@PermissionNames.ArtifactsView">
+        <Authorized>
+            <a class="index-row" href="artifacts">
+                <span class="index-name">سجل القطع</span>
+                <span class="index-note">ابحث برقم المتحف أو الفئة أو الوصف، وافتح تفاصيل أي قطعة.</span>
+                <span class="index-go" aria-hidden="true">‹</span>
+            </a>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Policy="@PermissionNames.StorehouseDeliver">
+        <Authorized>
+            <a class="index-row" href="storehouse/delivery">
+                <span class="index-name">تسليم القطع</span>
+                <span class="index-note">أخرج قطعة من المخزن إلى جهة داخلية مصرح لها.</span>
+                <span class="index-go" aria-hidden="true">‹</span>
+            </a>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Policy="@PermissionNames.StorehouseReturn">
+        <Authorized>
+            <a class="index-row" href="storehouse/return">
+                <span class="index-name">استلام القطع</span>
+                <span class="index-note">أعد قطعة إلى موقع خزن معتمد وسجّل الحركة.</span>
+                <span class="index-go" aria-hidden="true">‹</span>
+            </a>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Policy="@PermissionNames.DocumentationView">
+        <Authorized>
+            <a class="index-row" href="documentation">
+                <span class="index-name">توثيق القطع</span>
+                <span class="index-note">أنشئ سجل توثيق للقطعة أو تابع مسودة محفوظة.</span>
+                <span class="index-go" aria-hidden="true">‹</span>
+            </a>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Policy="@PermissionNames.DocumentationTemplatesView">
+        <Authorized>
+            <a class="index-row" href="documentation/templates">
+                <span class="index-name">قوالب التوثيق</span>
+                <span class="index-note">راجع قوالب الفئات وأصدر نسخة جديدة أو فعّل إصداراً.</span>
+                <span class="index-go" aria-hidden="true">‹</span>
+            </a>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Policy="@PermissionNames.ImportsPreview">
+        <Authorized>
+            <a class="index-row" href="imports/excel">
+                <span class="index-name">استيراد Excel</span>
+                <span class="index-note">عاين بيانات القطع في ملف Excel قبل إدخالها إلى السجل.</span>
+                <span class="index-go" aria-hidden="true">‹</span>
+            </a>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Policy="@PermissionNames.AuditView">
+        <Authorized>
+            <a class="index-row" href="admin/audit">
+                <span class="index-name">سجل التدقيق</span>
+                <span class="index-note">راجع العمليات الحساسة ومن نفّذها ومتى.</span>
+                <span class="index-go" aria-hidden="true">‹</span>
+            </a>
+        </Authorized>
+    </AuthorizeView>
+</nav>

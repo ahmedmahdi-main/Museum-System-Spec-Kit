@@ -8,9 +8,13 @@
 
 <PageTitle>استيراد Excel</PageTitle>
 
-<section class="page-section">
-    <h2>استيراد Excel</h2>
+<section class="page-header">
+    <p class="eyebrow">الاستيراد</p>
+    <h1>استيراد Excel</h1>
+    <p>عاين بيانات القطع في الملف وتحقق منها قبل اعتمادها في السجل.</p>
+</section>
 
+<section class="page-section">
     @if (!string.IsNullOrWhiteSpace(message))
     {
         <div class="status-message">@message</div>
@@ -21,14 +25,16 @@
             <span>رفع ملف .xlsx</span>
             <InputFile OnChange="OnFileSelected" />
         </label>
-        <button type="button" class="btn-primary" disabled="@(selectedFile is null)" @onclick="UploadAsync">رفع للمعاينة</button>
-        <button type="button" class="btn-secondary" disabled="@(currentBatch is null)" @onclick="ValidateAsync">تحقق</button>
-        <AuthorizeView Policy="@PermissionNames.ImportsCommit">
-            <Authorized>
-                <button type="button" class="btn-primary" disabled="@(!CanCommit)" @onclick="CommitAsync">اعتماد</button>
-            </Authorized>
-        </AuthorizeView>
-        <button type="button" class="btn-secondary" disabled="@(currentBatch is null || IsFinal)" @onclick="CancelAsync">إلغاء</button>
+        <div class="form-actions span-all">
+            <button type="button" class="btn-primary" disabled="@(selectedFile is null)" @onclick="UploadAsync">رفع للمعاينة</button>
+            <button type="button" class="btn-secondary" disabled="@(currentBatch is null)" @onclick="ValidateAsync">تحقق</button>
+            <AuthorizeView Policy="@PermissionNames.ImportsCommit">
+                <Authorized>
+                    <button type="button" class="btn-primary" disabled="@(!CanCommit)" @onclick="CommitAsync">اعتماد</button>
+                </Authorized>
+            </AuthorizeView>
+            <button type="button" class="btn-secondary" disabled="@(currentBatch is null || IsFinal)" @onclick="CancelAsync">إلغاء</button>
+        </div>
     </div>
 
     @if (currentBatch is not null)
@@ -47,8 +53,8 @@
                 <thead>
                     <tr>
                         <th>الصف</th>
-                        <th>CategoryCode</th>
-                        <th>ItemNumber</th>
+                        <th>رمز الفئة</th>
+                        <th>رقم التسلسل داخل الفئة</th>
                         <th>الموقع</th>
                         <th>الوصف</th>
                         <th>الحالة</th>

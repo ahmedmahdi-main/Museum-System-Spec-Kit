@@ -7,11 +7,14 @@
 @inject IAuthorizationService AuthorizationService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
-<PageTitle>Documentation Record</PageTitle>
+<PageTitle>سجل التوثيق</PageTitle>
+
+<section class="page-header">
+    <p class="eyebrow">التوثيق</p>
+    <h1>سجل التوثيق</h1>
+</section>
 
 <section class="page-section">
-    <h2>Documentation Record</h2>
-
     @if (!string.IsNullOrWhiteSpace(message))
     {
         <div class="status-message">@message</div>
@@ -19,33 +22,53 @@
 
     @if (record is not null)
     {
-        <p>@record.Artifact.MuseumNumber - @record.Artifact.BasicDescription</p>
-        <p>@record.TemplateVersion.TemplateName v@record.TemplateVersion.VersionNumber - @record.Record.Status</p>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <span>رقم المتحف</span>
+                <strong>@record.Artifact.MuseumNumber</strong>
+            </div>
+            <div class="summary-item">
+                <span>الوصف</span>
+                <strong>@record.Artifact.BasicDescription</strong>
+            </div>
+            <div class="summary-item">
+                <span>القالب</span>
+                <strong>@record.TemplateVersion.TemplateName - إصدار @record.TemplateVersion.VersionNumber</strong>
+            </div>
+            <div class="summary-item">
+                <span>الحالة</span>
+                <strong>@RecordStatusText(record.Record.Status)</strong>
+            </div>
+        </div>
+
         @if (!record.Artifact.IsAvailableToDocumentation && record.Record.Status == DocumentationRecordStatus.Draft)
         {
-            <p>The artifact is not currently held by Documentation.</p>
+            <div class="status-message warning-message">القطعة ليست حالياً لدى قسم التوثيق، لذلك لا يمكن تعديل المسودة.</div>
         }
+
         <EditForm Model="values" OnSubmit="SaveDraftAsync" FormName="documentation-record-draft">
             <DynamicDocumentationForm Fields="record.TemplateVersion.Fields" Values="values" IsReadOnly="IsFormReadOnly" />
 
             @if (record.Record.Status == DocumentationRecordStatus.Draft)
             {
-                <button type="submit" class="btn-primary" disabled="@(!record.Actions.CanSaveDraft)">Save Draft</button>
-                <button type="button" class="btn-secondary" disabled="@(!record.Actions.CanComplete)" @onclick="CompleteAsync">Complete</button>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary" disabled="@(!record.Actions.CanSaveDraft)">حفظ المسودة</button>
+                    <button type="button" class="btn-secondary" disabled="@(!record.Actions.CanComplete)" @onclick="CompleteAsync">إكمال التوثيق</button>
+                </div>
             }
             else
             {
-                <p>Completed documentation is read-only in this phase.</p>
+                <div class="status-message">التوثيق المكتمل للعرض فقط في هذه المرحلة.</div>
             }
         </EditForm>
 
         @if (!string.IsNullOrWhiteSpace(record.Actions.DraftEditBlockedReason) && record.Record.Status == DocumentationRecordStatus.Draft)
         {
-            <p>@record.Actions.DraftEditBlockedReason</p>
+            <p class="muted">@LocalizeMessage(record.Actions.DraftEditBlockedReason)</p>
         }
         @if (!string.IsNullOrWhiteSpace(record.Actions.CompleteBlockedReason) && record.Record.Status == DocumentationRecordStatus.Draft)
         {
-            <p>@record.Actions.CompleteBlockedReason</p>
+            <p class="muted">@LocalizeMessage(record.Actions.CompleteBlockedReason)</p>
         }
     }
 </section>
@@ -65,13 +88,15 @@
     {
         if (!await IsAuthorizedAsync(PermissionNames.DocumentationEdit))
         {
-            message = "You are not authorized to edit documentation records.";
+            message = "لا تملك صلاحية تعديل سجلات التوثيق.";
             return;
         }
 
         if (record is null || !record.Actions.CanSaveDraft)
         {
-            message = record?.Actions.DraftEditBlockedReason ?? "Save Draft is not available.";
+            message = record?.Actions.DraftEditBlockedReason is null
+                ? "حفظ المسودة غير متاح حالياً."
+                : LocalizeMessage(record.Actions.DraftEditBlockedReason);
             return;
         }
 
@@ -87,13 +112,15 @@
     {
         if (!await IsAuthorizedAsync(PermissionNames.DocumentationEdit) || !await IsAuthorizedAsync(PermissionNames.DocumentationComplete))
         {
-            message = "You are not authorized to complete documentation records.";
+            message = "لا تملك صلاحية إكمال سجلات التوثيق.";
             return;
         }
 
         if (record is null || !record.Actions.CanComplete)
         {
-            message = record?.Actions.CompleteBlockedReason ?? "Complete is not available.";
+            message = record?.Actions.CompleteBlockedReason is null
+                ? "إكمال التوثيق غير متاح حالياً."
+                : LocalizeMessage(record.Actions.CompleteBlockedReason);
             return;
         }
 
@@ -142,10 +169,30 @@
             OptionKeys = value.OptionKeys.ToList()
         }).ToList();
 
+    private static string RecordStatusText(DocumentationRecordStatus status) => status switch
+    {
+        DocumentationRecordStatus.Draft => "مسودة",
+        DocumentationRecordStatus.Completed => "مكتمل",
+        _ => status.ToString()
+    };
+
     private static string FormatResult<T>(UseCaseResult<T> result) =>
         result.Succeeded
-            ? string.Join(" ", result.Messages.DefaultIfEmpty("Saved."))
+            ? string.Join(" ", result.Messages.DefaultIfEmpty("تم الحفظ.").Select(LocalizeMessage))
             : result.ConcurrencyConflict
-                ? string.Join(" ", result.Messages)
-                : string.Join(" ", result.ValidationIssues.Select(issue => issue.Message));
+                ? string.Join(" ", result.Messages.Select(LocalizeMessage))
+                : string.Join(" ", result.ValidationIssues.Select(issue => LocalizeMessage(issue.Message)));
+
+    private static string LocalizeMessage(string message)
+    {
+        if (message.Contains("not currently held by Documentation", StringComparison.OrdinalIgnoreCase)) return "القطعة ليست حالياً لدى قسم التوثيق.";
+        if (message.Contains("Draft documentation saved", StringComparison.OrdinalIgnoreCase)) return "تم حفظ المسودة.";
+        if (message.Contains("documentation record completed", StringComparison.OrdinalIgnoreCase)) return "تم إكمال التوثيق.";
+        if (message.Contains("Reload and review", StringComparison.OrdinalIgnoreCase)) return "تغيرت البيانات. أعد التحميل وراجع آخر نسخة قبل المتابعة.";
+        if (message.Contains("Only Draft", StringComparison.OrdinalIgnoreCase)) return "يمكن حفظ سجلات المسودة فقط.";
+        if (message.Contains("required", StringComparison.OrdinalIgnoreCase)) return "توجد حقول مطلوبة لم تكتمل.";
+        if (message.Contains("not authorized", StringComparison.OrdinalIgnoreCase)) return "لا تملك الصلاحية المطلوبة.";
+        if (message.Contains("Saved", StringComparison.OrdinalIgnoreCase)) return "تم الحفظ.";
+        return message;
+    }
 }

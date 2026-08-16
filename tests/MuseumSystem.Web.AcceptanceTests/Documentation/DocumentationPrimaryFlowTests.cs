@@ -28,7 +28,7 @@ public sealed class DocumentationPrimaryFlowTests
 
         Assert.Contains("SearchDocumentationArtifact", index);
         Assert.Contains("CreateDocumentationRecord", index);
-        Assert.Contains("Resume Draft", index);
+        Assert.Contains("CanResumeDraft", index);
         Assert.Contains("DocumentationArtifactSummaryDto", index);
         Assert.Contains("SaveDocumentationDraft", edit);
         Assert.Contains("CompleteDocumentationRecord", edit);

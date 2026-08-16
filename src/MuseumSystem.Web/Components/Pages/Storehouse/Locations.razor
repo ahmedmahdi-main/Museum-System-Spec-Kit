@@ -5,9 +5,13 @@
 
 <PageTitle>المواقع</PageTitle>
 
-<section class="page-section">
-    <h2>إدارة مواقع الخزن وقاعات العرض</h2>
+<section class="page-header">
+    <p class="eyebrow">المخزن</p>
+    <h1>مواقع الخزن والعرض</h1>
+    <p>أضف مواقع الخزن وقاعات العرض التي تُنقل إليها القطع، أو عدّل أسماءها.</p>
+</section>
 
+<section class="page-section">
     @if (!string.IsNullOrWhiteSpace(message))
     {
         <div class="status-message">@message</div>
@@ -22,45 +26,51 @@
             <label>
                 <span>نوع الموقع</span>
                 <InputSelect @bind-Value="locationType" class="form-control">
-                    <option value="@LocationType.Storage">موقع خزن</option>
+                    <option value="@LocationType.Storage">خزن</option>
                     <option value="@LocationType.DisplayHall">قاعة عرض</option>
                 </InputSelect>
             </label>
-            <button type="submit" class="btn-primary">@(editingLocationId is null ? "إضافة الموقع" : "حفظ التعديل")</button>
-            @if (editingLocationId is not null)
-            {
-                <button type="button" class="btn-secondary" @onclick="CancelEdit">إلغاء</button>
-            }
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">@(editingLocationId is null ? "إضافة موقع" : "حفظ التعديل")</button>
+                @if (editingLocationId is not null)
+                {
+                    <button type="button" class="btn-secondary" @onclick="CancelEdit">إلغاء</button>
+                }
+            </div>
         </div>
     </EditForm>
 
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>الاسم</th>
-                <th>النوع</th>
-                <th>الحالة</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var location in locations)
-            {
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
                 <tr>
-                    <td>@location.NameArabic</td>
-                    <td>@location.LocationType</td>
-                    <td>@(location.IsActive ? "نشط" : "معطل")</td>
-                    <td>
-                        <button class="btn-secondary" @onclick="() => EditLocation(location)">تعديل</button>
-                        @if (location.IsActive)
-                        {
-                            <button class="btn-secondary" @onclick="() => DisableLocationAsync(location.LocationId)">تعطيل</button>
-                        }
-                    </td>
+                    <th>الاسم</th>
+                    <th>النوع</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var location in locations)
+                {
+                    <tr>
+                        <td>@location.NameArabic</td>
+                        <td>@LocationTypeText(location.LocationType)</td>
+                        <td>@(location.IsActive ? "فعال" : "متوقف")</td>
+                        <td>
+                            <div class="inline-actions">
+                                <button class="btn-secondary" @onclick="() => EditLocation(location)">تعديل</button>
+                                @if (location.IsActive)
+                                {
+                                    <button class="btn-secondary" @onclick="() => DisableLocationAsync(location.LocationId)">إيقاف</button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </section>
 
 @code {
@@ -106,9 +116,16 @@
     private async Task DisableLocationAsync(Guid locationId)
     {
         var result = await LocationUseCases.DisableLocationForNewUse(locationId);
-        message = result.Succeeded ? "تم تعطيل الموقع." : string.Join(" ", result.ValidationIssues.Select(i => i.Message));
+        message = result.Succeeded ? "تم إيقاف الموقع." : string.Join(" ", result.ValidationIssues.Select(i => i.Message));
         await ReloadAsync();
     }
 
     private async Task ReloadAsync() => locations = (await LocationUseCases.ListLocations()).ToList();
+
+    private static string LocationTypeText(LocationType type) => type switch
+    {
+        LocationType.Storage => "خزن",
+        LocationType.DisplayHall => "قاعة عرض",
+        _ => type.ToString()
+    };
 }

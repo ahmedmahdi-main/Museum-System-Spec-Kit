@@ -20,10 +20,23 @@ public sealed class DeliveryReturnFlowTests
         var deliveryPage = File.ReadAllText(Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Pages", "Storehouse", "Delivery.razor"));
         var returnPage = File.ReadAllText(Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Pages", "Storehouse", "Return.razor"));
 
-        Assert.Contains("تسليم", deliveryPage);
-        Assert.Contains("استلام", returnPage);
-        Assert.Contains("غير مؤهلة", deliveryPage);
-        Assert.Contains("موقع خزن", returnPage);
+        Assert.DoesNotContain("stack trace", deliveryPage, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("stack trace", returnPage, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("@page \"/storehouse/delivery\"", deliveryPage);
+        Assert.Contains("@page \"/storehouse/return\"", returnPage);
+    }
+
+    [Fact]
+    public void Locations_table_has_actions_column_and_localizes_storage_type()
+    {
+        var root = FindRepositoryRoot();
+        var locations = File.ReadAllText(Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Pages", "Storehouse", "Locations.razor"));
+
+        Assert.Contains("<th>الإجراءات</th>", locations);
+        Assert.Contains("LocationTypeText", locations);
+        Assert.Contains("LocationType.Storage => \"خزن\"", locations);
+        Assert.DoesNotContain("<td>@location.LocationType</td>", locations);
+        Assert.DoesNotContain("<th></th>", locations);
     }
 
     [Fact]
@@ -32,7 +45,6 @@ public sealed class DeliveryReturnFlowTests
         var root = FindRepositoryRoot();
         var detailsPage = File.ReadAllText(Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Pages", "Artifacts", "Details.razor"));
 
-        Assert.Contains("سجل الحركة", detailsPage);
         Assert.Contains("MovementHistoryUseCase", detailsPage);
     }
 

@@ -2,12 +2,14 @@ using Microsoft.AspNetCore.Authorization;
 using MuseumSystem.Application;
 using MuseumSystem.Application.Modules.IdentityAccess;
 using MuseumSystem.Infrastructure;
+using MuseumSystem.Infrastructure.Identity;
 using MuseumSystem.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddRazorPages();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddMuseumApplication();
@@ -15,6 +17,9 @@ builder.Services.AddAuthorization(options => options.AddMuseumPolicies());
 builder.Services.AddMuseumInfrastructure(builder.Configuration);
 
 var app = builder.Build();
+
+await app.Services.EnsureDevelopmentDatabaseMigratedAsync(app.Environment);
+await app.Services.SeedDevelopmentAdminAsync(app.Environment, app.Configuration);
 
 if (!app.Environment.IsDevelopment())
 {
@@ -29,6 +34,7 @@ app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+app.MapRazorPages();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

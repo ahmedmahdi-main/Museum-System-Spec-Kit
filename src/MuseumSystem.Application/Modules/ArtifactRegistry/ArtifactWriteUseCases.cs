@@ -12,22 +12,28 @@ public sealed class ArtifactWriteUseCases(IMuseumDbContext dbContext, IAuditWrit
 {
     public async Task<UseCaseResult<ArtifactDetailsDto>> CreateArtifact(CreateArtifactRequest request, CancellationToken cancellationToken = default)
     {
+        var requestValidation = ValidateCreateRequest(request);
+        if (requestValidation.Count > 0)
+        {
+            return UseCaseResult<ArtifactDetailsDto>.Failure(requestValidation.ToArray());
+        }
+
         var category = await dbContext.ArtifactCategories.FindAsync([request.CategoryId], cancellationToken);
         if (category is null || !category.IsActive)
         {
-            return UseCaseResult<ArtifactDetailsDto>.Failure(new ValidationIssue("Category.NotSelectable", "الفئة غير متاحة للاستخدام.", nameof(request.CategoryId)));
+            return UseCaseResult<ArtifactDetailsDto>.Failure(new ValidationIssue("Category.NotSelectable", "اختر فئة فعالة للقطعة.", nameof(request.CategoryId)));
         }
 
         var location = await dbContext.Locations.FindAsync([request.InitialLocationId], cancellationToken);
         if (location is null || !location.IsActive || location.LocationType != LocationType.Storage)
         {
-            return UseCaseResult<ArtifactDetailsDto>.Failure(new ValidationIssue("Location.NotSelectable", "موقع الخزن غير متاح.", nameof(request.InitialLocationId)));
+            return UseCaseResult<ArtifactDetailsDto>.Failure(new ValidationIssue("Location.NotSelectable", "اختر موقع خزن فعال.", nameof(request.InitialLocationId)));
         }
 
         var duplicate = await dbContext.Artifacts.AnyAsync(a => a.CategoryId == request.CategoryId && a.ItemNumber == request.ItemNumber, cancellationToken);
         if (duplicate)
         {
-            return UseCaseResult<ArtifactDetailsDto>.Failure(new ValidationIssue("MuseumNumber.Duplicate", "رقم القطعة مكرر داخل الفئة.", nameof(request.ItemNumber)));
+            return UseCaseResult<ArtifactDetailsDto>.Failure(new ValidationIssue("MuseumNumber.Duplicate", "رقم القطعة مستخدم ضمن هذه الفئة.", nameof(request.ItemNumber)));
         }
 
         var artifact = ArtifactFactory.Create(category, request.ItemNumber, request.BasicDescription, location);
@@ -40,6 +46,11 @@ public sealed class ArtifactWriteUseCases(IMuseumDbContext dbContext, IAuditWrit
 
     public async Task<UseCaseResult<ArtifactDetailsDto>> UpdateArtifactBasicInfo(UpdateArtifactBasicInfoRequest request, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(request.BasicDescription))
+        {
+            return UseCaseResult<ArtifactDetailsDto>.Failure(new ValidationIssue("Artifact.BasicDescriptionRequired", "الوصف الأساسي مطلوب.", nameof(request.BasicDescription)));
+        }
+
         var artifact = await dbContext.Artifacts
             .Include(a => a.Category)
             .Include(a => a.CurrentLocation)
@@ -54,6 +65,32 @@ public sealed class ArtifactWriteUseCases(IMuseumDbContext dbContext, IAuditWrit
         await dbContext.SaveChangesAsync(cancellationToken);
         await WriteAuditAsync("Artifact.UpdateBasicInfo", artifact.ArtifactId, $"Updated artifact {artifact.MuseumNumberDisplay} basic information.", "BasicDescription updated.", cancellationToken);
         return UseCaseResult<ArtifactDetailsDto>.Success(ToDetailsDto(artifact, artifact.Category, artifact.CurrentLocation));
+    }
+
+    private static List<ValidationIssue> ValidateCreateRequest(CreateArtifactRequest request)
+    {
+        List<ValidationIssue> issues = [];
+        if (request.CategoryId == Guid.Empty)
+        {
+            issues.Add(new ValidationIssue("Category.Required", "اختر فئة القطعة.", nameof(request.CategoryId)));
+        }
+
+        if (request.ItemNumber <= 0)
+        {
+            issues.Add(new ValidationIssue("ItemNumber.Positive", "رقم التسلسل داخل الفئة يجب أن يكون أكبر من صفر.", nameof(request.ItemNumber)));
+        }
+
+        if (request.InitialLocationId == Guid.Empty)
+        {
+            issues.Add(new ValidationIssue("Location.Required", "اختر موقع الخزن الأولي.", nameof(request.InitialLocationId)));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.BasicDescription))
+        {
+            issues.Add(new ValidationIssue("Artifact.BasicDescriptionRequired", "الوصف الأساسي مطلوب.", nameof(request.BasicDescription)));
+        }
+
+        return issues;
     }
 
     private static ArtifactDetailsDto ToDetailsDto(Artifact artifact, ArtifactCategory category, Location? location) =>
@@ -80,4 +117,3 @@ public sealed class ArtifactWriteUseCases(IMuseumDbContext dbContext, IAuditWrit
             summary,
             changeSummary), cancellationToken) ?? Task.CompletedTask;
 }
-

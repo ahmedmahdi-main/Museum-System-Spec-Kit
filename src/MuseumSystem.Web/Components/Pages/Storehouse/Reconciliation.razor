@@ -8,9 +8,13 @@
 
 <PageTitle>الجرد</PageTitle>
 
-<section class="page-section">
-    <h2>الجرد</h2>
+<section class="page-header">
+    <p class="eyebrow">المخزن</p>
+    <h1>الجرد</h1>
+    <p>ابدأ جلسة جرد لموقع خزن، سجّل ما رُصد فيه، ثم راجع الفروقات.</p>
+</section>
 
+<section class="page-section">
     @if (!string.IsNullOrWhiteSpace(message))
     {
         <div class="status-message">@message</div>
@@ -39,7 +43,7 @@
         <section class="sub-section">
             <h3>تسجيل المرصود</h3>
             <label>
-                <span>MuseumNumber لكل سطر</span>
+                <span>رقم المتحف لكل سطر</span>
                 <InputTextArea @bind-Value="observedNumbersText" class="form-control" />
             </label>
             <button type="button" class="btn-secondary" @onclick="RecordAsync">تسجيل النتائج</button>
@@ -53,7 +57,7 @@
                     <tr>
                         <th>النوع</th>
                         <th>الرقم المرصود</th>
-                        <th>ArtifactId</th>
+                        <th>معرف القطعة</th>
                         <th>الوصف</th>
                         <th>مؤكد</th>
                     </tr>

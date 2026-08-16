@@ -7,9 +7,13 @@
 
 <PageTitle>تسليم القطع</PageTitle>
 
-<section class="page-section">
-    <h2>تسليم القطع</h2>
+<section class="page-header">
+    <p class="eyebrow">المخزن</p>
+    <h1>تسليم القطع</h1>
+    <p>أخرج قطعة أو أكثر من المخزن إلى جهة داخلية مصرح لها. عاين القائمة قبل التسليم.</p>
+</section>
 
+<section class="page-section">
     @if (!string.IsNullOrWhiteSpace(message))
     {
         <div class="status-message">@message</div>
@@ -18,7 +22,7 @@
     <EditForm Model="this" OnSubmit="PreviewAsync" FormName="preview-delivery">
         <div class="form-grid">
             <label>
-                <span>ArtifactId لكل سطر</span>
+                <span>معرّفات القطع — معرّف واحد في كل سطر</span>
                 <InputTextArea @bind-Value="artifactIdsText" class="form-control" />
             </label>
             <label>
@@ -58,8 +62,10 @@
                 <span>ملاحظة</span>
                 <InputText @bind-Value="note" class="form-control" />
             </label>
-            <button type="submit" class="btn-secondary">معاينة</button>
-            <button type="button" class="btn-primary" disabled="@(!canCommit)" @onclick="DeliverAsync">تسليم</button>
+            <div class="form-actions span-all">
+                <button type="submit" class="btn-secondary">معاينة</button>
+                <button type="button" class="btn-primary" disabled="@(!canCommit)" @onclick="DeliverAsync">تسليم</button>
+            </div>
         </div>
     </EditForm>
 

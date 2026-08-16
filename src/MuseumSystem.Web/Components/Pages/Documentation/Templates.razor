@@ -10,24 +10,29 @@
 @inject IAuthorizationService AuthorizationService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
-<PageTitle>Documentation Templates</PageTitle>
+<PageTitle>قوالب التوثيق</PageTitle>
 
-<section class="page-section">
-    <h2>Documentation Templates</h2>
+<section class="page-header">
+    <p class="eyebrow">التوثيق</p>
+    <h1>قوالب التوثيق</h1>
+    <p>إدارة قوالب الفئات وإصداراتها النشطة والمسودات.</p>
+</section>
 
-    @if (!string.IsNullOrWhiteSpace(message))
-    {
-        <div class="status-message">@message</div>
-    }
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <div class="status-message">@message</div>
+}
 
-    @if (canManage)
-    {
+@if (canManage)
+{
+    <section class="page-section">
+        <h2>إنشاء قالب جديد</h2>
         <EditForm Model="this" OnSubmit="CreateTemplateAsync" FormName="create-documentation-template">
             <div class="form-grid">
                 <label>
-                    <span>Artifact Category</span>
+                    <span>فئة القطعة</span>
                     <InputSelect @bind-Value="selectedCategoryId" class="form-control">
-                        <option value="">Select category</option>
+                        <option value="">اختر الفئة</option>
                         @foreach (var category in categories)
                         {
                             <option value="@category.CategoryId">@category.CategoryCode - @category.NameArabic</option>
@@ -35,80 +40,98 @@
                     </InputSelect>
                 </label>
                 <label>
-                    <span>Template Name</span>
+                    <span>اسم القالب</span>
                     <InputText @bind-Value="templateName" class="form-control" />
                 </label>
                 <label>
-                    <span>Description</span>
+                    <span>الوصف</span>
                     <InputText @bind-Value="templateDescription" class="form-control" />
                 </label>
-                <button type="submit" class="btn-primary">Create Template Family</button>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">إنشاء القالب</button>
+                </div>
             </div>
         </EditForm>
-    }
+    </section>
+}
 
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Category</th>
-                <th>Template</th>
-                <th>Versions</th>
-                <th>Active</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var template in templates)
-            {
-                <tr>
-                    <td>@template.ArtifactCategoryCode - @template.ArtifactCategoryName</td>
-                    <td>@template.Name</td>
-                    <td>
-                        @foreach (var version in template.Versions)
-                        {
-                            <div>
-                                <a href="@DetailsHref(version.DocumentationTemplateVersionId)">v@version.VersionNumber</a>
-                                <span>@version.Status</span>
-                                @if (version.IsUsed)
+<section class="page-section">
+    <h2>القوالب الحالية</h2>
+
+    @if (templates.Count == 0)
+    {
+        <div class="status-message">لا توجد قوالب توثيق بعد.</div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>الفئة</th>
+                        <th>القالب</th>
+                        <th>الإصدارات</th>
+                        <th>النشط</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var template in templates)
+                    {
+                        <tr>
+                            <td>@template.ArtifactCategoryCode - @template.ArtifactCategoryName</td>
+                            <td>
+                                <strong>@template.Name</strong>
+                                @if (!string.IsNullOrWhiteSpace(template.Description))
                                 {
-                                    <span>used</span>
+                                    <div class="muted">@template.Description</div>
                                 }
-                            </div>
-                        }
-                    </td>
-                    <td>@(template.ActiveVersion is null ? "No Active version" : $"v{template.ActiveVersion.VersionNumber}")</td>
-                    <td>
-                        @if (canManage)
-                        {
-                            <button type="button" class="btn-secondary" @onclick="() => CreateDraftAsync(template.DocumentationTemplateId, null)">New Draft</button>
-                            @if (template.LatestVersion is not null)
-                            {
-                                <button type="button" class="btn-secondary" @onclick="() => CreateDraftAsync(template.DocumentationTemplateId, template.LatestVersion.DocumentationTemplateVersionId)">Copy Latest</button>
-                            }
-                            @foreach (var version in template.Versions)
-                            {
-                                <div>
-                                    @if (version.Status == DocumentationTemplateVersionStatus.Draft)
+                            </td>
+                            <td>
+                                <div class="inline-actions">
+                                    @foreach (var version in template.Versions)
                                     {
-                                        <a class="btn-secondary" href="@EditorHref(version.DocumentationTemplateVersionId)">Edit v@version.VersionNumber</a>
-                                        <button type="button" class="btn-secondary" @onclick="() => ActivateAsync(version)">Activate</button>
-                                    }
-                                    @if (version.Status == DocumentationTemplateVersionStatus.Active)
-                                    {
-                                        <button type="button" class="btn-secondary" @onclick="() => RetireAsync(version)">Retire v@version.VersionNumber</button>
+                                        <a class="badge-status @StatusClass(version.Status)" href="@DetailsHref(version.DocumentationTemplateVersionId)">
+                                            إصدار @version.VersionNumber - @VersionStatusText(version.Status)@(version.IsUsed ? " - مستخدم" : string.Empty)
+                                        </a>
                                     }
                                 </div>
-                            }
-                        }
-                        else
-                        {
-                            <span>View only</span>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+                            </td>
+                            <td>@(template.ActiveVersion is null ? "لا يوجد إصدار نشط" : $"إصدار {template.ActiveVersion.VersionNumber}")</td>
+                            <td>
+                                @if (canManage)
+                                {
+                                    <div class="inline-actions">
+                                        <button type="button" class="btn-secondary" @onclick="() => CreateDraftAsync(template.DocumentationTemplateId, null)">مسودة جديدة</button>
+                                        @if (template.LatestVersion is not null)
+                                        {
+                                            <button type="button" class="btn-secondary" @onclick="() => CreateDraftAsync(template.DocumentationTemplateId, template.LatestVersion.DocumentationTemplateVersionId)">نسخ آخر إصدار</button>
+                                        }
+                                        @foreach (var version in template.Versions)
+                                        {
+                                            @if (version.Status == DocumentationTemplateVersionStatus.Draft)
+                                            {
+                                                <a class="btn-secondary" href="@EditorHref(version.DocumentationTemplateVersionId)">تحرير إصدار @version.VersionNumber</a>
+                                                <button type="button" class="btn-secondary" @onclick="() => ActivateAsync(version)">تفعيل</button>
+                                            }
+                                            @if (version.Status == DocumentationTemplateVersionStatus.Active)
+                                            {
+                                                <button type="button" class="btn-secondary" @onclick="() => RetireAsync(version)">إيقاف إصدار @version.VersionNumber</button>
+                                            }
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="muted">عرض فقط</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 </section>
 
 @code {
@@ -132,13 +155,13 @@
     {
         if (!await IsAuthorizedAsync(PermissionNames.DocumentationTemplatesManage))
         {
-            message = "You are not authorized to manage documentation templates.";
+            message = "لا تملك صلاحية إدارة قوالب التوثيق.";
             return;
         }
 
         if (selectedCategoryId is null)
         {
-            message = "Select an Artifact Category before creating a template.";
+            message = "اختر فئة القطعة قبل إنشاء القالب.";
             return;
         }
 
@@ -156,7 +179,7 @@
     {
         if (!await IsAuthorizedAsync(PermissionNames.DocumentationTemplatesManage))
         {
-            message = "You are not authorized to manage documentation templates.";
+            message = "لا تملك صلاحية إدارة قوالب التوثيق.";
             return;
         }
 
@@ -169,7 +192,7 @@
     {
         if (!await IsAuthorizedAsync(PermissionNames.DocumentationTemplatesManage))
         {
-            message = "You are not authorized to activate documentation templates.";
+            message = "لا تملك صلاحية تفعيل قوالب التوثيق.";
             return;
         }
 
@@ -182,13 +205,13 @@
     {
         if (!await IsAuthorizedAsync(PermissionNames.DocumentationTemplatesManage))
         {
-            message = "You are not authorized to retire documentation templates.";
+            message = "لا تملك صلاحية إيقاف قوالب التوثيق.";
             return;
         }
 
         var result = await RetireUseCase.RetireTemplateVersion(new RetireTemplateVersionRequest(version.DocumentationTemplateVersionId, version.ConcurrencyToken));
         message = result.Succeeded
-            ? string.Join(" ", result.Messages.DefaultIfEmpty("Template version retired. The category may now have zero Active versions."))
+            ? string.Join(" ", result.Messages.DefaultIfEmpty("تم إيقاف إصدار القالب. قد تبقى الفئة دون إصدار نشط مؤقتاً.").Select(LocalizeMessage))
             : FormatResult(result);
         await ReloadAsync();
     }
@@ -205,10 +228,38 @@
 
     private static string EditorHref(Guid versionId) => $"documentation/templates/{versionId}/edit";
 
+    private static string VersionStatusText(DocumentationTemplateVersionStatus status) => status switch
+    {
+        DocumentationTemplateVersionStatus.Draft => "مسودة",
+        DocumentationTemplateVersionStatus.Active => "نشط",
+        DocumentationTemplateVersionStatus.Retired => "متوقف",
+        _ => status.ToString()
+    };
+
+    private static string StatusClass(DocumentationTemplateVersionStatus status) => status switch
+    {
+        DocumentationTemplateVersionStatus.Draft => "badge-draft",
+        DocumentationTemplateVersionStatus.Active => "badge-active",
+        DocumentationTemplateVersionStatus.Retired => "badge-retired",
+        _ => string.Empty
+    };
+
     private static string FormatResult<T>(UseCaseResult<T> result) =>
         result.Succeeded
-            ? string.Join(" ", result.Messages.DefaultIfEmpty("Saved."))
+            ? string.Join(" ", result.Messages.DefaultIfEmpty("تم الحفظ.").Select(LocalizeMessage))
             : result.ConcurrencyConflict
-                ? string.Join(" ", result.Messages)
-                : string.Join(" ", result.ValidationIssues.Select(issue => issue.Message));
+                ? string.Join(" ", result.Messages.Select(LocalizeMessage))
+                : string.Join(" ", result.ValidationIssues.Select(issue => LocalizeMessage(issue.Message)));
+
+    private static string LocalizeMessage(string message)
+    {
+        if (message.Contains("created", StringComparison.OrdinalIgnoreCase)) return "تم الإنشاء.";
+        if (message.Contains("saved", StringComparison.OrdinalIgnoreCase)) return "تم الحفظ.";
+        if (message.Contains("activated", StringComparison.OrdinalIgnoreCase)) return "تم تفعيل إصدار القالب.";
+        if (message.Contains("retired", StringComparison.OrdinalIgnoreCase)) return "تم إيقاف إصدار القالب.";
+        if (message.Contains("Reload and review", StringComparison.OrdinalIgnoreCase)) return "تغيرت البيانات. أعد التحميل وراجع آخر نسخة قبل المتابعة.";
+        if (message.Contains("not authorized", StringComparison.OrdinalIgnoreCase)) return "لا تملك الصلاحية المطلوبة.";
+        if (message.Contains("Only Draft", StringComparison.OrdinalIgnoreCase)) return "يمكن تحرير إصدارات المسودة فقط.";
+        return message;
+    }
 }

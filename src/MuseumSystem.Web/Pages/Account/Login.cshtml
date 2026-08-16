@@ -1,0 +1,49 @@
+@page "/Account/Login"
+@model MuseumSystem.Web.Pages.Account.LoginModel
+@{
+    Layout = null;
+    ViewData["Title"] = "تسجيل الدخول";
+}
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - نظام إدارة المتحف العراقي</title>
+    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.rtl.min.css" />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+    <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+    <main class="auth-page">
+        <section class="auth-card">
+            <div class="auth-brand">
+                <strong>نظام إدارة المتحف العراقي</strong>
+                <span>دخول الموظفين المخولين</span>
+            </div>
+            <h1>تسجيل الدخول</h1>
+            <p class="muted">استخدم اسم المستخدم وكلمة المرور الصادرين لك من إدارة النظام.</p>
+
+            <form method="post" asp-route-returnUrl="@Model.ReturnUrl">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+                <label>
+                    <span>اسم المستخدم</span>
+                    <input asp-for="Input.Username" class="form-control" autocomplete="username" autofocus />
+                    <span asp-validation-for="Input.Username" class="text-danger"></span>
+                </label>
+
+                <label>
+                    <span>كلمة المرور</span>
+                    <input asp-for="Input.Password" class="form-control" autocomplete="current-password" />
+                    <span asp-validation-for="Input.Password" class="text-danger"></span>
+                </label>
+
+                <button type="submit" class="btn-primary">تسجيل الدخول</button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

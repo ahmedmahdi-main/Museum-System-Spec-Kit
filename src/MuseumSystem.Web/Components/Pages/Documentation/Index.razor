@@ -7,75 +7,118 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager Navigation
 
-<PageTitle>Documentation Workspace</PageTitle>
+<PageTitle>توثيق القطع</PageTitle>
+
+<section class="page-header">
+    <p class="eyebrow">التوثيق</p>
+    <h1>توثيق القطع</h1>
+    <p>ابحث برقم المتحف لفتح مساحة التوثيق الخاصة بالقطعة.</p>
+</section>
 
 <section class="page-section">
-    <h2>Documentation Workspace</h2>
-
     @if (!string.IsNullOrWhiteSpace(message))
     {
         <div class="status-message">@message</div>
     }
 
     <EditForm Model="this" OnSubmit="SearchAsync" FormName="documentation-artifact-search">
-        <div class="form-grid">
+        <div class="search-row">
             <label>
-                <span>Museum Number</span>
+                <span>رقم المتحف</span>
                 <InputText @bind-Value="museumNumber" class="form-control" autofocus />
             </label>
-            <button type="submit" class="btn-primary">Search</button>
+            <button type="submit" class="btn-primary">بحث</button>
         </div>
     </EditForm>
-
-    @if (workspace is not null)
-    {
-        <section class="page-section">
-            <h3>@workspace.Artifact.MuseumNumber</h3>
-            <dl>
-                <dt>Description</dt><dd>@workspace.Artifact.BasicDescription</dd>
-                <dt>Category</dt><dd>@workspace.Artifact.CategoryCode - @workspace.Artifact.CategoryName</dd>
-                <dt>Custody</dt><dd>@CustodyText(workspace.Artifact)</dd>
-                <dt>Documentation</dt><dd>@workspace.DocumentationStatus</dd>
-            </dl>
-
-            @if (!workspace.Artifact.IsAvailableToDocumentation)
-            {
-                <p>The artifact is not currently held by Documentation.</p>
-            }
-            @if (workspace.ActiveTemplateVersion is not null)
-            {
-                <p>Active template v@workspace.ActiveTemplateVersion.VersionNumber</p>
-            }
-
-            @if (workspace.Actions.CanCreate)
-            {
-                <button type="button" class="btn-primary" @onclick="CreateAsync">Create Documentation</button>
-            }
-            else if (workspace.ActiveTemplateVersion is null && workspace.ExistingRecord is null)
-            {
-                <p>No Active documentation template is available for this Artifact Category.</p>
-            }
-            else if (!string.IsNullOrWhiteSpace(workspace.Actions.CreateBlockedReason) && workspace.ExistingRecord is null)
-            {
-                <p>@workspace.Actions.CreateBlockedReason</p>
-            }
-
-            @if (workspace.Actions.CanResumeDraft && workspace.ExistingRecord is not null)
-            {
-                <a class="btn-primary" href="@EditHref(workspace.ExistingRecord.DocumentationRecordId)">Resume Draft</a>
-            }
-            else if (!string.IsNullOrWhiteSpace(workspace.Actions.DraftEditBlockedReason) && workspace.ExistingRecord?.Status == DocumentationRecordStatus.Draft)
-            {
-                <p>@workspace.Actions.DraftEditBlockedReason</p>
-            }
-
-            @if (workspace.Actions.CanViewCompleted && workspace.ExistingRecord is not null)
-            {
-                <a class="btn-secondary" href="@EditHref(workspace.ExistingRecord.DocumentationRecordId)">View Documentation</a>
-            }
-        </section>
-    }
 </section>
+
+@if (workspace is not null)
+{
+    <section class="page-section">
+        <div>
+            <p class="eyebrow">نتيجة البحث</p>
+            <h2>@workspace.Artifact.MuseumNumber</h2>
+        </div>
+
+        <div class="summary-grid">
+            <div class="summary-item">
+                <span>الوصف</span>
+                <strong>@workspace.Artifact.BasicDescription</strong>
+            </div>
+            <div class="summary-item">
+                <span>الفئة</span>
+                <strong>@workspace.Artifact.CategoryCode - @workspace.Artifact.CategoryName</strong>
+            </div>
+            <div class="summary-item">
+                <span>الحيازة الحالية</span>
+                <strong>@CustodyText(workspace.Artifact)</strong>
+            </div>
+            <div class="summary-item">
+                <span>حالة التوثيق</span>
+                <strong>@DocumentationStatusText(workspace.DocumentationStatus)</strong>
+            </div>
+            <div class="summary-item">
+                <span>القالب النشط</span>
+                <strong>@(workspace.ActiveTemplateVersion is null ? "لا يوجد قالب نشط" : $"الإصدار {workspace.ActiveTemplateVersion.VersionNumber}")</strong>
+            </div>
+            <div class="summary-item">
+                <span>إتاحة التوثيق</span>
+                <strong>@(workspace.Artifact.IsAvailableToDocumentation ? "القطعة لدى التوثيق" : "القطعة ليست لدى التوثيق")</strong>
+            </div>
+        </div>
+
+        @if (!workspace.Artifact.IsAvailableToDocumentation)
+        {
+            <div class="status-message warning-message">القطعة ليست حالياً لدى قسم التوثيق، لذلك لا يمكن إنشاء سجل جديد أو تعديل مسودة.</div>
+        }
+
+        @if (workspace.ExistingRecord is null)
+        {
+            <div class="card-panel">
+                <h3>لا يوجد سجل توثيق</h3>
+                <p class="muted">يمكن إنشاء سجل توثيق عندما تكون القطعة لدى قسم التوثيق ويوجد قالب نشط لفئتها.</p>
+                @if (workspace.Actions.CanCreate)
+                {
+                    <button type="button" class="btn-primary" @onclick="CreateAsync">إنشاء سجل توثيق</button>
+                }
+                else if (workspace.ActiveTemplateVersion is null)
+                {
+                    <p class="muted">لا يوجد قالب توثيق نشط لهذه الفئة.</p>
+                }
+                else if (!string.IsNullOrWhiteSpace(workspace.Actions.CreateBlockedReason))
+                {
+                    <p class="muted">@LocalizeMessage(workspace.Actions.CreateBlockedReason)</p>
+                }
+            </div>
+        }
+        else if (workspace.ExistingRecord.Status == DocumentationRecordStatus.Draft)
+        {
+            <div class="card-panel">
+                <h3>مسودة توثيق</h3>
+                <p class="muted">يوجد سجل توثيق محفوظ كمسودة.</p>
+                @if (workspace.Actions.CanResumeDraft)
+                {
+                    <a class="btn-primary" href="@EditHref(workspace.ExistingRecord.DocumentationRecordId)">متابعة المسودة</a>
+                }
+                else if (!string.IsNullOrWhiteSpace(workspace.Actions.DraftEditBlockedReason))
+                {
+                    <p class="muted">@LocalizeMessage(workspace.Actions.DraftEditBlockedReason)</p>
+                }
+            </div>
+        }
+        else if (workspace.ExistingRecord.Status == DocumentationRecordStatus.Completed)
+        {
+            <div class="card-panel">
+                <h3>توثيق مكتمل</h3>
+                <p class="muted">السجل مكتمل ومتاح للعرض في هذه المرحلة.</p>
+                @if (workspace.Actions.CanViewCompleted)
+                {
+                    <a class="btn-secondary" href="@EditHref(workspace.ExistingRecord.DocumentationRecordId)">عرض التوثيق</a>
+                }
+            </div>
+        }
+    </section>
+}
 
 @code {
     private string museumNumber = string.Empty;
@@ -110,13 +153,15 @@
     {
         if (!await IsAuthorizedAsync(PermissionNames.DocumentationCreate))
         {
-            message = "You are not authorized to create documentation records.";
+            message = "لا تملك صلاحية إنشاء سجلات التوثيق.";
             return;
         }
 
         if (workspace is null || !workspace.Actions.CanCreate)
         {
-            message = workspace?.Actions.CreateBlockedReason ?? "Create Documentation is not available.";
+            message = workspace?.Actions.CreateBlockedReason is null
+                ? "إنشاء سجل التوثيق غير متاح حالياً."
+                : LocalizeMessage(workspace.Actions.CreateBlockedReason);
             return;
         }
 
@@ -148,13 +193,43 @@
 
     private static string CustodyText(DocumentationArtifactSummaryDto artifact) =>
         artifact.CurrentStatus == ArtifactCurrentStatus.InStorage
-            ? artifact.CurrentLocationName ?? "In storage"
-            : artifact.CurrentHolderName ?? artifact.CurrentHolderType ?? "Out of storage";
+            ? artifact.CurrentLocationName ?? "داخل الخزن"
+            : artifact.CurrentHolderName ?? HolderTypeText(artifact.CurrentHolderType) ?? "خارج الخزن";
+
+    private static string? HolderTypeText(string? holderType) => holderType switch
+    {
+        "DocumentationDivision" => "قسم التوثيق",
+        "ConservationLab" => "المختبر",
+        "PhotographyUnit" => "وحدة التصوير",
+        "DisplayHall" => "قاعة العرض",
+        _ => holderType
+    };
+
+    private static string DocumentationStatusText(DocumentationArtifactDocumentationStatus status) => status switch
+    {
+        DocumentationArtifactDocumentationStatus.None => "لا يوجد سجل",
+        DocumentationArtifactDocumentationStatus.Draft => "مسودة",
+        DocumentationArtifactDocumentationStatus.Completed => "مكتمل",
+        _ => status.ToString()
+    };
 
     private static string FormatResult<T>(UseCaseResult<T> result) =>
         result.Succeeded
-            ? string.Join(" ", result.Messages.DefaultIfEmpty("Saved."))
+            ? string.Join(" ", result.Messages.DefaultIfEmpty("تم الحفظ.").Select(LocalizeMessage))
             : result.ConcurrencyConflict
-                ? string.Join(" ", result.Messages)
-                : string.Join(" ", result.ValidationIssues.Select(issue => issue.Message));
+                ? string.Join(" ", result.Messages.Select(LocalizeMessage))
+                : string.Join(" ", result.ValidationIssues.Select(issue => LocalizeMessage(issue.Message)));
+
+    private static string LocalizeMessage(string message)
+    {
+        if (message.Contains("Artifact was not found", StringComparison.OrdinalIgnoreCase)) return "لم يتم العثور على القطعة.";
+        if (message.Contains("already has a Documentation Record", StringComparison.OrdinalIgnoreCase)) return "توجد للقطعة سجل توثيق مسبق.";
+        if (message.Contains("not currently held by Documentation", StringComparison.OrdinalIgnoreCase)) return "القطعة ليست حالياً لدى قسم التوثيق.";
+        if (message.Contains("No Active documentation template", StringComparison.OrdinalIgnoreCase)) return "لا يوجد قالب توثيق نشط لهذه الفئة.";
+        if (message.Contains("Draft documentation record created", StringComparison.OrdinalIgnoreCase)) return "تم إنشاء مسودة التوثيق.";
+        if (message.Contains("Reload and review", StringComparison.OrdinalIgnoreCase)) return "تغيرت البيانات. أعد التحميل وراجع آخر نسخة قبل المتابعة.";
+        if (message.Contains("not authorized", StringComparison.OrdinalIgnoreCase)) return "لا تملك الصلاحية المطلوبة.";
+        if (message.Contains("Saved", StringComparison.OrdinalIgnoreCase)) return "تم الحفظ.";
+        return message;
+    }
 }

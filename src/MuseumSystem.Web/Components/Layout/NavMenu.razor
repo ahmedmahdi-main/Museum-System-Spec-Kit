@@ -1,57 +1,70 @@
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">MuseumSystem.Web</a>
-    </div>
-</div>
+@* Labels here match each page's own heading, so a link and the page it opens are named the same thing. *@
+<nav class="nav-menu" aria-label="روابط النظام">
+    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">الرئيسية</NavLink>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+    <AuthorizeView Policy="@PermissionNames.ArtifactsView">
+        <Authorized>
+            <div class="nav-section">سجل القطع</div>
+            <NavLink class="nav-link" href="artifacts">البحث عن القطع</NavLink>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Policy="@PermissionNames.ArtifactsManage">
+        <Authorized>
+            <NavLink class="nav-link" href="artifacts/create">إنشاء قطعة</NavLink>
+            <NavLink class="nav-link" href="artifacts/categories">إدارة الفئات</NavLink>
+        </Authorized>
+    </AuthorizeView>
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
+    <AuthorizeView Policy="@PermissionNames.StorehouseDeliver">
+        <Authorized>
+            <div class="nav-section">المخزن</div>
+            <NavLink class="nav-link" href="storehouse/delivery">تسليم القطع</NavLink>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Policy="@PermissionNames.StorehouseReturn">
+        <Authorized>
+            <NavLink class="nav-link" href="storehouse/return">استلام القطع</NavLink>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Policy="@PermissionNames.StorehouseLocationsManage">
+        <Authorized>
+            <NavLink class="nav-link" href="storehouse/locations">مواقع الخزن والعرض</NavLink>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Policy="@PermissionNames.StorehouseReconciliationManage">
+        <Authorized>
+            <NavLink class="nav-link" href="storehouse/reconciliation">الجرد</NavLink>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Policy="@PermissionNames.StorehouseCorrectionsCreate">
+        <Authorized>
+            <NavLink class="nav-link" href="storehouse/documented-correction">تصحيح موثق</NavLink>
+        </Authorized>
+    </AuthorizeView>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
+    <AuthorizeView Policy="@PermissionNames.ImportsPreview">
+        <Authorized>
+            <div class="nav-section">الاستيراد</div>
+            <NavLink class="nav-link" href="imports/excel">استيراد Excel</NavLink>
+        </Authorized>
+    </AuthorizeView>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-        <AuthorizeView Policy="@PermissionNames.DocumentationView">
-            <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="documentation">
-                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Documentation
-                    </NavLink>
-                </div>
-            </Authorized>
-        </AuthorizeView>
-        <AuthorizeView Policy="@PermissionNames.DocumentationTemplatesView">
-            <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="documentation/templates">
-                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Documentation Templates
-                    </NavLink>
-                </div>
-            </Authorized>
-        </AuthorizeView>
+    <AuthorizeView Policy="@PermissionNames.DocumentationView">
+        <Authorized>
+            <div class="nav-section">التوثيق</div>
+            <NavLink class="nav-link" href="documentation">توثيق القطع</NavLink>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Policy="@PermissionNames.DocumentationTemplatesView">
+        <Authorized>
+            <NavLink class="nav-link" href="documentation/templates">قوالب التوثيق</NavLink>
+        </Authorized>
+    </AuthorizeView>
 
-        <AuthorizeView Policy="@PermissionNames.DocumentationTemplatesManage">
-            <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="documentation/templates">
-                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Manage Templates
-                    </NavLink>
-                </div>
-            </Authorized>
-        </AuthorizeView>
-    </nav>
-</div>
+    <AuthorizeView Policy="@PermissionNames.AuditView">
+        <Authorized>
+            <div class="nav-section">الإدارة</div>
+            <NavLink class="nav-link" href="admin/audit">سجل التدقيق</NavLink>
+        </Authorized>
+    </AuthorizeView>
+</nav>

@@ -1,0 +1,38 @@
+@page "/Account/Logout"
+@model MuseumSystem.Web.Pages.Account.LogoutModel
+@{
+    Layout = null;
+    ViewData["Title"] = "تسجيل الخروج";
+}
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - نظام إدارة المتحف العراقي</title>
+    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.rtl.min.css" />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+    <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+    <main class="auth-page">
+        <section class="auth-card">
+            <div class="auth-brand">
+                <strong>نظام إدارة المتحف العراقي</strong>
+                <span>إنهاء الجلسة الحالية</span>
+            </div>
+            <h1>تسجيل الخروج</h1>
+            <p class="muted">أكد إنهاء جلسة الدخول الحالية.</p>
+
+            <form method="post">
+                @Html.AntiForgeryToken()
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">تسجيل الخروج</button>
+                    <a class="btn-secondary" href="/">رجوع</a>
+                </div>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

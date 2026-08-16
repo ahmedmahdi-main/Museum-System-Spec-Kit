@@ -1,43 +1,59 @@
 @inherits LayoutComponentBase
+@using System.Security.Claims
+@using MuseumSystem.Infrastructure.Identity
+
+<a class="skip-link" href="#main">تخطي إلى المحتوى</a>
 
 <div class="app-shell">
-    <aside class="app-sidebar" aria-label="التنقل الرئيسي">
+    <aside class="app-rail" aria-label="التنقل الرئيسي">
         <a class="brand" href="/">
-            <span class="brand-title">Museum-System</span>
-            <span class="brand-subtitle">نظام إدارة القطع المتحفية</span>
+            <span class="brand-mark">نظام إدارة المتحف العراقي</span>
+            <span class="brand-note">قسم السجلات</span>
         </a>
-        <nav class="nav-list" aria-label="أقسام النظام">
-            <a href="/" class="nav-link">الرئيسية</a>
-            <span class="nav-link is-disabled">سجل القطع</span>
-            <span class="nav-link is-disabled">عمليات المخزن</span>
-            <span class="nav-link is-disabled">الاستيراد</span>
-        </nav>
+
+        <NavMenu />
+
+        <div class="rail-foot">
+            <AuthorizeView Context="authState">
+                <Authorized>
+                    <div class="rail-user">
+                        <span class="rail-user-label">الموظف</span>
+                        <span class="rail-user-name">@DisplayName(authState.User)</span>
+                    </div>
+                    <form method="post" action="/Account/Logout">
+                        <AntiforgeryToken />
+                        <button type="submit" class="btn-quiet">إنهاء الجلسة</button>
+                    </form>
+                </Authorized>
+                <NotAuthorized>
+                    <div class="rail-user">
+                        <span class="rail-user-label">الجلسة</span>
+                        <span class="rail-user-name">غير مسجل الدخول</span>
+                    </div>
+                    <a class="btn-quiet" href="/Account/Login">تسجيل الدخول</a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
     </aside>
 
     <div class="app-main">
-        <header class="top-bar">
-            <div>
-                <p class="eyebrow">المرحلة الأولى</p>
-                <h1>الأساس التشغيلي</h1>
-            </div>
-            <AuthorizeView>
-                <Authorized>
-                    <span class="auth-chip">@context.User.Identity?.Name</span>
-                </Authorized>
-                <NotAuthorized>
-                    <span class="auth-chip">غير مسجل</span>
-                </NotAuthorized>
-            </AuthorizeView>
-        </header>
-
-        <main class="content" tabindex="-1">
+        <main id="main" class="content" tabindex="-1">
             @Body
         </main>
     </div>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
-    حدث خطأ غير متوقع.
+    انقطع الاتصال بالخادم ولم يُحفظ آخر إجراء.
     <a href="." class="reload">إعادة التحميل</a>
-    <span class="dismiss">×</span>
+    <span class="dismiss">x</span>
 </div>
+
+@code {
+    private static string DisplayName(ClaimsPrincipal user) =>
+        user.FindFirst(ApplicationUserClaimsPrincipalFactory.DisplayNameClaimType)?.Value
+        ?? user.FindFirst(ClaimTypes.GivenName)?.Value
+        ?? user.FindFirst(ClaimTypes.Name)?.Value
+        ?? user.Identity?.Name
+        ?? "مستخدم";
+}

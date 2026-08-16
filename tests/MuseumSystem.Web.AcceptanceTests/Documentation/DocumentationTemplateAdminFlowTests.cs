@@ -30,7 +30,7 @@ public sealed class DocumentationTemplateAdminFlowTests
         Assert.Contains("RetireTemplateVersion", templates);
         Assert.Contains("DocumentationFieldType", editor);
         Assert.Contains(nameof(PermissionNames.DocumentationTemplatesView), nav);
-        Assert.Contains(nameof(PermissionNames.DocumentationTemplatesManage), nav);
+        Assert.Contains("href=\"documentation/templates\"", nav);
 
         Assert.True(File.Exists(Path.Combine(pagesRoot, "Index.razor")));
         Assert.True(File.Exists(Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Documentation", "DynamicDocumentationForm.razor")));

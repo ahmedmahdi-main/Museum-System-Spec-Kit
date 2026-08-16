@@ -5,9 +5,13 @@
 
 <PageTitle>تصحيح موثق</PageTitle>
 
-<section class="page-section">
-    <h2>تصحيح موثق</h2>
+<section class="page-header">
+    <p class="eyebrow">المخزن</p>
+    <h1>تصحيح موثق</h1>
+    <p>صحّح موقع قطعة أو عهدتها بعد الجرد، مع سبب مكتوب يُحفظ في سجل التدقيق.</p>
+</section>
 
+<section class="page-section">
     @if (!string.IsNullOrWhiteSpace(message))
     {
         <div class="status-message">@message</div>
@@ -16,7 +20,7 @@
     <EditForm Model="this" OnSubmit="SaveAsync" FormName="documented-correction">
         <div class="form-grid">
             <label>
-                <span>ReconciliationResultId</span>
+                <span>معرّف نتيجة الجرد</span>
                 <InputText @bind-Value="resultIdText" class="form-control" />
             </label>
             <label>
@@ -27,7 +31,7 @@
                 </InputSelect>
             </label>
             <label>
-                <span>LocationId جديد</span>
+                <span>معرّف الموقع الجديد</span>
                 <InputText @bind-Value="newLocationIdText" class="form-control" />
             </label>
             <label>

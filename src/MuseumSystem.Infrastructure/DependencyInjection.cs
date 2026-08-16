@@ -29,10 +29,16 @@ public static class DependencyInjection
         services.AddIdentityCore<ApplicationUser>()
             .AddRoles<ApplicationRole>()
             .AddEntityFrameworkStores<MuseumDbContext>()
-            .AddSignInManager();
+            .AddSignInManager()
+            .AddClaimsPrincipalFactory<ApplicationUserClaimsPrincipalFactory>();
 
         services.AddAuthentication(IdentityConstants.ApplicationScheme)
             .AddIdentityCookies();
+        services.ConfigureApplicationCookie(options =>
+        {
+            options.LoginPath = "/Account/Login";
+            options.AccessDeniedPath = "/Account/AccessDenied";
+        });
 
         return services;
     }

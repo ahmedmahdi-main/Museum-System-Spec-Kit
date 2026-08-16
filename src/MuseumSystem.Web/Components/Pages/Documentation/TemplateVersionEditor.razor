@@ -8,11 +8,14 @@
 @inject IAuthorizationService AuthorizationService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
-<PageTitle>Draft Template Editor</PageTitle>
+<PageTitle>تحرير مسودة القالب</PageTitle>
+
+<section class="page-header">
+    <p class="eyebrow">قوالب التوثيق</p>
+    <h1>تحرير مسودة القالب</h1>
+</section>
 
 <section class="page-section">
-    <h2>Draft Template Editor</h2>
-
     @if (!string.IsNullOrWhiteSpace(message))
     {
         <div class="status-message">@message</div>
@@ -20,88 +23,98 @@
 
     @if (version is not null)
     {
-        <p class="muted">@version.ArtifactCategoryCode - @version.ArtifactCategoryName</p>
-        <p>@version.TemplateName v@version.VersionNumber - @version.Status</p>
+        <div class="summary-grid">
+            <div class="summary-item"><span>الفئة</span><strong>@version.ArtifactCategoryCode - @version.ArtifactCategoryName</strong></div>
+            <div class="summary-item"><span>القالب</span><strong>@version.TemplateName</strong></div>
+            <div class="summary-item"><span>الإصدار</span><strong>@version.VersionNumber</strong></div>
+            <div class="summary-item"><span>الحالة</span><strong>@VersionStatusText(version.Status)</strong></div>
+        </div>
 
         @if (version.IsReadOnly)
         {
-            <p>Used or non-Draft template versions are read-only. Create a new Draft version to change fields or options.</p>
-            <a class="btn-secondary" href="@DetailsHref">View Details</a>
+            <div class="status-message">الإصدارات المستخدمة أو غير المسودة للقراءة فقط. أنشئ مسودة جديدة لتعديل الحقول أو الخيارات.</div>
+            <a class="btn-secondary" href="@DetailsHref">عرض التفاصيل</a>
         }
         else
         {
             <EditForm Model="this" OnSubmit="SaveAsync" FormName="save-template-version-draft">
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" @onclick="AddField">إضافة حقل</button>
+                    <button type="submit" class="btn-primary">حفظ المسودة</button>
+                    <button type="button" class="btn-secondary" @onclick="ActivateAsync">تفعيل المسودة</button>
+                </div>
+
                 @foreach (var field in fields)
                 {
-                    <section class="page-section">
+                    <section class="field-card">
                         <div class="form-grid">
                             <label>
-                                <span>Field Key</span>
+                                <span>مفتاح الحقل</span>
                                 <InputText @bind-Value="field.FieldKey" class="form-control" />
                             </label>
                             <label>
-                                <span>Label</span>
+                                <span>التسمية</span>
                                 <InputText @bind-Value="field.Label" class="form-control" />
                             </label>
                             <label>
-                                <span>Field Type</span>
+                                <span>نوع الحقل</span>
                                 <InputSelect @bind-Value="field.FieldType" class="form-control">
                                     @foreach (var fieldType in supportedFieldTypes)
                                     {
-                                        <option value="@fieldType">@fieldType</option>
+                                        <option value="@fieldType">@FieldTypeText(fieldType)</option>
                                     }
                                 </InputSelect>
                             </label>
                             <label>
-                                <span>Display Order</span>
+                                <span>ترتيب العرض</span>
                                 <InputNumber @bind-Value="field.DisplayOrder" class="form-control" />
                             </label>
                             <label>
-                                <span>Section</span>
+                                <span>القسم</span>
                                 <InputText @bind-Value="field.Section" class="form-control" />
                             </label>
                             <label>
-                                <span>Help Text</span>
+                                <span>نص المساعدة</span>
                                 <InputText @bind-Value="field.HelpText" class="form-control" />
                             </label>
-                            <label>
-                                <span>Required</span>
+                            <label class="checkbox-row">
                                 <InputCheckbox @bind-Value="field.IsRequired" />
+                                <span>مطلوب</span>
                             </label>
-                            <button type="button" class="btn-secondary" @onclick="() => RemoveField(field)">Remove Field</button>
+                            <div class="form-actions">
+                                <button type="button" class="btn-secondary" @onclick="() => RemoveField(field)">حذف الحقل</button>
+                            </div>
                         </div>
 
                         @if (IsSelect(field.FieldType))
                         {
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Option Key</th>
-                                        <th>Label</th>
-                                        <th>Order</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var option in field.Options)
-                                    {
+                            <div class="table-wrap">
+                                <table class="data-table">
+                                    <thead>
                                         <tr>
-                                            <td><InputText @bind-Value="option.OptionKey" class="form-control" /></td>
-                                            <td><InputText @bind-Value="option.Label" class="form-control" /></td>
-                                            <td><InputNumber @bind-Value="option.DisplayOrder" class="form-control" /></td>
-                                            <td><button type="button" class="btn-secondary" @onclick="() => field.Options.Remove(option)">Remove</button></td>
+                                            <th>مفتاح الخيار</th>
+                                            <th>التسمية</th>
+                                            <th>الترتيب</th>
+                                            <th>إجراء</th>
                                         </tr>
-                                    }
-                                </tbody>
-                            </table>
-                            <button type="button" class="btn-secondary" @onclick="() => AddOption(field)">Add Option</button>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var option in field.Options)
+                                        {
+                                            <tr>
+                                                <td><InputText @bind-Value="option.OptionKey" class="form-control" /></td>
+                                                <td><InputText @bind-Value="option.Label" class="form-control" /></td>
+                                                <td><InputNumber @bind-Value="option.DisplayOrder" class="form-control" /></td>
+                                                <td><button type="button" class="btn-secondary" @onclick="() => field.Options.Remove(option)">حذف</button></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button type="button" class="btn-secondary" @onclick="() => AddOption(field)">إضافة خيار</button>
                         }
                     </section>
                 }
-
-                <button type="button" class="btn-secondary" @onclick="AddField">Add Field</button>
-                <button type="submit" class="btn-primary">Save Draft</button>
-                <button type="button" class="btn-secondary" @onclick="ActivateAsync">Activate Draft</button>
             </EditForm>
         }
     }
@@ -124,7 +137,7 @@
     {
         if (!await IsAuthorizedAsync(PermissionNames.DocumentationTemplatesManage))
         {
-            message = "You are not authorized to manage documentation templates.";
+            message = "لا تملك صلاحية إدارة قوالب التوثيق.";
             return;
         }
 
@@ -159,7 +172,7 @@
     {
         if (!await IsAuthorizedAsync(PermissionNames.DocumentationTemplatesManage))
         {
-            message = "You are not authorized to activate documentation templates.";
+            message = "لا تملك صلاحية تفعيل قوالب التوثيق.";
             return;
         }
 
@@ -181,7 +194,7 @@
         var result = await TemplateQueries.ViewTemplateVersion(VersionId);
         if (!result.Succeeded)
         {
-            message = string.Join(" ", result.ValidationIssues.Select(issue => issue.Message));
+            message = string.Join(" ", result.ValidationIssues.Select(issue => LocalizeMessage(issue.Message)));
             return;
         }
 
@@ -209,10 +222,10 @@
         fields.Add(new FieldEditorModel
         {
             FieldKey = $"field_{fields.Count + 1}",
-            Label = "New Field",
+            Label = "حقل جديد",
             FieldType = DocumentationFieldType.Text,
             DisplayOrder = fields.Count == 0 ? 1 : fields.Max(field => field.DisplayOrder) + 1,
-            Section = "Main"
+            Section = "الرئيسية"
         });
     }
 
@@ -221,7 +234,7 @@
         field.Options.Add(new OptionEditorModel
         {
             OptionKey = $"option_{field.Options.Count + 1}",
-            Label = "New Option",
+            Label = "خيار جديد",
             DisplayOrder = field.Options.Count == 0 ? 1 : field.Options.Max(option => option.DisplayOrder) + 1
         });
     }
@@ -237,12 +250,42 @@
     private static bool IsSelect(DocumentationFieldType fieldType) =>
         fieldType is DocumentationFieldType.SingleSelect or DocumentationFieldType.MultiSelect;
 
+    private static string FieldTypeText(DocumentationFieldType fieldType) => fieldType switch
+    {
+        DocumentationFieldType.Text => "نص قصير",
+        DocumentationFieldType.MultilineText => "نص متعدد الأسطر",
+        DocumentationFieldType.Number => "رقم",
+        DocumentationFieldType.Date => "تاريخ",
+        DocumentationFieldType.Boolean => "نعم / لا",
+        DocumentationFieldType.SingleSelect => "اختيار واحد",
+        DocumentationFieldType.MultiSelect => "اختيارات متعددة",
+        _ => fieldType.ToString()
+    };
+
+    private static string VersionStatusText(DocumentationTemplateVersionStatus status) => status switch
+    {
+        DocumentationTemplateVersionStatus.Draft => "مسودة",
+        DocumentationTemplateVersionStatus.Active => "نشط",
+        DocumentationTemplateVersionStatus.Retired => "متوقف",
+        _ => status.ToString()
+    };
+
     private static string FormatResult<T>(UseCaseResult<T> result) =>
         result.Succeeded
-            ? string.Join(" ", result.Messages.DefaultIfEmpty("Saved."))
+            ? string.Join(" ", result.Messages.DefaultIfEmpty("تم الحفظ.").Select(LocalizeMessage))
             : result.ConcurrencyConflict
-                ? string.Join(" ", result.Messages)
-                : string.Join(" ", result.ValidationIssues.Select(issue => issue.Message));
+                ? string.Join(" ", result.Messages.Select(LocalizeMessage))
+                : string.Join(" ", result.ValidationIssues.Select(issue => LocalizeMessage(issue.Message)));
+
+    private static string LocalizeMessage(string message)
+    {
+        if (message.Contains("saved", StringComparison.OrdinalIgnoreCase)) return "تم حفظ المسودة.";
+        if (message.Contains("activated", StringComparison.OrdinalIgnoreCase)) return "تم تفعيل المسودة.";
+        if (message.Contains("Reload and review", StringComparison.OrdinalIgnoreCase)) return "تغيرت البيانات. أعد التحميل وراجع آخر نسخة قبل المتابعة.";
+        if (message.Contains("Only Draft", StringComparison.OrdinalIgnoreCase)) return "يمكن تحرير إصدارات المسودة فقط.";
+        if (message.Contains("not authorized", StringComparison.OrdinalIgnoreCase)) return "لا تملك الصلاحية المطلوبة.";
+        return message;
+    }
 
     private sealed class FieldEditorModel
     {
@@ -251,7 +294,7 @@
         public DocumentationFieldType FieldType { get; set; } = DocumentationFieldType.Text;
         public bool IsRequired { get; set; }
         public int DisplayOrder { get; set; } = 1;
-        public string Section { get; set; } = "Main";
+        public string Section { get; set; } = "الرئيسية";
         public string? HelpText { get; set; }
         public List<OptionEditorModel> Options { get; set; } = [];
     }
