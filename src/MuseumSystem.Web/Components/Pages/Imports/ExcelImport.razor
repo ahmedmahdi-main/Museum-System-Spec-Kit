@@ -21,9 +21,13 @@
     }
 
     <div class="form-grid">
-        <label>
-            <span>رفع ملف .xlsx</span>
-            <InputFile OnChange="OnFileSelected" />
+        <label class="span-all">
+            <span>ملف Excel (.xlsx)</span>
+            <div class="file-picker">
+                <InputFile id="excel-file-input" class="file-picker-input" OnChange="OnFileSelected" accept=".xlsx" aria-label="اختيار ملف Excel" />
+                <span class="file-picker-button">اختيار ملف</span>
+                <span class="file-picker-name">@SelectedFileName</span>
+            </div>
         </label>
         <div class="form-actions span-all">
             <button type="button" class="btn-primary" disabled="@(selectedFile is null)" @onclick="UploadAsync">رفع للمعاينة</button>
@@ -89,6 +93,7 @@
 
     private bool CanCommit => currentBatch?.Status == ImportBatchStatus.ReadyToCommit;
     private bool IsFinal => currentBatch?.Status is ImportBatchStatus.Committed or ImportBatchStatus.Cancelled;
+    private string SelectedFileName => selectedFile?.Name ?? "لم يتم اختيار ملف";
 
     private void OnFileSelected(InputFileChangeEventArgs args)
     {

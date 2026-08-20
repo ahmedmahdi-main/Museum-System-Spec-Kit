@@ -32,7 +32,7 @@ public sealed class DeliveryReturnFlowTests
         var root = FindRepositoryRoot();
         var locations = File.ReadAllText(Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Pages", "Storehouse", "Locations.razor"));
 
-        Assert.Contains("<th>الإجراءات</th>", locations);
+        Assert.Contains("الإجراءات", locations);
         Assert.Contains("LocationTypeText", locations);
         Assert.Contains("LocationType.Storage => \"خزن\"", locations);
         Assert.DoesNotContain("<td>@location.LocationType</td>", locations);

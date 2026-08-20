@@ -11,6 +11,12 @@ public sealed class CategoryUseCases(IMuseumDbContext dbContext, IAuditWriter? a
 {
     public async Task<UseCaseResult<CategoryDto>> CreateCategory(CreateCategoryRequest request, CancellationToken cancellationToken = default)
     {
+        var requestValidation = ValidateSaveRequest(request.CategoryCode, request.NameArabic);
+        if (requestValidation.Count > 0)
+        {
+            return UseCaseResult<CategoryDto>.Failure(requestValidation.ToArray());
+        }
+
         var code = ArtifactCategory.NormalizeCategoryCode(request.CategoryCode);
         if (await dbContext.ArtifactCategories.AnyAsync(c => c.CategoryCode == code, cancellationToken))
         {
@@ -30,6 +36,12 @@ public sealed class CategoryUseCases(IMuseumDbContext dbContext, IAuditWriter? a
         if (category is null)
         {
             return UseCaseResult<CategoryDto>.Failure(new ValidationIssue("Category.NotFound", "الفئة غير موجودة.", nameof(request.CategoryId)));
+        }
+
+        var requestValidation = ValidateSaveRequest(request.CategoryCode, request.NameArabic);
+        if (requestValidation.Count > 0)
+        {
+            return UseCaseResult<CategoryDto>.Failure(requestValidation.ToArray());
         }
 
         var code = ArtifactCategory.NormalizeCategoryCode(request.CategoryCode);
@@ -73,6 +85,22 @@ public sealed class CategoryUseCases(IMuseumDbContext dbContext, IAuditWriter? a
 
     private static CategoryDto ToDto(ArtifactCategory category) =>
         new(category.CategoryId, category.CategoryCode, category.NameArabic, category.Description, category.IsActive);
+
+    private static List<ValidationIssue> ValidateSaveRequest(string categoryCode, string nameArabic)
+    {
+        List<ValidationIssue> issues = [];
+        if (string.IsNullOrWhiteSpace(categoryCode))
+        {
+            issues.Add(new ValidationIssue("CategoryCode.Required", "اكتب رقم الفئة.", nameof(CreateCategoryRequest.CategoryCode)));
+        }
+
+        if (string.IsNullOrWhiteSpace(nameArabic))
+        {
+            issues.Add(new ValidationIssue("CategoryName.Required", "اكتب اسم الفئة.", nameof(CreateCategoryRequest.NameArabic)));
+        }
+
+        return issues;
+    }
 
     private Task WriteAuditAsync(string actionName, Guid categoryId, string summary, string? changeSummary, CancellationToken cancellationToken) =>
         auditWriter?.WriteAsync(new AuditWriteRequest(

@@ -1,0 +1,143 @@
+@page "/artifacts"
+@attribute [Authorize(Policy = PermissionNames.ArtifactsView)]
+@rendermode InteractiveServer
+@inject ArtifactReadUseCases ArtifactReadUseCases
+
+<PageTitle>البحث عن القطع</PageTitle>
+
+<div class="register-page">
+    <section class="page-header">
+        <div>
+            <p class="eyebrow">سجل القطع</p>
+            <h1>البحث عن القطع</h1>
+            <p>ابحث في السجل برقم المتحف أو الوصف أو رمز الفئة، ثم افتح السجل الكامل للقطعة.</p>
+        </div>
+        <div class="page-header-actions">
+            <AuthorizeView Policy="@PermissionNames.ArtifactsManage">
+                <Authorized>
+                    <a class="btn-primary" href="artifacts/create">إنشاء قطعة</a>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+    </section>
+
+    <section class="page-section">
+        <div class="section-header">
+            <div>
+                <p class="eyebrow">سجل رقمي</p>
+                <h2>نتائج البحث</h2>
+                <p>الجدول يعرض المعلومات التشغيلية الأكثر حاجة: رقم المتحف، الفئة، الحالة، والموقع أو الحيازة الحالية.</p>
+            </div>
+        </div>
+
+        <div class="section-body">
+            <div class="register-toolbar">
+                <label>
+                    <span>عبارة البحث</span>
+                    <InputText @bind-Value="query" class="form-control" placeholder="رقم المتحف أو الوصف أو رمز الفئة" />
+                </label>
+                <button class="btn-primary" @onclick="SearchAsync">بحث</button>
+                <div class="register-context" aria-live="polite">
+                    @if (hasSearched)
+                    {
+                        <span>عدد النتائج: <strong>@results.Count</strong></span>
+                    }
+                    else
+                    {
+                        <span>ابدأ البحث لعرض سجل القطع.</span>
+                    }
+                </div>
+            </div>
+
+            @if (!hasSearched)
+            {
+                <div class="empty-state">
+                    <strong>السجل بانتظار عبارة البحث.</strong>
+                    <span>اكتب رقم المتحف أو جزءاً من الوصف، ثم اضغط بحث.</span>
+                </div>
+            }
+            else if (results.Count == 0)
+            {
+                <div class="empty-state">
+                    <strong>لا توجد قطع تطابق هذه العبارة.</strong>
+                    <span>جرّب رقم المتحف كاملاً أو رمز الفئة.</span>
+                </div>
+            }
+            else
+            {
+                <div class="register-table-shell">
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>رقم المتحف</th>
+                                    <th>رمز الفئة</th>
+                                    <th>الحالة</th>
+                                    <th>الموقع / الحيازة الحالية</th>
+                                    <th class="actions-cell">الإجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var artifact in results)
+                                {
+                                    <tr>
+                                        <td><a class="ref" href="/artifacts/@artifact.ArtifactId">@artifact.MuseumNumber</a></td>
+                                        <td>@artifact.CategoryCode</td>
+                                        <td><span class="badge-status @CurrentStatusClass(artifact.CurrentStatus)">@CurrentStatusText(artifact.CurrentStatus)</span></td>
+                                        <td>@(artifact.CurrentLocationName ?? artifact.CurrentHolderName ?? "-")</td>
+                                        <td class="actions-cell"><a class="btn-secondary compact" href="/artifacts/@artifact.ArtifactId">التفاصيل</a></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+</div>
+
+@code {
+    // The home page opens this screen with ?q=. so a museum number typed there lands directly on results.
+    [SupplyParameterFromQuery(Name = "q")] public string? IncomingQuery { get; set; }
+
+    private string? query;
+    private string? appliedIncomingQuery;
+    private List<ArtifactSearchResultDto> results = [];
+    private bool hasSearched;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IncomingQuery == appliedIncomingQuery)
+        {
+            return;
+        }
+
+        appliedIncomingQuery = IncomingQuery;
+        if (!string.IsNullOrWhiteSpace(IncomingQuery))
+        {
+            query = IncomingQuery;
+            await SearchAsync();
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        hasSearched = true;
+        results = (await ArtifactReadUseCases.SearchArtifacts(query)).ToList();
+    }
+
+    private static string CurrentStatusText(ArtifactCurrentStatus status) => status switch
+    {
+        ArtifactCurrentStatus.InStorage => "داخل المخزن",
+        ArtifactCurrentStatus.OutOfStorage => "خارج المخزن",
+        _ => status.ToString()
+    };
+
+    private static string CurrentStatusClass(ArtifactCurrentStatus status) => status switch
+    {
+        ArtifactCurrentStatus.InStorage => "badge-storage",
+        ArtifactCurrentStatus.OutOfStorage => "badge-out",
+        _ => string.Empty
+    };
+}

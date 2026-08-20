@@ -5,93 +5,158 @@
 @inject DeliverArtifactsUseCase DeliverUseCase
 @inject LocationUseCases LocationUseCases
 
-<PageTitle>تسليم القطع</PageTitle>
+<PageTitle>تسليم قطعة</PageTitle>
 
-<section class="page-header">
-    <p class="eyebrow">المخزن</p>
-    <h1>تسليم القطع</h1>
-    <p>أخرج قطعة أو أكثر من المخزن إلى جهة داخلية مصرح لها. عاين القائمة قبل التسليم.</p>
-</section>
+<div class="workflow-page">
+    <section class="page-header">
+        <div>
+            <p class="eyebrow">الحركة المخزنية</p>
+            <h1>تسليم قطعة</h1>
+            <p>نقل عهدة قطعة أو مجموعة قطع من المخزن إلى جهة تشغيلية داخلية مع مراجعة الأهلية قبل اعتماد الحركة.</p>
+        </div>
+    </section>
 
-<section class="page-section">
     @if (!string.IsNullOrWhiteSpace(message))
     {
         <div class="status-message">@message</div>
     }
 
-    <EditForm Model="this" OnSubmit="PreviewAsync" FormName="preview-delivery">
-        <div class="form-grid">
-            <label>
-                <span>معرّفات القطع — معرّف واحد في كل سطر</span>
-                <InputTextArea @bind-Value="artifactIdsText" class="form-control" />
-            </label>
-            <label>
-                <span>الجهة</span>
-                <InputSelect @bind-Value="recipientType" class="form-control">
-                    <option value="@MovementRecipientType.DocumentationDivision">التوثيق</option>
-                    <option value="@MovementRecipientType.LaboratoryDivision">المختبر</option>
-                    <option value="@MovementRecipientType.Photographer">المصور</option>
-                    <option value="@MovementRecipientType.DisplayHall">قاعة العرض</option>
-                </InputSelect>
-            </label>
-            @if (recipientType == MovementRecipientType.DisplayHall)
-            {
-                <label>
-                    <span>قاعة العرض</span>
-                    <InputSelect @bind-Value="destinationLocationId" class="form-control">
-                        <option value="">اختر قاعة عرض</option>
-                        @foreach (var location in displayLocations)
-                        {
-                            <option value="@location.LocationId">@location.NameArabic</option>
-                        }
-                    </InputSelect>
-                </label>
-            }
-            else
-            {
-                <label>
-                    <span>اسم الجهة المستلمة</span>
-                    <InputText @bind-Value="recipientName" class="form-control" />
-                </label>
-            }
-            <label>
-                <span>سبب التسليم</span>
-                <InputText @bind-Value="purpose" class="form-control" />
-            </label>
-            <label>
-                <span>ملاحظة</span>
-                <InputText @bind-Value="note" class="form-control" />
-            </label>
-            <div class="form-actions span-all">
-                <button type="submit" class="btn-secondary">معاينة</button>
-                <button type="button" class="btn-primary" disabled="@(!canCommit)" @onclick="DeliverAsync">تسليم</button>
+    <section class="page-section">
+        <div class="section-header">
+            <div>
+                <p class="eyebrow">عملية حركة</p>
+                <h2>من المخزن إلى جهة الاستلام</h2>
+                <p>استخدم المعاينة لتأكيد القطع المؤهلة قبل تسجيل التسليم في السجل الرسمي.</p>
             </div>
         </div>
-    </EditForm>
+        <div class="section-body">
+            <div class="workflow-layout">
+                <EditForm Model="this" OnSubmit="PreviewAsync" FormName="preview-delivery">
+                    <div class="workflow-stack">
+                        <section class="workflow-step" aria-labelledby="delivery-artifacts-title">
+                            <header>
+                                <span>01</span>
+                                <h2 id="delivery-artifacts-title">تحديد القطع</h2>
+                            </header>
+                            <label>
+                                <span>معرفات القطع - سطر منفصل أو أي فاصل</span>
+                                <InputTextArea @bind-Value="artifactIdsText" class="form-control" />
+                            </label>
+                        </section>
 
-    @if (previewItems.Count > 0)
-    {
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>القطعة</th>
-                    <th>الحالة</th>
-                    <th>السبب</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in previewItems)
-                {
-                    <tr>
-                        <td>@(string.IsNullOrWhiteSpace(item.MuseumNumber) ? item.ArtifactId : item.MuseumNumber)</td>
-                        <td>@(item.IsEligible ? "مؤهلة" : "غير مؤهلة")</td>
-                        <td>@item.Message</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
-</section>
+                        <section class="workflow-step" aria-labelledby="delivery-destination-title">
+                            <header>
+                                <span>02</span>
+                                <h2 id="delivery-destination-title">جهة الاستلام</h2>
+                            </header>
+                            <div class="form-grid">
+                                <label>
+                                    <span>الجهة</span>
+                                    <InputSelect @bind-Value="recipientType" class="form-control">
+                                        <option value="@MovementRecipientType.DocumentationDivision">التوثيق</option>
+                                        <option value="@MovementRecipientType.LaboratoryDivision">المختبر</option>
+                                        <option value="@MovementRecipientType.Photographer">المصور</option>
+                                        <option value="@MovementRecipientType.DisplayHall">قاعة عرض</option>
+                                    </InputSelect>
+                                </label>
+                                @if (recipientType == MovementRecipientType.DisplayHall)
+                                {
+                                    <label>
+                                        <span>قاعة العرض</span>
+                                        <InputSelect @bind-Value="destinationLocationId" class="form-control">
+                                            <option value="">اختر قاعة عرض</option>
+                                            @foreach (var location in displayLocations)
+                                            {
+                                                <option value="@location.LocationId">@location.NameArabic</option>
+                                            }
+                                        </InputSelect>
+                                    </label>
+                                }
+                                else
+                                {
+                                    <label>
+                                        <span>اسم المستلم الداخلي</span>
+                                        <InputText @bind-Value="recipientName" class="form-control" />
+                                    </label>
+                                }
+                                <label>
+                                    <span>سبب التسليم</span>
+                                    <InputText @bind-Value="purpose" class="form-control" />
+                                </label>
+                                <label>
+                                    <span>ملاحظة</span>
+                                    <InputText @bind-Value="note" class="form-control" />
+                                </label>
+                            </div>
+                        </section>
+
+                        <div class="workflow-transition" aria-label="مسار الحركة">
+                            <div class="transition-node">
+                                <span>الحيازة الحالية</span>
+                                <strong>داخل المخزن</strong>
+                            </div>
+                            <div class="transition-arrow" aria-hidden="true">&larr;</div>
+                            <div class="transition-node">
+                                <span>بعد التسليم</span>
+                                <strong>خارج عهدة المخزن حسب جهة الاستلام</strong>
+                            </div>
+                        </div>
+
+                        <div class="action-bar">
+                            <span class="action-bar-note">زر التسليم يتفعل فقط بعد معاينة ناجحة لكل القطع.</span>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-secondary">معاينة</button>
+                                <button type="button" class="btn-primary" disabled="@(!canCommit)" @onclick="DeliverAsync">تسليم</button>
+                            </div>
+                        </div>
+                    </div>
+                </EditForm>
+
+                <section class="preview-panel" aria-labelledby="delivery-preview-title">
+                    <div class="section-header">
+                        <div>
+                            <p class="eyebrow">التحقق</p>
+                            <h2 id="delivery-preview-title">نتيجة المعاينة</h2>
+                            <p>تبين حالة كل قطعة قبل تنفيذ حركة التسليم.</p>
+                        </div>
+                    </div>
+
+                    @if (previewItems.Count == 0)
+                    {
+                        <div class="empty-state">
+                            <strong>لا توجد معاينة بعد.</strong>
+                            <span>أدخل معرفات القطع وحدد جهة الاستلام لعرض نتيجة الأهلية.</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>القطعة</th>
+                                        <th>الحالة</th>
+                                        <th>التفاصيل</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in previewItems)
+                                    {
+                                        <tr>
+                                            <td>@ArtifactLabel(item)</td>
+                                            <td><span class="badge-status @(item.IsEligible ? "badge-eligible" : "badge-blocked")">@(item.IsEligible ? "مؤهلة" : "غير مؤهلة")</span></td>
+                                            <td>@item.Message</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </section>
+            </div>
+        </div>
+    </section>
+</div>
 
 @code {
     private string artifactIdsText = string.Empty;
@@ -117,7 +182,7 @@
         var ids = ParseArtifactIds();
         if (ids.Count == 0)
         {
-            message = "أدخل قطعة واحدة على الأقل.";
+            message = "أدخل معرف قطعة واحد على الأقل.";
             canCommit = false;
             previewItems.Clear();
             return;
@@ -143,4 +208,8 @@
         .Where(id => id != Guid.Empty)
         .Distinct()
         .ToList();
+
+    private static string ArtifactLabel(ArtifactEligibilityDto item) => string.IsNullOrWhiteSpace(item.MuseumNumber)
+        ? item.ArtifactId.ToString()
+        : item.MuseumNumber;
 }

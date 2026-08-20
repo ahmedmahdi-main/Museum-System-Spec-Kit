@@ -23,6 +23,79 @@ public sealed class CreateArtifactUseCaseTests
         Assert.Contains(duplicate.ValidationIssues, issue => issue.Code == "CategoryCode.Duplicate");
     }
 
+
+    [Fact]
+    public async Task Create_category_rejects_blank_required_fields_without_throwing_or_persisting()
+    {
+        await using var db = CreateDbContext();
+        var useCases = new CategoryUseCases(db);
+
+        var exception = await Record.ExceptionAsync(async () =>
+            await useCases.CreateCategory(new CreateCategoryRequest("   ", "   ", null)));
+        var result = await useCases.CreateCategory(new CreateCategoryRequest("   ", "   ", null));
+
+        Assert.Null(exception);
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.ValidationIssues, issue => issue.Code == "CategoryCode.Required");
+        Assert.Contains(result.ValidationIssues, issue => issue.Code == "CategoryName.Required");
+        Assert.Equal(0, await db.ArtifactCategories.CountAsync());
+    }
+
+    [Fact]
+    public async Task Update_category_rejects_blank_required_fields_without_throwing_or_mutating()
+    {
+        await using var db = CreateDbContext();
+        var useCases = new CategoryUseCases(db);
+        var created = await useCases.CreateCategory(new CreateCategoryRequest("TXT", "نسيج", null));
+
+        var exception = await Record.ExceptionAsync(async () =>
+            await useCases.UpdateCategory(new UpdateCategoryRequest(created.Value!.CategoryId, "   ", "   ", null)));
+        var result = await useCases.UpdateCategory(new UpdateCategoryRequest(created.Value!.CategoryId, "   ", "   ", null));
+        var stored = await db.ArtifactCategories.SingleAsync();
+
+        Assert.Null(exception);
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.ValidationIssues, issue => issue.Code == "CategoryCode.Required");
+        Assert.Contains(result.ValidationIssues, issue => issue.Code == "CategoryName.Required");
+        Assert.Equal("TXT", stored.CategoryCode);
+        Assert.Equal("نسيج", stored.NameArabic);
+    }
+
+    [Fact]
+    public async Task Create_location_rejects_blank_name_without_throwing_or_persisting()
+    {
+        await using var db = CreateDbContext();
+        var useCases = new LocationUseCases(db);
+
+        var exception = await Record.ExceptionAsync(async () =>
+            await useCases.CreateLocation(new CreateLocationRequest("   ", LocationType.Storage)));
+        var result = await useCases.CreateLocation(new CreateLocationRequest("   ", LocationType.Storage));
+
+        Assert.Null(exception);
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.ValidationIssues, issue => issue.Code == "Location.NameRequired");
+        Assert.Equal(0, await db.Locations.CountAsync());
+    }
+
+    [Fact]
+    public async Task Update_location_rejects_blank_name_without_throwing_or_mutating()
+    {
+        await using var db = CreateDbContext();
+        var useCases = new LocationUseCases(db);
+        var created = await useCases.CreateLocation(new CreateLocationRequest("خزن 1", LocationType.Storage));
+
+        var exception = await Record.ExceptionAsync(async () =>
+            await useCases.UpdateLocation(new UpdateLocationRequest(created.Value!.LocationId, "   ", LocationType.DisplayHall)));
+        var result = await useCases.UpdateLocation(new UpdateLocationRequest(created.Value!.LocationId, "   ", LocationType.DisplayHall));
+        var stored = await db.Locations.SingleAsync();
+
+        Assert.Null(exception);
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.ValidationIssues, issue => issue.Code == "Location.NameRequired");
+        Assert.Equal("خزن 1", stored.NameArabic);
+        Assert.Equal(LocationType.Storage, stored.LocationType);
+    }
+
     [Fact]
     public async Task Create_artifact_sets_museum_number_from_category_code_and_item_number()
     {

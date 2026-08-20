@@ -2,12 +2,12 @@
 
 @if (Fields.Count > 0)
 {
-    @foreach (var section in OrderedSections)
-    {
-        <section class="card-panel">
-            <h3>@section</h3>
-            <div class="form-grid">
-                @foreach (var field in OrderedFields.Where(field => field.Section == section))
+   @foreach (var sectionName in OrderedSections)
+{
+    <section class="card-panel">
+        <h3>@sectionName</h3>
+        <div class="form-grid">
+            @foreach (var field in OrderedFields.Where(field => field.Section == sectionName))
                 {
                     var value = GetValue(field);
                     <label>

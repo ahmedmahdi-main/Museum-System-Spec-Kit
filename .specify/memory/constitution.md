@@ -1,6 +1,6 @@
 <!--
 Sync Impact Report
-Version change: 1.0.0 -> 2.0.0
+Version change: 2.0.0 -> 2.1.0
 Modified principles:
 - I. Collection Data Integrity -> I. Artifact-Centered Digital Identity
 - II. Role-Aware Museum Workflows -> II. Single Source of Truth
@@ -22,6 +22,7 @@ Added sections:
 - Architectural Constraints
 - Data Governance
 - Delivery and Quality Gates
+- Frontend Design Authority
 Removed sections:
 - Domain Constraints
 - Development Workflow
@@ -158,4 +159,10 @@ Follow-up TODOs:
 المتأثرة، وأي أعمال متابعة مطلوبة. يجب أن تتحقق مراجعات المواصفات والخطط والمهام
 والتنفيذ من الالتزام بالدستور قبل اعتماد العمل.
 
-**Version**: 2.0.0 | **Ratified**: 2026-08-09 | **Last Amended**: 2026-08-09
+## Frontend Design Authority
+
+Before any frontend implementation, agents and developers MUST read and follow the installed `frontend-design` skill and `docs/design-system.md`. The Museum Design System is the project-specific visual authority for frontend work.
+
+Existing Museum Design System tokens and shared UI primitives MUST be reused. New frontend work MUST NOT introduce a feature-level visual language, duplicate button/card/table/form systems, arbitrary palettes, unrelated typography, or page-specific styling that bypasses the shared design system. When a missing UI primitive is genuinely needed, define it centrally first, document its intended use, and then compose feature screens from it.
+
+**Version**: 2.1.0 | **Ratified**: 2026-08-09 | **Last Amended**: 2026-08-17

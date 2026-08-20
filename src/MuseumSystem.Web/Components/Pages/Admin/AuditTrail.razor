@@ -33,13 +33,49 @@
         <tbody>
             @foreach (var entry in entries)
             {
+                var actionDisplay = AuditDisplayText.Action(entry.ActionName);
+                var moduleDisplay = AuditDisplayText.Module(entry.ModuleName);
+                var entityDisplay = AuditDisplayText.Entity(entry.EntityName);
+                var summaryDisplay = AuditDisplayText.Summary(entry.Summary);
+                var changeDisplay = AuditDisplayText.Summary(entry.ChangeSummary);
+
                 <tr>
                     <td>@entry.OccurredAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
-                    <td>@entry.ActionName</td>
-                    <td>@entry.ModuleName</td>
-                    <td>@entry.EntityName</td>
-                    <td>@entry.Summary</td>
-                    <td>@(entry.ChangeSummary ?? "-")</td>
+                    <td>
+                        <span class="audit-primary">@actionDisplay</span>
+                        @if (AuditDisplayText.HasDisplayValue(entry.ActionName, actionDisplay))
+                        {
+                            <code class="audit-code">@entry.ActionName</code>
+                        }
+                    </td>
+                    <td>
+                        <span class="audit-primary">@moduleDisplay</span>
+                        @if (AuditDisplayText.HasDisplayValue(entry.ModuleName, moduleDisplay))
+                        {
+                            <code class="audit-code">@entry.ModuleName</code>
+                        }
+                    </td>
+                    <td>
+                        <span class="audit-primary">@entityDisplay</span>
+                        @if (AuditDisplayText.HasDisplayValue(entry.EntityName, entityDisplay))
+                        {
+                            <code class="audit-code">@entry.EntityName</code>
+                        }
+                    </td>
+                    <td>
+                        <span class="audit-primary">@summaryDisplay</span>
+                        @if (AuditDisplayText.HasDisplayValue(entry.Summary, summaryDisplay))
+                        {
+                            <span class="audit-secondary">@entry.Summary</span>
+                        }
+                    </td>
+                    <td>
+                        <span class="audit-primary">@changeDisplay</span>
+                        @if (AuditDisplayText.HasDisplayValue(entry.ChangeSummary, changeDisplay))
+                        {
+                            <span class="audit-secondary">@entry.ChangeSummary</span>
+                        }
+                    </td>
                 </tr>
             }
         </tbody>

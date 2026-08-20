@@ -10,20 +10,26 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - نظام إدارة المتحف العراقي</title>
+    <title>@ViewData["Title"] - نظام مخزن المتحف</title>
     <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.rtl.min.css" />
     <link rel="stylesheet" href="/fonts/fonts.css" />
     <link rel="stylesheet" href="/app.css" />
 </head>
 <body>
-    <main class="auth-page">
-        <section class="auth-card">
+    <main class="auth-page auth-page-login">
+        <section class="auth-context" aria-labelledby="auth-system-title">
+            <p class="page-kicker">نظام مخزن المتحف</p>
+            <h1 id="auth-system-title">دخول موظفي السجل والمخزن</h1>
+            <p>واجهة تشغيلية لإدارة أرقام المتحف، مواقع الخزن، الحيازة، حركة القطع، والتوثيق المؤسسي.</p>
+        </section>
+
+        <section class="auth-card" aria-labelledby="login-title">
             <div class="auth-brand">
-                <strong>نظام إدارة المتحف العراقي</strong>
-                <span>دخول الموظفين المخولين</span>
+                <strong>نظام مخزن المتحف</strong>
+                <span>دخول مصرح للموظفين</span>
             </div>
-            <h1>تسجيل الدخول</h1>
-            <p class="muted">استخدم اسم المستخدم وكلمة المرور الصادرين لك من إدارة النظام.</p>
+            <h1 id="login-title">تسجيل الدخول</h1>
+            <p class="muted">استخدم حسابك للوصول إلى وظائف السجل والمخزن حسب الصلاحيات الممنوحة لك.</p>
 
             <form method="post" asp-route-returnUrl="@Model.ReturnUrl">
                 @Html.AntiForgeryToken()
@@ -41,7 +47,10 @@
                     <span asp-validation-for="Input.Password" class="text-danger"></span>
                 </label>
 
-                <button type="submit" class="btn-primary">تسجيل الدخول</button>
+                <div class="action-bar">
+                    <span class="action-bar-note">الجلسة مرتبطة بصلاحياتك المؤسسية.</span>
+                    <button type="submit" class="btn-primary">تسجيل الدخول</button>
+                </div>
             </form>
         </section>
     </main>

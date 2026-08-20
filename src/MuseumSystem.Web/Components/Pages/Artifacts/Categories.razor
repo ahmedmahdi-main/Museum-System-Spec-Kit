@@ -1,0 +1,159 @@
+@page "/artifacts/categories"
+@attribute [Authorize(Policy = PermissionNames.ArtifactsManage)]
+@rendermode InteractiveServer
+@inject CategoryUseCases CategoryUseCases
+
+<PageTitle>الفئات</PageTitle>
+
+<div class="management-page">
+    <section class="page-header">
+        <div>
+            <p class="eyebrow">سجل القطع</p>
+            <h1>إدارة الفئات</h1>
+            <p>تنظم الفئات طريقة توليد أرقام المتحف وتصنيف القطع داخل السجل.</p>
+        </div>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="status-message">@message</div>
+    }
+
+    <div class="management-layout">
+        <section class="page-section">
+            <div class="section-header">
+                <div>
+                    <p class="eyebrow">إضافة / تعديل</p>
+                    <h2>@(editingCategoryId is null ? "فئة جديدة" : "تعديل فئة")</h2>
+                    <p>رمز الفئة يستخدم داخل رقم المتحف، لذلك يجب أن يكون واضحاً وثابتاً.</p>
+                </div>
+            </div>
+            <div class="section-body">
+                <EditForm Model="this" OnSubmit="SaveCategoryAsync" FormName="save-category">
+                    <div class="form-section">
+                        <div class="form-grid">
+                            <label>
+                                <span>رمز الفئة</span>
+                                <InputText @bind-Value="categoryCode" class="form-control" />
+                            </label>
+                            <label>
+                                <span>اسم الفئة</span>
+                                <InputText @bind-Value="nameArabic" class="form-control" />
+                            </label>
+                            <label class="span-all">
+                                <span>الوصف</span>
+                                <InputText @bind-Value="description" class="form-control" />
+                            </label>
+                        </div>
+                        <div class="action-bar">
+                            <span class="action-bar-note">الإيقاف يمنع الاستخدام الجديد ولا يحذف السجلات السابقة.</span>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">@(editingCategoryId is null ? "إضافة فئة" : "حفظ التعديل")</button>
+                                @if (editingCategoryId is not null)
+                                {
+                                    <button type="button" class="btn-secondary" @onclick="CancelEdit">إلغاء</button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </EditForm>
+            </div>
+        </section>
+
+        <section class="page-section management-register">
+            <div class="section-header">
+                <div>
+                    <p class="eyebrow">السجل</p>
+                    <h2>الفئات الحالية</h2>
+                    <p>عدد الفئات: @categories.Count</p>
+                </div>
+            </div>
+            <div class="section-body">
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>رمز الفئة</th>
+                                <th>الفئة</th>
+                                <th>الحالة</th>
+                                <th class="actions-cell">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var category in categories)
+                            {
+                                <tr>
+                                    <td><span class="ref">@category.CategoryCode</span></td>
+                                    <td>@category.NameArabic</td>
+                                    <td><span class="badge-status @(category.IsActive ? "badge-active" : "badge-retired")">@(category.IsActive ? "نشطة" : "متوقفة")</span></td>
+                                    <td class="actions-cell">
+                                        <div class="inline-actions">
+                                            <button class="btn-secondary" @onclick="() => EditCategory(category)">تعديل</button>
+                                            @if (category.IsActive)
+                                            {
+                                                <button class="btn-secondary" @onclick="() => DisableCategoryAsync(category.CategoryId)">إيقاف</button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+@code {
+    private List<CategoryDto> categories = [];
+    private string categoryCode = string.Empty;
+    private string nameArabic = string.Empty;
+    private string? description;
+    private Guid? editingCategoryId;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task SaveCategoryAsync()
+    {
+        if (editingCategoryId is null)
+        {
+            var result = await CategoryUseCases.CreateCategory(new CreateCategoryRequest(categoryCode, nameArabic, description));
+            message = result.Succeeded ? "تمت إضافة الفئة." : string.Join(" ", result.ValidationIssues.Select(i => i.Message));
+            if (result.Succeeded) CancelEdit();
+        }
+        else
+        {
+            var result = await CategoryUseCases.UpdateCategory(new UpdateCategoryRequest(editingCategoryId.Value, categoryCode, nameArabic, description));
+            message = result.Succeeded ? "تم حفظ تعديل الفئة." : string.Join(" ", result.ValidationIssues.Select(i => i.Message));
+            if (result.Succeeded) CancelEdit();
+        }
+        await ReloadAsync();
+    }
+
+    private void EditCategory(CategoryDto category)
+    {
+        editingCategoryId = category.CategoryId;
+        categoryCode = category.CategoryCode;
+        nameArabic = category.NameArabic;
+        description = category.Description;
+    }
+
+    private void CancelEdit()
+    {
+        editingCategoryId = null;
+        categoryCode = string.Empty;
+        nameArabic = string.Empty;
+        description = null;
+    }
+
+    private async Task DisableCategoryAsync(Guid categoryId)
+    {
+        var result = await CategoryUseCases.DisableCategoryForNewUse(categoryId);
+        message = result.Succeeded ? "تم إيقاف الفئة." : string.Join(" ", result.ValidationIssues.Select(i => i.Message));
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync() => categories = (await CategoryUseCases.ListCategories()).ToList();
+}

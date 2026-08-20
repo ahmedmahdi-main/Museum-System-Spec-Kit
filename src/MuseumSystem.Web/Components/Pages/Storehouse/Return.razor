@@ -5,70 +5,135 @@
 @inject ReturnArtifactsUseCase ReturnUseCase
 @inject LocationUseCases LocationUseCases
 
-<PageTitle>استلام القطع</PageTitle>
+<PageTitle>استرجاع قطعة</PageTitle>
 
-<section class="page-header">
-    <p class="eyebrow">المخزن</p>
-    <h1>استلام القطع</h1>
-    <p>أعد القطع إلى موقع خزن معتمد. عاين القائمة قبل تسجيل الاستلام.</p>
-</section>
+<div class="workflow-page">
+    <section class="page-header">
+        <div>
+            <p class="eyebrow">الحركة المخزنية</p>
+            <h1>استرجاع قطعة</h1>
+            <p>إعادة القطع المسلمة إلى عهدة المخزن مع تحديد موقع الإرجاع وتثبيت الحركة بعد المعاينة.</p>
+        </div>
+    </section>
 
-<section class="page-section">
     @if (!string.IsNullOrWhiteSpace(message))
     {
         <div class="status-message">@message</div>
     }
 
-    <EditForm Model="this" OnSubmit="PreviewAsync" FormName="preview-return">
-        <div class="form-grid">
-            <label>
-                <span>معرّفات القطع — معرّف واحد في كل سطر</span>
-                <InputTextArea @bind-Value="artifactIdsText" class="form-control" />
-            </label>
-            <label>
-                <span>موقع خزن الاستلام</span>
-                <InputSelect @bind-Value="returnLocationId" class="form-control">
-                    <option value="">اختر موقع خزن</option>
-                    @foreach (var location in storageLocations)
-                    {
-                        <option value="@location.LocationId">@location.NameArabic</option>
-                    }
-                </InputSelect>
-            </label>
-            <label>
-                <span>ملاحظة</span>
-                <InputText @bind-Value="note" class="form-control" />
-            </label>
-            <div class="form-actions span-all">
-                <button type="submit" class="btn-secondary">معاينة</button>
-                <button type="button" class="btn-primary" disabled="@(!canCommit)" @onclick="ReturnAsync">استلام</button>
+    <section class="page-section">
+        <div class="section-header">
+            <div>
+                <p class="eyebrow">عملية حركة</p>
+                <h2>من خارج عهدة المخزن إلى المخزن</h2>
+                <p>تمنع المعاينة تسجيل إرجاع غير صالح وتوضح سبب رفض أي قطعة قبل الاعتماد.</p>
             </div>
         </div>
-    </EditForm>
+        <div class="section-body">
+            <div class="workflow-layout">
+                <EditForm Model="this" OnSubmit="PreviewAsync" FormName="preview-return">
+                    <div class="workflow-stack">
+                        <section class="workflow-step" aria-labelledby="return-artifacts-title">
+                            <header>
+                                <span>01</span>
+                                <h2 id="return-artifacts-title">تحديد القطع</h2>
+                            </header>
+                            <label>
+                                <span>معرفات القطع - سطر منفصل أو أي فاصل</span>
+                                <InputTextArea @bind-Value="artifactIdsText" class="form-control" />
+                            </label>
+                        </section>
 
-    @if (previewItems.Count > 0)
-    {
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>القطعة</th>
-                    <th>الحالة</th>
-                    <th>السبب</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in previewItems)
-                {
-                    <tr>
-                        <td>@(string.IsNullOrWhiteSpace(item.MuseumNumber) ? item.ArtifactId : item.MuseumNumber)</td>
-                        <td>@(item.IsEligible ? "مؤهلة" : "غير مؤهلة")</td>
-                        <td>@item.Message</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
-</section>
+                        <section class="workflow-step" aria-labelledby="return-location-title">
+                            <header>
+                                <span>02</span>
+                                <h2 id="return-location-title">موقع الإرجاع</h2>
+                            </header>
+                            <div class="form-grid">
+                                <label>
+                                    <span>موقع داخل المخزن</span>
+                                    <InputSelect @bind-Value="returnLocationId" class="form-control">
+                                        <option value="">اختر موقع مخزن</option>
+                                        @foreach (var location in storageLocations)
+                                        {
+                                            <option value="@location.LocationId">@location.NameArabic</option>
+                                        }
+                                    </InputSelect>
+                                </label>
+                                <label>
+                                    <span>ملاحظة</span>
+                                    <InputText @bind-Value="note" class="form-control" />
+                                </label>
+                            </div>
+                        </section>
+
+                        <div class="workflow-transition" aria-label="مسار الحركة">
+                            <div class="transition-node">
+                                <span>الحيازة الحالية</span>
+                                <strong>خارج المخزن</strong>
+                            </div>
+                            <div class="transition-arrow" aria-hidden="true">&larr;</div>
+                            <div class="transition-node">
+                                <span>بعد الاسترجاع</span>
+                                <strong>داخل المخزن في موقع محدد</strong>
+                            </div>
+                        </div>
+
+                        <div class="action-bar">
+                            <span class="action-bar-note">لا يمكن اعتماد الاسترجاع قبل اختيار موقع صالح ونجاح المعاينة.</span>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-secondary">معاينة</button>
+                                <button type="button" class="btn-primary" disabled="@(!canCommit)" @onclick="ReturnAsync">استرجاع</button>
+                            </div>
+                        </div>
+                    </div>
+                </EditForm>
+
+                <section class="preview-panel" aria-labelledby="return-preview-title">
+                    <div class="section-header">
+                        <div>
+                            <p class="eyebrow">التحقق</p>
+                            <h2 id="return-preview-title">نتيجة المعاينة</h2>
+                            <p>تبين أهلية كل قطعة للعودة إلى المخزن قبل تسجيل الحركة.</p>
+                        </div>
+                    </div>
+
+                    @if (previewItems.Count == 0)
+                    {
+                        <div class="empty-state">
+                            <strong>لا توجد معاينة بعد.</strong>
+                            <span>أدخل معرفات القطع واختر موقع الإرجاع لعرض النتيجة.</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>القطعة</th>
+                                        <th>الحالة</th>
+                                        <th>السبب</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in previewItems)
+                                    {
+                                        <tr>
+                                            <td>@ArtifactLabel(item)</td>
+                                            <td><span class="badge-status @(item.IsEligible ? "badge-eligible" : "badge-blocked")">@(item.IsEligible ? "مؤهلة" : "غير مؤهلة")</span></td>
+                                            <td>@item.Message</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </section>
+            </div>
+        </div>
+    </section>
+</div>
 
 @code {
     private string artifactIdsText = string.Empty;
@@ -91,7 +156,7 @@
         var ids = ParseArtifactIds();
         if (ids.Count == 0)
         {
-            message = "أدخل قطعة واحدة على الأقل.";
+            message = "أدخل معرف قطعة واحد على الأقل.";
             canCommit = false;
             previewItems.Clear();
             return;
@@ -99,7 +164,7 @@
 
         if (returnLocationId == Guid.Empty)
         {
-            message = "اختر موقع خزن صالح.";
+            message = "اختر موقع إرجاع صالح.";
             canCommit = false;
             previewItems.Clear();
             return;
@@ -114,7 +179,7 @@
     private async Task ReturnAsync()
     {
         var result = await ReturnUseCase.ReturnArtifacts(new ReturnArtifactsRequest(ParseArtifactIds(), returnLocationId, note));
-        message = result.Succeeded ? "تم الاستلام." : result.ConcurrencyConflict ? string.Join(" ", result.Messages) : string.Join(" ", result.ValidationIssues.Select(i => i.Message));
+        message = result.Succeeded ? "تم الاسترجاع." : result.ConcurrencyConflict ? string.Join(" ", result.Messages) : string.Join(" ", result.ValidationIssues.Select(i => i.Message));
         canCommit = false;
         await PreviewAsync();
     }
@@ -125,4 +190,8 @@
         .Where(id => id != Guid.Empty)
         .Distinct()
         .ToList();
+
+    private static string ArtifactLabel(ArtifactEligibilityDto item) => string.IsNullOrWhiteSpace(item.MuseumNumber)
+        ? item.ArtifactId.ToString()
+        : item.MuseumNumber;
 }

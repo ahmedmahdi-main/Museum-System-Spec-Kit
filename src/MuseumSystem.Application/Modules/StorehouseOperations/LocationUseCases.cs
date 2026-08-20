@@ -11,6 +11,12 @@ public sealed class LocationUseCases(IMuseumDbContext dbContext, IAuditWriter? a
 {
     public async Task<UseCaseResult<LocationDto>> CreateLocation(CreateLocationRequest request, CancellationToken cancellationToken = default)
     {
+        var requestValidation = ValidateSaveRequest(request.NameArabic);
+        if (requestValidation.Count > 0)
+        {
+            return UseCaseResult<LocationDto>.Failure(requestValidation.ToArray());
+        }
+
         var location = Location.Create(request.NameArabic, request.LocationType, request.ParentLocationId);
         dbContext.Locations.Add(location);
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -24,6 +30,12 @@ public sealed class LocationUseCases(IMuseumDbContext dbContext, IAuditWriter? a
         if (location is null)
         {
             return UseCaseResult<LocationDto>.Failure(new ValidationIssue("Location.NotFound", "الموقع غير موجود.", nameof(request.LocationId)));
+        }
+
+        var requestValidation = ValidateSaveRequest(request.NameArabic);
+        if (requestValidation.Count > 0)
+        {
+            return UseCaseResult<LocationDto>.Failure(requestValidation.ToArray());
         }
 
         location.Update(request.NameArabic, request.LocationType, request.ParentLocationId);
@@ -63,6 +75,17 @@ public sealed class LocationUseCases(IMuseumDbContext dbContext, IAuditWriter? a
 
     private static LocationDto ToDto(Location location) =>
         new(location.LocationId, location.NameArabic, location.LocationType, location.ParentLocationId, location.IsActive);
+
+    private static List<ValidationIssue> ValidateSaveRequest(string nameArabic)
+    {
+        List<ValidationIssue> issues = [];
+        if (string.IsNullOrWhiteSpace(nameArabic))
+        {
+            issues.Add(new ValidationIssue("Location.NameRequired", "اكتب اسم الموقع.", nameof(CreateLocationRequest.NameArabic)));
+        }
+
+        return issues;
+    }
 
     private Task WriteAuditAsync(string actionName, Guid locationId, string summary, string? changeSummary, CancellationToken cancellationToken) =>
         auditWriter?.WriteAsync(new AuditWriteRequest(

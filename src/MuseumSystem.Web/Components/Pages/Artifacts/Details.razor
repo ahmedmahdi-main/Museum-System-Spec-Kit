@@ -1,0 +1,198 @@
+@page "/artifacts/{ArtifactId:guid}"
+@attribute [Authorize(Policy = PermissionNames.ArtifactsView)]
+@rendermode InteractiveServer
+@inject ArtifactReadUseCases ArtifactReadUseCases
+@inject ArtifactWriteUseCases ArtifactWriteUseCases
+@inject MovementHistoryUseCase MovementHistoryUseCase
+
+<PageTitle>تفاصيل القطعة</PageTitle>
+
+@if (artifact is null)
+{
+    <div class="detail-page">
+        <section class="page-header">
+            <div>
+                <p class="eyebrow">سجل القطع</p>
+                <h1>القطعة غير موجودة</h1>
+                <p>لم نعثر على سجل القطعة. قد تكون محذوفة أو أن الرابط غير صحيح.</p>
+            </div>
+            <div class="page-header-actions">
+                <a class="btn-secondary" href="/artifacts">العودة إلى البحث</a>
+            </div>
+        </section>
+    </div>
+}
+else
+{
+    <div class="detail-page">
+        <section class="page-header">
+            <div>
+                <p class="eyebrow">سجل القطع</p>
+                <h1><span class="ref ref-lead">@artifact.MuseumNumber</span></h1>
+                <p>@artifact.BasicDescription</p>
+            </div>
+            <div class="page-header-actions">
+                <a class="btn-secondary" href="/artifacts">العودة إلى البحث</a>
+            </div>
+        </section>
+
+        <div class="artifact-state" aria-label="الحالة التشغيلية الحالية للقطعة">
+            <div class="artifact-state-item critical">
+                <span>الحالة الحالية</span>
+                <strong><span class="badge-status @CurrentStatusClass(artifact.CurrentStatus)">@CurrentStatusText(artifact.CurrentStatus)</span></strong>
+            </div>
+            <div class="artifact-state-item critical">
+                <span>الموقع الحالي</span>
+                <strong>@(artifact.CurrentLocationName ?? "لا يوجد موقع محدد")</strong>
+            </div>
+            <div class="artifact-state-item">
+                <span>الحيازة الحالية</span>
+                <strong>@CurrentHolderText</strong>
+            </div>
+        </div>
+
+        <div class="detail-layout">
+            <main class="detail-main">
+                <section class="page-section">
+                    <div class="section-header">
+                        <div>
+                            <p class="eyebrow">الحركة</p>
+                            <h2>سجل الحركة</h2>
+                            <p>تسلسل التسليم والاسترجاع المرتبط بهذه القطعة.</p>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        @if (movementHistory.Count == 0)
+                        {
+                            <div class="empty-state">
+                                <strong>لا توجد حركات مسجلة بعد.</strong>
+                                <span>ستظهر حركات التسليم والاسترجاع هنا عند تسجيلها.</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-wrap">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>النوع</th>
+                                            <th>الحيازة</th>
+                                            <th>موقع الإرجاع</th>
+                                            <th>الوقت</th>
+                                            <th>الملاحظة</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var movement in movementHistory)
+                                        {
+                                            <tr>
+                                                <td>@MovementTypeText(movement.MovementType)</td>
+                                                <td>@MovementHolderText(movement)</td>
+                                                <td>@(movement.ReturnLocationName ?? "-")</td>
+                                                <td>@movement.OccurredAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                                                <td>@(movement.Note ?? movement.Purpose ?? "-")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </section>
+            </main>
+
+            <aside class="detail-aside">
+                <section class="page-section">
+                    <div class="section-header">
+                        <div>
+                            <p class="eyebrow">التعريف</p>
+                            <h2>بيانات القطعة</h2>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <dl class="details-list">
+                            <dt>رمز الفئة</dt><dd>@artifact.CategoryCode</dd>
+                            <dt>رقم القطعة داخل الفئة</dt><dd>@artifact.ItemNumber</dd>
+                            <dt>الحالة</dt><dd>@CurrentStatusText(artifact.CurrentStatus)</dd>
+                            <dt>الموقع الحالي</dt><dd>@(artifact.CurrentLocationName ?? "لا يوجد موقع محدد")</dd>
+                            <dt>الحيازة الحالية</dt><dd>@CurrentHolderText</dd>
+                            <dt>معرف النظام</dt><dd><code>@artifact.ArtifactId</code></dd>
+                        </dl>
+                    </div>
+                </section>
+
+                <section class="page-section">
+                    <div class="section-header">
+                        <div>
+                            <p class="eyebrow">الوصف</p>
+                            <h2>تحديث البيانات الأساسية</h2>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        @if (!string.IsNullOrWhiteSpace(message))
+                        {
+                            <div class="status-message">@message</div>
+                        }
+
+                        <EditForm Model="this" OnSubmit="UpdateAsync" FormName="update-artifact-basic-info">
+                            <label>
+                                <span>الوصف الأساسي</span>
+                                <InputTextArea @bind-Value="basicDescription" class="form-control" />
+                            </label>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">حفظ التعديل</button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </section>
+            </aside>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid ArtifactId { get; set; }
+
+    private ArtifactDetailsDto? artifact;
+    private string basicDescription = string.Empty;
+    private string? message;
+    private List<MovementHistoryDto> movementHistory = [];
+
+    private string CurrentHolderText => string.IsNullOrWhiteSpace(artifact?.CurrentHolderName)
+        ? "لا توجد حيازة خارجية"
+        : $"{artifact.CurrentHolderType}: {artifact.CurrentHolderName}";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        artifact = await ArtifactReadUseCases.GetArtifactDetails(ArtifactId);
+        basicDescription = artifact?.BasicDescription ?? string.Empty;
+        movementHistory = (await MovementHistoryUseCase.GetMovementHistory(ArtifactId)).ToList();
+    }
+
+    private async Task UpdateAsync()
+    {
+        var result = await ArtifactWriteUseCases.UpdateArtifactBasicInfo(new UpdateArtifactBasicInfoRequest(ArtifactId, basicDescription));
+        message = result.Succeeded ? "تم حفظ التعديل." : string.Join(" ", result.ValidationIssues.Select(i => i.Message));
+        artifact = result.Value ?? artifact;
+    }
+
+    private static string CurrentStatusText(ArtifactCurrentStatus status) => status switch
+    {
+        ArtifactCurrentStatus.InStorage => "داخل المخزن",
+        ArtifactCurrentStatus.OutOfStorage => "خارج المخزن",
+        _ => status.ToString()
+    };
+
+    private static string CurrentStatusClass(ArtifactCurrentStatus status) => status switch
+    {
+        ArtifactCurrentStatus.InStorage => "badge-storage",
+        ArtifactCurrentStatus.OutOfStorage => "badge-out",
+        _ => string.Empty
+    };
+
+    private static string MovementTypeText(MovementType movementType) => movementType == MovementType.Delivery ? "تسليم" : "استرجاع";
+
+    private static string MovementHolderText(MovementHistoryDto movement) => movement.MovementType == MovementType.Return
+        ? "المخزن"
+        : $"{movement.RecipientType}: {movement.RecipientName}";
+}

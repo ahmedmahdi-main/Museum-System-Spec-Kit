@@ -5,73 +5,104 @@
 
 <PageTitle>المواقع</PageTitle>
 
-<section class="page-header">
-    <p class="eyebrow">المخزن</p>
-    <h1>مواقع الخزن والعرض</h1>
-    <p>أضف مواقع الخزن وقاعات العرض التي تُنقل إليها القطع، أو عدّل أسماءها.</p>
-</section>
+<div class="management-page">
+    <section class="page-header">
+        <div>
+            <p class="eyebrow">المخزن</p>
+            <h1>مواقع الخزن والعرض</h1>
+            <p>إدارة المواقع التي تحدد أين توجد القطعة فعلياً عند الخزن أو العرض.</p>
+        </div>
+    </section>
 
-<section class="page-section">
     @if (!string.IsNullOrWhiteSpace(message))
     {
         <div class="status-message">@message</div>
     }
 
-    <EditForm Model="this" OnSubmit="SaveLocationAsync" FormName="save-location">
-        <div class="form-grid">
-            <label>
-                <span>اسم الموقع</span>
-                <InputText @bind-Value="nameArabic" class="form-control" />
-            </label>
-            <label>
-                <span>نوع الموقع</span>
-                <InputSelect @bind-Value="locationType" class="form-control">
-                    <option value="@LocationType.Storage">خزن</option>
-                    <option value="@LocationType.DisplayHall">قاعة عرض</option>
-                </InputSelect>
-            </label>
-            <div class="form-actions">
-                <button type="submit" class="btn-primary">@(editingLocationId is null ? "إضافة موقع" : "حفظ التعديل")</button>
-                @if (editingLocationId is not null)
-                {
-                    <button type="button" class="btn-secondary" @onclick="CancelEdit">إلغاء</button>
-                }
+    <div class="management-layout">
+        <section class="page-section">
+            <div class="section-header">
+                <div>
+                    <p class="eyebrow">إضافة / تعديل</p>
+                    <h2>@(editingLocationId is null ? "موقع جديد" : "تعديل موقع")</h2>
+                    <p>اختر نوع الموقع بدقة لأنه يؤثر في عمليات التسليم والاستلام.</p>
+                </div>
             </div>
-        </div>
-    </EditForm>
-
-    <div class="table-wrap">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>الاسم</th>
-                    <th>النوع</th>
-                    <th>الحالة</th>
-                    <th>الإجراءات</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var location in locations)
-                {
-                    <tr>
-                        <td>@location.NameArabic</td>
-                        <td>@LocationTypeText(location.LocationType)</td>
-                        <td>@(location.IsActive ? "فعال" : "متوقف")</td>
-                        <td>
-                            <div class="inline-actions">
-                                <button class="btn-secondary" @onclick="() => EditLocation(location)">تعديل</button>
-                                @if (location.IsActive)
+            <div class="section-body">
+                <EditForm Model="this" OnSubmit="SaveLocationAsync" FormName="save-location">
+                    <div class="form-section">
+                        <div class="form-grid">
+                            <label>
+                                <span>اسم الموقع</span>
+                                <InputText @bind-Value="nameArabic" class="form-control" />
+                            </label>
+                            <label>
+                                <span>نوع الموقع</span>
+                                <InputSelect @bind-Value="locationType" class="form-control">
+                                    <option value="@LocationType.Storage">خزن</option>
+                                    <option value="@LocationType.DisplayHall">قاعة عرض</option>
+                                </InputSelect>
+                            </label>
+                        </div>
+                        <div class="action-bar">
+                            <span class="action-bar-note">إيقاف الموقع يمنع اختياره في العمليات الجديدة فقط.</span>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">@(editingLocationId is null ? "إضافة موقع" : "حفظ التعديل")</button>
+                                @if (editingLocationId is not null)
                                 {
-                                    <button class="btn-secondary" @onclick="() => DisableLocationAsync(location.LocationId)">إيقاف</button>
+                                    <button type="button" class="btn-secondary" @onclick="CancelEdit">إلغاء</button>
                                 }
                             </div>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                        </div>
+                    </div>
+                </EditForm>
+            </div>
+        </section>
+
+        <section class="page-section management-register">
+            <div class="section-header">
+                <div>
+                    <p class="eyebrow">سجل المواقع</p>
+                    <h2>المواقع المعتمدة</h2>
+                    <p>عدد المواقع: @locations.Count</p>
+                </div>
+            </div>
+            <div class="section-body">
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>الموقع</th>
+                                <th>النوع</th>
+                                <th>الحالة</th>
+                                <th class="actions-cell">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var location in locations)
+                            {
+                                <tr>
+                                    <td>@location.NameArabic</td>
+                                    <td>@LocationTypeText(location.LocationType)</td>
+                                    <td><span class="badge-status @(location.IsActive ? "badge-active" : "badge-retired")">@(location.IsActive ? "نشط" : "متوقف")</span></td>
+                                    <td class="actions-cell">
+                                        <div class="inline-actions">
+                                            <button class="btn-secondary" @onclick="() => EditLocation(location)">تعديل</button>
+                                            @if (location.IsActive)
+                                            {
+                                                <button class="btn-secondary" @onclick="() => DisableLocationAsync(location.LocationId)">إيقاف</button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
     </div>
-</section>
+</div>
 
 @code {
     private List<LocationDto> locations = [];

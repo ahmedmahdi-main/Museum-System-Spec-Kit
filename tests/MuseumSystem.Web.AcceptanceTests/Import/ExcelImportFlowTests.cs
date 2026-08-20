@@ -26,6 +26,23 @@ public sealed class ExcelImportFlowTests
         Assert.Contains("CommitImportBatchUseCase", page);
     }
 
+
+    [Fact]
+    public void Excel_import_uses_accessible_arabic_file_picker_presentation()
+    {
+        var root = FindRepositoryRoot();
+        var page = File.ReadAllText(Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Pages", "Imports", "ExcelImport.razor"));
+
+        Assert.Contains("file-picker", page);
+        Assert.Contains("file-picker-input", page);
+        Assert.Contains("accept=\".xlsx\"", page);
+        Assert.Contains("aria-label=\"اختيار ملف Excel\"", page);
+        Assert.Contains("اختيار ملف", page);
+        Assert.Contains("لم يتم اختيار ملف", page);
+        Assert.Contains("SelectedFileName", page);
+        Assert.DoesNotContain("<InputFile OnChange=\"OnFileSelected\" />", page);
+    }
+
     private static DirectoryInfo FindRepositoryRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);

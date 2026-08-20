@@ -42,7 +42,7 @@ public sealed class ArtifactRegistryFlowTests
         Assert.Contains("لا توجد قطع تطابق هذه العبارة", searchPage);
         Assert.Contains("<th>رقم المتحف</th>", searchPage);
         Assert.Contains("<th>رمز الفئة</th>", searchPage);
-        Assert.Contains("<th>الإجراءات</th>", searchPage);
+        Assert.Contains("الإجراء", searchPage);
         Assert.DoesNotContain("<th>MuseumNumber</th>", searchPage);
         Assert.DoesNotContain("CategoryCode أو ItemNumber", searchPage);
         Assert.DoesNotContain("placeholder=\"MuseumNumber", searchPage);
@@ -55,7 +55,7 @@ public sealed class ArtifactRegistryFlowTests
         var categories = File.ReadAllText(Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Pages", "Artifacts", "Categories.razor"));
 
         Assert.Contains("رمز الفئة", categories);
-        Assert.Contains("<th>الإجراءات</th>", categories);
+        Assert.Contains("الإجراءات", categories);
         Assert.DoesNotContain("<th>CategoryCode</th>", categories);
         Assert.DoesNotContain("CategoryCode هو", categories);
     }

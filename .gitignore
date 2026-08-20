@@ -12,7 +12,7 @@ coverage/
 *.coveragexml
 
 # Build output
-artifacts/
+/artifacts/
 publish/
 
 # Local configuration

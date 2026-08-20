@@ -58,6 +58,21 @@ public sealed class RuntimeAuthenticationHotfixTests
         Assert.Contains("<AntiforgeryToken />", layout);
     }
 
+
+    [Fact]
+    public void Runtime_error_copy_does_not_claim_persistence_outcome()
+    {
+        var root = FindRepositoryRoot();
+        var errorPage = Read(root, "src", "MuseumSystem.Web", "Components", "Pages", "Error.razor");
+        var layout = Read(root, "src", "MuseumSystem.Web", "Components", "Layout", "MainLayout.razor");
+        var combined = errorPage + layout;
+
+        Assert.Contains("تحقق من حالة السجل قبل إعادة المحاولة", errorPage);
+        Assert.Contains("تحقق من نتيجة آخر إجراء قبل تكراره", layout);
+        Assert.DoesNotContain("لم يُحفظ آخر إجراء", combined);
+        Assert.DoesNotContain("فلم تتغير أي بيانات", combined);
+    }
+
     private static string Read(DirectoryInfo root, params string[] parts)
     {
         var allParts = new string[parts.Length + 1];

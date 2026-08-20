@@ -101,24 +101,34 @@
                             <td>
                                 @if (canManage)
                                 {
-                                    <div class="inline-actions">
-                                        <button type="button" class="btn-secondary" @onclick="() => CreateDraftAsync(template.DocumentationTemplateId, null)">مسودة جديدة</button>
-                                        @if (template.LatestVersion is not null)
-                                        {
-                                            <button type="button" class="btn-secondary" @onclick="() => CreateDraftAsync(template.DocumentationTemplateId, template.LatestVersion.DocumentationTemplateVersionId)">نسخ آخر إصدار</button>
-                                        }
-                                        @foreach (var version in template.Versions)
-                                        {
-                                            @if (version.Status == DocumentationTemplateVersionStatus.Draft)
-                                            {
-                                                <a class="btn-secondary" href="@EditorHref(version.DocumentationTemplateVersionId)">تحرير إصدار @version.VersionNumber</a>
-                                                <button type="button" class="btn-secondary" @onclick="() => ActivateAsync(version)">تفعيل</button>
-                                            }
-                                            @if (version.Status == DocumentationTemplateVersionStatus.Active)
-                                            {
-                                                <button type="button" class="btn-secondary" @onclick="() => RetireAsync(version)">إيقاف إصدار @version.VersionNumber</button>
-                                            }
-                                        }
+                                    <div class="template-actions">
+                                        <div class="action-family">
+                                            <span class="action-group-label">إجراءات القالب</span>
+                                            <div class="inline-actions">
+                                                <button type="button" class="btn-primary compact" @onclick="() => CreateDraftAsync(template.DocumentationTemplateId, null)">مسودة جديدة</button>
+                                                @if (template.LatestVersion is not null)
+                                                {
+                                                    <button type="button" class="btn-secondary compact" @onclick="() => CreateDraftAsync(template.DocumentationTemplateId, template.LatestVersion.DocumentationTemplateVersionId)">نسخ آخر إصدار</button>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="action-family">
+                                            <span class="action-group-label">إجراءات الإصدارات</span>
+                                            <div class="inline-actions">
+                                                @foreach (var version in template.Versions)
+                                                {
+                                                    @if (version.Status == DocumentationTemplateVersionStatus.Draft)
+                                                    {
+                                                        <a class="btn-secondary compact" href="@EditorHref(version.DocumentationTemplateVersionId)">تحرير إصدار @version.VersionNumber</a>
+                                                        <button type="button" class="btn-secondary compact" @onclick="() => ActivateAsync(version)">تفعيل @version.VersionNumber</button>
+                                                    }
+                                                    @if (version.Status == DocumentationTemplateVersionStatus.Active)
+                                                    {
+                                                        <button type="button" class="btn-secondary compact" @onclick="() => RetireAsync(version)">إيقاف إصدار @version.VersionNumber</button>
+                                                    }
+                                                }
+                                            </div>
+                                        </div>
                                     </div>
                                 }
                                 else

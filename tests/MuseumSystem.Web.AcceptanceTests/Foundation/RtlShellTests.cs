@@ -82,6 +82,41 @@ public sealed class RtlShellTests
         Assert.DoesNotContain("weather", nav, StringComparison.OrdinalIgnoreCase);
     }
 
+
+    [Fact]
+    public void Runtime_navigation_uses_exact_leaf_matches_for_sibling_routes()
+    {
+        var root = FindRepositoryRoot();
+        var nav = File.ReadAllText(Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Layout", "NavMenu.razor"));
+
+        Assert.Contains("href=\"artifacts\" Match=\"NavLinkMatch.All\"", nav);
+        Assert.Contains("href=\"artifacts/create\" Match=\"NavLinkMatch.All\"", nav);
+        Assert.Contains("href=\"artifacts/categories\" Match=\"NavLinkMatch.All\"", nav);
+        Assert.Contains("href=\"documentation\" Match=\"NavLinkMatch.All\"", nav);
+        Assert.Contains("href=\"documentation/templates\" Match=\"NavLinkMatch.All\"", nav);
+        Assert.Contains("href=\"storehouse/delivery\" Match=\"NavLinkMatch.All\"", nav);
+        Assert.Contains("href=\"storehouse/return\" Match=\"NavLinkMatch.All\"", nav);
+        Assert.Contains("href=\"imports/excel\" Match=\"NavLinkMatch.All\"", nav);
+        Assert.DoesNotContain("<NavLink class=\"nav-link\" href=\"artifacts\">", nav);
+        Assert.DoesNotContain("<NavLink class=\"nav-link\" href=\"documentation\">", nav);
+    }
+
+    [Fact]
+    public void Sidebar_keeps_brand_and_account_stable_while_nav_scrolls()
+    {
+        var root = FindRepositoryRoot();
+        var css = File.ReadAllText(Path.Combine(root.FullName, "src", "MuseumSystem.Web", "wwwroot", "app.css"));
+
+        Assert.Contains(".app-rail", css);
+        Assert.Contains("overflow: hidden;", css);
+        Assert.Contains(".nav-menu", css);
+        Assert.Contains("overflow-y: auto;", css);
+        Assert.Contains("overscroll-behavior: contain;", css);
+        Assert.Contains(".brand,", css);
+        Assert.Contains(".rail-foot", css);
+        Assert.Contains("flex: 0 0 auto;", css);
+    }
+
     [Fact]
     public void Visible_product_name_is_unified()
     {
@@ -98,9 +133,10 @@ public sealed class RtlShellTests
         foreach (var file in files)
         {
             var text = File.ReadAllText(file);
-            Assert.Contains("نظام إدارة المتحف العراقي", text);
+            Assert.Contains("نظام مخزن المتحف", text);
             Assert.DoesNotContain("نظام إدارة المتحف</h1>", text);
             Assert.DoesNotContain("Museum-System", text);
+            Assert.DoesNotContain("المتحف العراقي", text);
         }
     }
 

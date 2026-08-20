@@ -1,0 +1,152 @@
+@page "/artifacts/create"
+@attribute [Authorize(Policy = PermissionNames.ArtifactsManage)]
+@rendermode InteractiveServer
+@inject CategoryUseCases CategoryUseCases
+@inject LocationUseCases LocationUseCases
+@inject ArtifactWriteUseCases ArtifactWriteUseCases
+
+<PageTitle>إنشاء قطعة</PageTitle>
+
+<div class="form-page">
+    <section class="page-header">
+        <div>
+            <p class="eyebrow">سجل القطع</p>
+            <h1>إنشاء قطعة</h1>
+            <p>هذه الخطوة تنشئ الهوية المؤسسية للقطعة وتربطها بفئتها وموقع خزنها الأول.</p>
+        </div>
+        <div class="page-header-actions">
+            <a class="btn-secondary" href="artifacts">العودة إلى السجل</a>
+        </div>
+    </section>
+
+    <section class="page-section">
+        <div class="section-header">
+            <div>
+                <p class="eyebrow">هوية القطعة</p>
+                <h2>بيانات التسجيل الأولي</h2>
+                <p>اختر الفئة والتسلسل وموقع الخزن، ثم أضف الوصف الأساسي كما يظهر في السجل.</p>
+            </div>
+        </div>
+
+        <div class="section-body">
+            @if (!string.IsNullOrWhiteSpace(message))
+            {
+                <div class="status-message">@message</div>
+            }
+
+            <div class="form-workspace">
+                <EditForm Model="this" OnSubmit="CreateArtifactAsync" FormName="create-artifact">
+                    <div class="workflow-stack">
+                        <section class="form-section" aria-labelledby="identity-section-title">
+                            <div class="form-section-title">
+                                <h3 id="identity-section-title">هوية السجل</h3>
+                                <p>رقم المتحف يتولد من الفئة والتسلسل بعد الحفظ.</p>
+                            </div>
+                            <div class="form-grid">
+                                <label>
+                                    <span>رمز الفئة</span>
+                                    <InputSelect @bind-Value="categoryId" class="form-control" required>
+                                        <option value="@Guid.Empty">اختر فئة</option>
+                                        @foreach (var category in categories.Where(c => c.IsActive))
+                                        {
+                                            <option value="@category.CategoryId">@category.CategoryCode - @category.NameArabic</option>
+                                        }
+                                    </InputSelect>
+                                </label>
+                                <label>
+                                    <span>رقم التسلسل داخل الفئة</span>
+                                    <InputNumber @bind-Value="itemNumber" class="form-control" min="1" required />
+                                </label>
+                            </div>
+                        </section>
+
+                        <section class="form-section" aria-labelledby="storage-section-title">
+                            <div class="form-section-title">
+                                <h3 id="storage-section-title">الخزن الأولي</h3>
+                                <p>حدد موقع وجود القطعة عند إدخالها إلى النظام.</p>
+                            </div>
+                            <div class="form-grid">
+                                <label>
+                                    <span>موقع الخزن الأولي</span>
+                                    <InputSelect @bind-Value="initialLocationId" class="form-control" required>
+                                        <option value="@Guid.Empty">اختر موقع خزن</option>
+                                        @foreach (var location in locations.Where(l => l.LocationType == LocationType.Storage && l.IsActive))
+                                        {
+                                            <option value="@location.LocationId">@location.NameArabic</option>
+                                        }
+                                    </InputSelect>
+                                </label>
+                            </div>
+                        </section>
+
+                        <section class="form-section" aria-labelledby="description-section-title">
+                            <div class="form-section-title">
+                                <h3 id="description-section-title">الوصف الأساسي</h3>
+                                <p>اكتب وصفاً موجزاً يساعد الموظف على تمييز القطعة في السجل.</p>
+                            </div>
+                            <label>
+                                <span>الوصف الأساسي</span>
+                                <InputTextArea @bind-Value="basicDescription" class="form-control" required />
+                            </label>
+                            <div class="action-bar">
+                                <span class="action-bar-note">بعد الحفظ يظهر رقم المتحف ورابط السجل الكامل.</span>
+                                <button type="submit" class="btn-primary">إنشاء القطعة</button>
+                            </div>
+                        </section>
+                    </div>
+                </EditForm>
+
+                <aside class="context-panel" aria-label="معلومات إنشاء القطعة">
+                    <h2>ما الذي يتم تثبيته؟</h2>
+                    <dl class="context-list">
+                        <div>
+                            <dt>هوية مؤسسية</dt>
+                            <dd>الفئة مع تسلسل القطعة داخلها.</dd>
+                        </div>
+                        <div>
+                            <dt>موقع أولي</dt>
+                            <dd>تبدأ القطعة داخل موقع خزن معتمد.</dd>
+                        </div>
+                        <div>
+                            <dt>وصف أساسي</dt>
+                            <dd>وصف مختصر يظهر في البحث وتفاصيل السجل.</dd>
+                        </div>
+                    </dl>
+
+                    @if (createdArtifact is not null)
+                    {
+                        <div class="result-panel">
+                            <strong>رقم المتحف:</strong>
+                            <span class="ref">@createdArtifact.MuseumNumber</span>
+                            <a class="btn-secondary" href="/artifacts/@createdArtifact.ArtifactId">عرض التفاصيل</a>
+                        </div>
+                    }
+                </aside>
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+    private List<CategoryDto> categories = [];
+    private List<LocationDto> locations = [];
+    private Guid categoryId;
+    private int itemNumber = 1;
+    private Guid initialLocationId;
+    private string basicDescription = string.Empty;
+    private string? message;
+    private ArtifactDetailsDto? createdArtifact;
+
+    protected override async Task OnInitializedAsync()
+    {
+        categories = (await CategoryUseCases.ListCategories()).ToList();
+        locations = (await LocationUseCases.ListSelectableLocations()).ToList();
+    }
+
+    private async Task CreateArtifactAsync()
+    {
+        var result = await ArtifactWriteUseCases.CreateArtifact(new CreateArtifactRequest(categoryId, itemNumber, basicDescription, initialLocationId));
+        message = result.Succeeded ? "تم إنشاء القطعة." : string.Join(" ", result.ValidationIssues.Select(i => i.Message));
+        createdArtifact = result.Succeeded ? result.Value : null;
+    }
+}
