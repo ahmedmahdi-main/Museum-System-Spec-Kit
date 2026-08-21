@@ -1,0 +1,81 @@
+@page "/documentation/records/{RecordId:guid}/history/{RevisionNumber:int}"
+@attribute [Authorize(Policy = PermissionNames.DocumentationHistoryView)]
+@rendermode InteractiveServer
+@inject GetDocumentationRevisionDetailsUseCase DetailsUseCase
+
+<PageTitle>تفاصيل مراجعة التوثيق</PageTitle>
+
+<section class="page-header">
+    <p class="eyebrow">التوثيق · مراجعة معتمدة</p>
+    <h1>تفاصيل المراجعة @RevisionNumber</h1>
+</section>
+
+<section class="page-section">
+    @if (!string.IsNullOrWhiteSpace(message)) { <div class="status-message warning-message">@message</div> }
+    @if (details is not null)
+    {
+        <div class="summary-grid">
+            <div class="summary-item"><span>النوع</span><strong>@(details.IsCompletionBaseline ? "الإكمال الأول" : "تصحيح")</strong></div>
+            <div class="summary-item"><span>الموظف</span><strong>@(details.Author ?? "غير مسجل")</strong></div>
+            <div class="summary-item"><span>التاريخ والوقت</span><strong>@details.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</strong></div>
+            <div class="summary-item"><span>القالب المرتبط</span><strong>@details.TemplateVersion.TemplateName — إصدار @details.TemplateVersion.VersionNumber</strong></div>
+        </div>
+
+        @if (!details.IsCompletionBaseline) { <div class="status-message"><strong>سبب التصحيح:</strong> @details.Reason</div> }
+
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>الحقل</th>@if (!details.IsCompletionBaseline) { <th>القيمة السابقة</th> }<th>@(details.IsCompletionBaseline ? "قيمة الإكمال" : "القيمة الجديدة")</th>@if (!details.IsCompletionBaseline) { <th>ملخص التغيير</th> }</tr></thead>
+                <tbody>
+                @if (details.IsCompletionBaseline)
+                {
+                    @foreach (var field in details.TemplateVersion.Fields.OrderBy(field => field.DisplayOrder))
+                    {
+                        var value = details.BaselineValues.First(item => item.FieldKey == field.FieldKey);
+                        <tr><td><strong>@field.Label</strong></td><td>@DisplayValue(field, value)</td></tr>
+                    }
+                }
+                else
+                {
+                    @foreach (var change in details.ChangedFields)
+                    {
+                        var field = details.TemplateVersion.Fields.First(item => item.FieldKey == change.FieldKey);
+                        <tr><td><strong>@change.FieldLabel</strong></td><td>@DisplayValue(field, change.PreviousValue)</td><td>@DisplayValue(field, change.NewValue)</td><td>@change.Summary</td></tr>
+                    }
+                }
+                </tbody>
+            </table>
+        </div>
+        <div class="form-actions"><a class="btn-secondary" href="/documentation/records/@RecordId/history">العودة إلى سجل المراجعات</a></div>
+    }
+</section>
+
+@code {
+    [Parameter] public Guid RecordId { get; set; }
+    [Parameter] public int RevisionNumber { get; set; }
+    private DocumentationRevisionDetailsDto? details;
+    private string? message;
+    protected override async Task OnParametersSetAsync()
+    {
+        details = null;
+        message = null;
+        var result = await DetailsUseCase.GetDocumentationRevisionDetails(new(RecordId, RevisionNumber));
+        if (result.Succeeded) details = result.Value;
+        else message = string.Join(" ", result.ValidationIssues.Select(issue => issue.Message));
+    }
+
+    private static string DisplayValue(DocumentationTemplateFieldDto field, DocumentationFieldValueDto? value)
+    {
+        if (value is null) return "—";
+        return field.FieldType switch
+        {
+            DocumentationFieldType.Text or DocumentationFieldType.MultilineText => value.TextValue ?? "—",
+            DocumentationFieldType.Number => value.NumberValue?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "—",
+            DocumentationFieldType.Date => value.DateValue?.ToString("yyyy-MM-dd") ?? "—",
+            DocumentationFieldType.Boolean => value.BooleanValue is null ? "—" : value.BooleanValue.Value ? "نعم" : "لا",
+            DocumentationFieldType.SingleSelect => field.Options.FirstOrDefault(option => option.OptionKey == value.OptionKey)?.Label ?? "—",
+            DocumentationFieldType.MultiSelect => value.OptionKeys.Count == 0 ? "—" : string.Join("، ", value.OptionKeys.Select(key => field.Options.FirstOrDefault(option => option.OptionKey == key)?.Label ?? key)),
+            _ => "—"
+        };
+    }
+}

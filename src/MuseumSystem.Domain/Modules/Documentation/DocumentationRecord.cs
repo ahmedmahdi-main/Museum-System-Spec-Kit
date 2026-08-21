@@ -68,6 +68,13 @@ public sealed class DocumentationRecord
 
     public DocumentationRevision CorrectCompleted(IReadOnlyDictionary<string, DocumentationFieldValue> values, DocumentationTemplateVersion templateVersion, string changeSummaryJson, string reason, string? actor = null)
     {
+        var revision = PrepareCompletedCorrection(values, templateVersion, changeSummaryJson, reason, actor);
+        AddPreparedCorrectionRevision(revision);
+        return revision;
+    }
+
+    internal DocumentationRevision PrepareCompletedCorrection(IReadOnlyDictionary<string, DocumentationFieldValue> values, DocumentationTemplateVersion templateVersion, string changeSummaryJson, string reason, string? actor = null)
+    {
         if (Status != DocumentationRecordStatus.Completed)
         {
             throw new InvalidOperationException("Only completed records can be corrected.");
@@ -87,10 +94,25 @@ public sealed class DocumentationRecord
             reason,
             actor);
 
-        _revisions.Add(revision);
         ValuesJson = newValuesJson;
         Touch(actor);
         return revision;
+    }
+
+    internal void AddPreparedCorrectionRevision(DocumentationRevision revision)
+    {
+        ArgumentNullException.ThrowIfNull(revision);
+        if (revision.DocumentationRecordId != DocumentationRecordId || revision.TemplateVersionId != DocumentationTemplateVersionId)
+        {
+            throw new InvalidOperationException("The correction revision does not belong to this documentation record.");
+        }
+
+        if (revision.RevisionNumber != NextCorrectionRevisionNumber())
+        {
+            throw new InvalidOperationException("The correction revision number is not the next expected revision.");
+        }
+
+        _revisions.Add(revision);
     }
 
     private int NextCorrectionRevisionNumber() => _revisions.Count == 0 ? 2 : _revisions.Max(revision => revision.RevisionNumber) + 1;

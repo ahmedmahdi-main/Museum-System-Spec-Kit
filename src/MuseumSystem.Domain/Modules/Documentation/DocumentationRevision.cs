@@ -36,7 +36,7 @@ public sealed class DocumentationRevision
     public DateTimeOffset CreatedAt { get; private set; }
     public string? CreatedBy { get; private set; }
 
-    public static DocumentationRevision Create(Guid documentationRecordId, Guid templateVersionId, int revisionNumber, string previousValuesJson, string newValuesJson, string changeSummaryJson, string reason, string? actor = null) =>
+    internal static DocumentationRevision Create(Guid documentationRecordId, Guid templateVersionId, int revisionNumber, string previousValuesJson, string newValuesJson, string changeSummaryJson, string reason, string? actor = null) =>
         new(documentationRecordId, templateVersionId, revisionNumber, previousValuesJson, newValuesJson, changeSummaryJson, reason, actor);
 
     private static string RequireJson(string value, string paramName)

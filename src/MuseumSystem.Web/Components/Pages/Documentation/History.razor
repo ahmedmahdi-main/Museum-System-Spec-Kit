@@ -1,0 +1,55 @@
+@page "/documentation/records/{RecordId:guid}/history"
+@attribute [Authorize(Policy = PermissionNames.DocumentationHistoryView)]
+@rendermode InteractiveServer
+@inject GetDocumentationHistoryUseCase HistoryUseCase
+
+<PageTitle>سجل مراجعات التوثيق</PageTitle>
+
+<section class="page-header">
+    <p class="eyebrow">التوثيق · السجل التاريخي</p>
+    <h1>سجل المراجعات</h1>
+    <p>تسلسل النسخ المعتمدة منذ الإكمال الأول، مرتباً من الأقدم إلى الأحدث.</p>
+</section>
+
+<section class="page-section">
+    @if (!string.IsNullOrWhiteSpace(message)) { <div class="status-message warning-message">@message</div> }
+    @if (items.Count > 0)
+    {
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>المراجعة</th><th>النوع</th><th>الموظف</th><th>التاريخ والوقت</th><th>السبب / التغييرات</th><th>الإجراء</th></tr></thead>
+                <tbody>
+                @foreach (var item in items)
+                {
+                    <tr>
+                        <td><strong>المراجعة @item.RevisionNumber</strong></td>
+                        <td><span class="badge-status @(item.IsCompletionBaseline ? "badge-completed" : "badge-active")">@(item.IsCompletionBaseline ? "الإكمال الأول" : "تصحيح")</span></td>
+                        <td>@(item.Author ?? "غير مسجل")</td>
+                        <td>@item.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>
+                            @if (item.IsCompletionBaseline) { <span>النسخة الأساسية عند الإكمال</span> }
+                            else { <strong>@item.Reason</strong><br /><span class="muted">@string.Join("، ", item.ChangedFields.Select(change => change.Summary))</span> }
+                        </td>
+                        <td><a class="btn-secondary compact" href="/documentation/records/@RecordId/history/@item.RevisionNumber">عرض التفاصيل</a></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        <div class="form-actions"><a class="btn-secondary" href="/documentation/records/@RecordId/edit">العودة إلى السجل</a></div>
+    }
+</section>
+
+@code {
+    [Parameter] public Guid RecordId { get; set; }
+    private IReadOnlyList<DocumentationHistoryItemDto> items = [];
+    private string? message;
+    protected override async Task OnParametersSetAsync()
+    {
+        items = [];
+        message = null;
+        var result = await HistoryUseCase.GetDocumentationHistory(new(RecordId));
+        if (result.Succeeded) items = result.Value!;
+        else message = string.Join(" ", result.ValidationIssues.Select(issue => issue.Message));
+    }
+}

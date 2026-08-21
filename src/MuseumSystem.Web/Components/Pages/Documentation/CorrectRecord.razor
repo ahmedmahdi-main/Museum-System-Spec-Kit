@@ -1,0 +1,116 @@
+@page "/documentation/records/{RecordId:guid}/correct"
+@attribute [Authorize(Policy = PermissionNames.DocumentationView)]
+@rendermode InteractiveServer
+@inject GetDocumentationRecordForEditUseCase GetRecordUseCase
+@inject CorrectCompletedDocumentationUseCase CorrectUseCase
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>تصحيح سجل التوثيق</PageTitle>
+
+<section class="page-header">
+    <p class="eyebrow">التوثيق · تصحيح معتمد</p>
+    <h1>تصحيح سجل التوثيق المكتمل</h1>
+    <p>حدّث المعلومات الموثقة مع حفظ النسخة السابقة وسبب التصحيح في سجل المراجعات.</p>
+</section>
+
+<section class="page-section">
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="status-message @(isConflict ? "warning-message" : null)">@message</div>
+    }
+
+    @if (record is not null)
+    {
+        <div class="summary-grid">
+            <div class="summary-item"><span>رقم المتحف</span><strong class="ref">@record.Artifact.MuseumNumber</strong></div>
+            <div class="summary-item"><span>القطعة</span><strong>@record.Artifact.BasicDescription</strong></div>
+            <div class="summary-item"><span>القالب المرتبط</span><strong>@record.TemplateVersion.TemplateName — إصدار @record.TemplateVersion.VersionNumber</strong></div>
+            <div class="summary-item"><span>الحالة</span><strong><span class="badge-status badge-completed">مكتمل</span></strong></div>
+        </div>
+
+        <EditForm Model="values" OnSubmit="SubmitAsync" FormName="documentation-record-correction">
+            <DynamicDocumentationForm Fields="record.TemplateVersion.Fields" Values="values" IsReadOnly="@(!canCorrect)" />
+            <section class="sub-section">
+                <label class="span-all">
+                    <span>سبب التصحيح *</span>
+                    <InputTextArea @bind-Value="reason" class="form-control" maxlength="1000" disabled="@(!canCorrect)" />
+                    <small class="muted">اكتب سبباً واضحاً يراه موظفو المتحف في سجل المراجعات.</small>
+                </label>
+            </section>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary" disabled="@(!canCorrect)">حفظ التصحيح</button>
+                <a class="btn-secondary" href="/documentation/records/@RecordId/edit">العودة إلى السجل</a>
+            </div>
+        </EditForm>
+    }
+</section>
+
+@code {
+    [Parameter] public Guid RecordId { get; set; }
+    private DocumentationRecordEditDto? record;
+    private List<DocumentationFieldValueInputDto> values = [];
+    private string? reason;
+    private string? message;
+    private bool canCorrect;
+    private bool isConflict;
+    private Guid? loadedRecordId;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (loadedRecordId != RecordId)
+        {
+            reason = null;
+        }
+
+        record = null;
+        values = [];
+        message = null;
+        isConflict = false;
+        canCorrect = await IsAuthorizedAsync(PermissionNames.DocumentationEdit);
+        var result = await GetRecordUseCase.GetDocumentationRecordForEdit(new(RecordId, new(CanEdit: canCorrect)));
+        if (!result.Succeeded) { message = FormatFailure(result); return; }
+        record = result.Value;
+        loadedRecordId = RecordId;
+        if (record!.Record.Status != DocumentationRecordStatus.Completed)
+        {
+            message = "يمكن تصحيح سجلات التوثيق المكتملة فقط.";
+            canCorrect = false;
+        }
+        values = ToInputs(record.Values);
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (!await IsAuthorizedAsync(PermissionNames.DocumentationEdit)) { message = "لا تملك صلاحية تصحيح سجلات التوثيق."; return; }
+        if (record is null) return;
+        if (string.IsNullOrWhiteSpace(reason)) { message = "سبب التصحيح مطلوب."; return; }
+        var result = await CorrectUseCase.CorrectCompletedDocumentation(new(RecordId, record.Record.ConcurrencyToken, values, reason));
+        isConflict = result.ConcurrencyConflict;
+        message = result.Succeeded
+            ? $"تم حفظ التصحيح بنجاح بوصفه المراجعة {result.Value!.RevisionNumber}."
+            : result.ConcurrencyConflict ? "تغير السجل. أعد التحميل وراجع أحدث القيم قبل حفظ التصحيح." : FormatFailure(result);
+        if (result.Succeeded) await OnParametersSetAsync();
+    }
+
+    private async Task<bool> IsAuthorizedAsync(string policy)
+    {
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        return (await AuthorizationService.AuthorizeAsync(state.User, policy)).Succeeded;
+    }
+
+    private static string FormatFailure<T>(UseCaseResult<T> result) =>
+        string.Join(" ", result.ValidationIssues.Select(issue => issue.Message).Concat(result.Messages));
+
+    private static List<DocumentationFieldValueInputDto> ToInputs(IReadOnlyList<DocumentationFieldValueDto> source) =>
+        source.Select(value => new DocumentationFieldValueInputDto
+        {
+            FieldKey = value.FieldKey,
+            TextValue = value.TextValue,
+            NumberValue = value.NumberValue,
+            DateValue = value.DateValue,
+            BooleanValue = value.BooleanValue,
+            OptionKey = value.OptionKey,
+            OptionKeys = value.OptionKeys.ToList()
+        }).ToList();
+}

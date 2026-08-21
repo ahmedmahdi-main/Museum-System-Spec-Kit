@@ -36,6 +36,10 @@ public static class DependencyInjection
         services.AddScoped<GetDocumentationRecordForEditUseCase>();
         services.AddScoped<SaveDocumentationDraftUseCase>();
         services.AddScoped<CompleteDocumentationRecordUseCase>();
+        services.AddScoped<DocumentationChangeSummaryService>();
+        services.AddScoped<CorrectCompletedDocumentationUseCase>();
+        services.AddScoped<GetDocumentationHistoryUseCase>();
+        services.AddScoped<GetDocumentationRevisionDetailsUseCase>();
         services.AddScoped<CreateDocumentationTemplateUseCase>();
         services.AddScoped<CreateTemplateVersionDraftUseCase>();
         services.AddScoped<SaveTemplateVersionDraftUseCase>();

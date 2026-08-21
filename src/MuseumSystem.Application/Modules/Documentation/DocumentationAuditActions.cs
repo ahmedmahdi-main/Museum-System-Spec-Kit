@@ -9,4 +9,5 @@ public static class DocumentationAuditActions
     public const string RecordCreate = "Documentation.Record.Create";
     public const string RecordSaveDraft = "Documentation.Record.SaveDraft";
     public const string RecordComplete = "Documentation.Record.Complete";
+    public const string RecordCorrectCompleted = "Documentation.Record.CorrectCompleted";
 }

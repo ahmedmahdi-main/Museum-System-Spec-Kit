@@ -188,29 +188,29 @@
 
 ### Tests for User Story 4
 
-- [ ] T105 [P] [US4] Add application tests rejecting post-completion corrections with missing or empty Reason in `tests/MuseumSystem.Application.Tests/Documentation/CorrectCompletedDocumentationUseCaseTests.cs`
-- [ ] T106 [P] [US4] Add application tests proving post-completion corrections do not require current Documentation custody and do not create movement changes in `tests/MuseumSystem.Application.Tests/Documentation/CorrectCompletedDocumentationUseCaseTests.cs`
-- [ ] T107 [P] [US4] Add application tests proving first correction creates Revision 2 and later corrections increment Revision 3, Revision 4, and onward in `tests/MuseumSystem.Application.Tests/Documentation/DocumentationRevisionNumberingTests.cs`
-- [ ] T108 [P] [US4] Add application tests proving correction revisions persist previous values, new values, changed field summary, reason, author, and timestamp in `tests/MuseumSystem.Application.Tests/Documentation/DocumentationRevisionSnapshotTests.cs`
-- [ ] T109 [P] [US4] Add application tests for `GetDocumentationHistory` returning baseline completion as Revision 1 and ordered correction revisions with revision number, non-empty reason, author, timestamp, and changed field summary in `tests/MuseumSystem.Application.Tests/Documentation/GetDocumentationHistoryUseCaseTests.cs`
-- [ ] T110 [P] [US4] Add application tests for `GetDocumentationRevisionDetails` returning Revision 1 baseline values with completion author/timestamp and no correction reason, and Revision 2+ previous values, new values, field-level change summary, mandatory non-empty correction reason, correction author, and correction timestamp using bound template labels/options in `tests/MuseumSystem.Application.Tests/Documentation/GetDocumentationRevisionDetailsUseCaseTests.cs`
-- [ ] T111 [P] [US4] Add application tests proving revision history uses the original bound template after Artifact Category changes in `tests/MuseumSystem.Application.Tests/Documentation/DocumentationHistoryTemplateBindingTests.cs`
-- [ ] T112 [P] [US4] Add PostgreSQL append-only revision persistence tests using the shared fixture in `tests/MuseumSystem.Integration.Tests/Documentation/DocumentationRevisionPersistenceTests.cs`
-- [ ] T113 [P] [US4] Add lightweight xUnit acceptance tests for correction and history page source structure in `tests/MuseumSystem.Web.AcceptanceTests/Documentation/DocumentationHistoryFlowTests.cs`
+- [X] T105 [P] [US4] Add application tests rejecting post-completion corrections with missing or empty Reason in `tests/MuseumSystem.Application.Tests/Documentation/CorrectCompletedDocumentationUseCaseTests.cs`
+- [X] T106 [P] [US4] Add application tests proving post-completion corrections do not require current Documentation custody and do not create movement changes in `tests/MuseumSystem.Application.Tests/Documentation/CorrectCompletedDocumentationUseCaseTests.cs`
+- [X] T107 [P] [US4] Add application tests proving first correction creates Revision 2 and later corrections increment Revision 3, Revision 4, and onward in `tests/MuseumSystem.Application.Tests/Documentation/DocumentationRevisionNumberingTests.cs`
+- [X] T108 [P] [US4] Add application tests proving correction revisions persist previous values, new values, changed field summary, reason, author, and timestamp in `tests/MuseumSystem.Application.Tests/Documentation/DocumentationRevisionSnapshotTests.cs`
+- [X] T109 [P] [US4] Add application tests for `GetDocumentationHistory` returning baseline completion as Revision 1 and ordered correction revisions with revision number, non-empty reason, author, timestamp, and changed field summary in `tests/MuseumSystem.Application.Tests/Documentation/GetDocumentationHistoryUseCaseTests.cs`
+- [X] T110 [P] [US4] Add application tests for `GetDocumentationRevisionDetails` returning Revision 1 baseline values with completion author/timestamp and no correction reason, and Revision 2+ previous values, new values, field-level change summary, mandatory non-empty correction reason, correction author, and correction timestamp using bound template labels/options in `tests/MuseumSystem.Application.Tests/Documentation/GetDocumentationRevisionDetailsUseCaseTests.cs`
+- [X] T111 [P] [US4] Add application tests proving revision history uses the original bound template after Artifact Category changes in `tests/MuseumSystem.Application.Tests/Documentation/DocumentationHistoryTemplateBindingTests.cs`
+- [X] T112 [P] [US4] Add PostgreSQL append-only revision persistence tests using the shared fixture in `tests/MuseumSystem.Integration.Tests/Documentation/DocumentationRevisionPersistenceTests.cs`
+- [X] T113 [P] [US4] Add lightweight xUnit acceptance tests for correction and history page source structure in `tests/MuseumSystem.Web.AcceptanceTests/Documentation/DocumentationHistoryFlowTests.cs`
 
 ### Implementation for User Story 4
 
 - [X] T114 [P] [US4] Create correction and revision DTO contracts in `src/MuseumSystem.Application/Modules/Documentation/Contracts/DocumentationRevisionDtos.cs`
-- [ ] T115 [US4] Implement field-level change summary generation using bound template metadata in `src/MuseumSystem.Application/Modules/Documentation/DocumentationChangeSummaryService.cs`
-- [ ] T116 [US4] Implement `CorrectCompletedDocumentation` with mandatory Reason, value validation, Completed-state preservation, Revision 2+ numbering, metadata, audit, and no custody check in `src/MuseumSystem.Application/Modules/Documentation/CorrectCompletedDocumentationUseCase.cs`
-- [ ] T117 [US4] Implement `GetDocumentationHistory` with Revision 1 baseline summary and ordered correction revisions in `src/MuseumSystem.Application/Modules/Documentation/GetDocumentationHistoryUseCase.cs`
-- [ ] T118 [US4] Implement `GetDocumentationRevisionDetails` with Revision 1 baseline values, completion author/timestamp, and no correction reason, plus Revision 2+ previous values, new values, field-level summary, mandatory non-empty correction reason, correction author/timestamp, and bound template labels/options in `src/MuseumSystem.Application/Modules/Documentation/GetDocumentationRevisionDetailsUseCase.cs`
-- [ ] T119 [US4] Register Phase D correction/history/revision-detail use cases using the explicit scoped registration pattern in `src/MuseumSystem.Application/DependencyInjection.cs`
-- [ ] T120 [US4] Create correction page with `Documentation.View` policy and action-level `Documentation.Edit` check in `src/MuseumSystem.Web/Components/Pages/Documentation/CorrectRecord.razor`
-- [ ] T121 [US4] Create history page with `Documentation.History.View` policy and Revision 1 plus correction sequence display in `src/MuseumSystem.Web/Components/Pages/Documentation/History.razor`
-- [ ] T122 [US4] Create revision details page with `Documentation.History.View` policy and bound-template value comparison display in `src/MuseumSystem.Web/Components/Pages/Documentation/RevisionDetails.razor`
-- [ ] T123 [US4] Add correction and history navigation/actions from the record page with existing ASP.NET Core authorization checks in `src/MuseumSystem.Web/Components/Pages/Documentation/EditRecord.razor`
-- [ ] T124 [US4] Add correction and revision-history audit actions in `src/MuseumSystem.Application/Modules/Documentation/DocumentationAuditActions.cs`
+- [X] T115 [US4] Implement field-level change summary generation using bound template metadata in `src/MuseumSystem.Application/Modules/Documentation/DocumentationChangeSummaryService.cs`
+- [X] T116 [US4] Implement `CorrectCompletedDocumentation` with mandatory Reason, value validation, Completed-state preservation, Revision 2+ numbering, metadata, audit, and no custody check in `src/MuseumSystem.Application/Modules/Documentation/CorrectCompletedDocumentationUseCase.cs`
+- [X] T117 [US4] Implement `GetDocumentationHistory` with Revision 1 baseline summary and ordered correction revisions in `src/MuseumSystem.Application/Modules/Documentation/GetDocumentationHistoryUseCase.cs`
+- [X] T118 [US4] Implement `GetDocumentationRevisionDetails` with Revision 1 baseline values, completion author/timestamp, and no correction reason, plus Revision 2+ previous values, new values, field-level summary, mandatory non-empty correction reason, correction author/timestamp, and bound template labels/options in `src/MuseumSystem.Application/Modules/Documentation/GetDocumentationRevisionDetailsUseCase.cs`
+- [X] T119 [US4] Register Phase D correction/history/revision-detail use cases using the explicit scoped registration pattern in `src/MuseumSystem.Application/DependencyInjection.cs`
+- [X] T120 [US4] Create correction page with `Documentation.View` policy and action-level `Documentation.Edit` check in `src/MuseumSystem.Web/Components/Pages/Documentation/CorrectRecord.razor`
+- [X] T121 [US4] Create history page with `Documentation.History.View` policy and Revision 1 plus correction sequence display in `src/MuseumSystem.Web/Components/Pages/Documentation/History.razor`
+- [X] T122 [US4] Create revision details page with `Documentation.History.View` policy and bound-template value comparison display in `src/MuseumSystem.Web/Components/Pages/Documentation/RevisionDetails.razor`
+- [X] T123 [US4] Add correction and history navigation/actions from the record page with existing ASP.NET Core authorization checks in `src/MuseumSystem.Web/Components/Pages/Documentation/EditRecord.razor`
+- [X] T124 [US4] Add correction and revision-history audit actions in `src/MuseumSystem.Application/Modules/Documentation/DocumentationAuditActions.cs`
 
 **Checkpoint**: US4 is independently testable against a completed record and does not depend on current artifact custody.
 ## Phase E: Documentation Permissions (US5)

@@ -58,7 +58,17 @@
             }
             else
             {
-                <div class="status-message">التوثيق المكتمل للعرض فقط في هذه المرحلة.</div>
+                <div class="status-message">السجل مكتمل. تظل القيم المعروضة للقراءة فقط، وتُحفظ أي تصحيحات كمراجعة جديدة.</div>
+                <div class="form-actions">
+                    @if (canCorrectCompleted)
+                    {
+                        <a class="btn-primary" href="/documentation/records/@RecordId/correct">تصحيح السجل</a>
+                    }
+                    @if (canViewHistory)
+                    {
+                        <a class="btn-secondary" href="/documentation/records/@RecordId/history">سجل المراجعات</a>
+                    }
+                </div>
             }
         </EditForm>
 
@@ -79,6 +89,8 @@
     private DocumentationRecordEditDto? record;
     private List<DocumentationFieldValueInputDto> values = [];
     private string? message;
+    private bool canCorrectCompleted;
+    private bool canViewHistory;
 
     private bool IsFormReadOnly => record is null || record.Record.Status != DocumentationRecordStatus.Draft || !record.Actions.CanSaveDraft;
 
@@ -134,6 +146,8 @@
 
     private async Task ReloadAsync()
     {
+        canCorrectCompleted = await IsAuthorizedAsync(PermissionNames.DocumentationEdit);
+        canViewHistory = await IsAuthorizedAsync(PermissionNames.DocumentationHistoryView);
         var permissions = await GetPermissionsAsync();
         var result = await GetRecordUseCase.GetDocumentationRecordForEdit(new GetDocumentationRecordForEditRequest(RecordId, permissions));
         if (!result.Succeeded)

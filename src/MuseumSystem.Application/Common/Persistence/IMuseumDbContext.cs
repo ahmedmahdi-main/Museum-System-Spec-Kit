@@ -26,5 +26,12 @@ public interface IMuseumDbContext
     DbSet<DocumentationRecord> DocumentationRecords { get; }
     DbSet<DocumentationRevision> DocumentationRevisions { get; }
 
+    Task<IMuseumDbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+}
+
+public interface IMuseumDbTransaction : IAsyncDisposable
+{
+    Task CommitAsync(CancellationToken cancellationToken = default);
+    Task RollbackAsync(CancellationToken cancellationToken = default);
 }
