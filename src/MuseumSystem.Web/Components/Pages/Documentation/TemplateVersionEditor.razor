@@ -18,7 +18,13 @@
 <section class="page-section">
     @if (!string.IsNullOrWhiteSpace(message))
     {
-        <div class="status-message">@message</div>
+        <div class="status-message @(isConflict ? "warning-message" : null)">@message</div>
+        @if (isConflict)
+        {
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" @onclick="ReloadLatestVersionAsync">إعادة تحميل أحدث نسخة</button>
+            </div>
+        }
     }
 
     @if (version is not null)
@@ -128,6 +134,7 @@
     private DocumentationTemplateVersionDetailsDto? version;
     private List<FieldEditorModel> fields = [];
     private string? message;
+    private bool isConflict;
 
     private string DetailsHref => $"documentation/templates/{VersionId}";
 
@@ -162,6 +169,7 @@
                     : [])).ToList()));
 
         message = FormatResult(result);
+        isConflict = result.ConcurrencyConflict;
         if (result.Succeeded)
         {
             await ReloadAsync();
@@ -183,19 +191,30 @@
 
         var result = await ActivateUseCase.ActivateTemplateVersion(new ActivateTemplateVersionRequest(VersionId, version.ConcurrencyToken));
         message = FormatResult(result);
+        isConflict = result.ConcurrencyConflict;
         if (result.Succeeded)
         {
             Navigation.NavigateTo($"documentation/templates/{VersionId}");
         }
     }
 
-    private async Task ReloadAsync()
+    private async Task ReloadLatestVersionAsync()
+    {
+        if (await ReloadAsync())
+        {
+            message = "تم تحميل أحدث نسخة. راجع القالب قبل المتابعة.";
+            isConflict = false;
+        }
+    }
+
+    private async Task<bool> ReloadAsync()
     {
         var result = await TemplateQueries.ViewTemplateVersion(VersionId);
         if (!result.Succeeded)
         {
             message = string.Join(" ", result.ValidationIssues.Select(issue => LocalizeMessage(issue.Message)));
-            return;
+            isConflict = result.ConcurrencyConflict;
+            return false;
         }
 
         version = result.Value!;
@@ -215,6 +234,8 @@
                 DisplayOrder = option.DisplayOrder
             }).ToList()
         }).ToList();
+        isConflict = false;
+        return true;
     }
 
     private void AddField()
@@ -281,7 +302,7 @@
     {
         if (message.Contains("saved", StringComparison.OrdinalIgnoreCase)) return "تم حفظ المسودة.";
         if (message.Contains("activated", StringComparison.OrdinalIgnoreCase)) return "تم تفعيل المسودة.";
-        if (message.Contains("Reload and review", StringComparison.OrdinalIgnoreCase)) return "تغيرت البيانات. أعد التحميل وراجع آخر نسخة قبل المتابعة.";
+        if (message.Contains("Reload and review", StringComparison.OrdinalIgnoreCase)) return "تغيرت البيانات بواسطة مستخدم آخر. أعد تحميل أحدث نسخة وراجعها قبل المتابعة.";
         if (message.Contains("Only Draft", StringComparison.OrdinalIgnoreCase)) return "يمكن تحرير إصدارات المسودة فقط.";
         if (message.Contains("not authorized", StringComparison.OrdinalIgnoreCase)) return "لا تملك الصلاحية المطلوبة.";
         return message;

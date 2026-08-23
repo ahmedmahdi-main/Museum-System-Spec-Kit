@@ -30,7 +30,7 @@ public sealed class RetireTemplateVersionUseCase(IMuseumDbContext dbContext, IAu
         var version = template.Versions.Single(version => version.DocumentationTemplateVersionId == request.DocumentationTemplateVersionId);
         if (version.ConcurrencyToken != request.ExpectedConcurrencyToken)
         {
-            return UseCaseResult<DocumentationTemplateVersionDetailsDto>.Conflict("Template version changed. Reload and review before retiring.");
+            return DocumentationConcurrencyHandler.StaleRequest<DocumentationTemplateVersionDetailsDto>("Template version changed. Reload and review before retiring.");
         }
 
         try
@@ -39,9 +39,12 @@ public sealed class RetireTemplateVersionUseCase(IMuseumDbContext dbContext, IAu
             template.RetireVersion(version, actor);
             await dbContext.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateConcurrencyException)
+        catch (DbUpdateConcurrencyException ex)
         {
-            return UseCaseResult<DocumentationTemplateVersionDetailsDto>.Conflict("Template version changed. Reload and review before retiring.");
+            return DocumentationConcurrencyHandler.OptimisticWriteConflict<DocumentationTemplateVersionDetailsDto>(
+                dbContext,
+                ex,
+                "Template version changed. Reload and review before retiring.");
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {

@@ -5,6 +5,7 @@ using MuseumSystem.Application.Modules.Documentation;
 using MuseumSystem.Application.Modules.Documentation.Contracts;
 using MuseumSystem.Domain.Modules.ArtifactRegistry;
 using MuseumSystem.Domain.Modules.Documentation;
+using MuseumSystem.Domain.Modules.StorehouseOperations;
 using MuseumSystem.Infrastructure.Audit;
 
 namespace MuseumSystem.Integration.Tests.Documentation;
@@ -12,6 +13,66 @@ namespace MuseumSystem.Integration.Tests.Documentation;
 [Collection(PostgresDocumentationCollection.Name)]
 public sealed class DocumentationConcurrencyTests(PostgresDocumentationTestFixture fixture)
 {
+    [Fact]
+    public async Task Create_documentation_record_competing_insert_clears_losing_context_and_reloads_winner()
+    {
+        Guid artifactId;
+        string? originalHolder;
+        Guid? originalLocation;
+        int originalMovementCount;
+        await using (var seed = fixture.CreateContext())
+        {
+            var (artifact, _) = await DocumentationTestData.SeedReadyGraphAsync(seed, $"CR{Guid.NewGuid():N}"[..8]);
+            artifact.DeliverToInternalHolder(MovementRecipientType.DocumentationDivision, "Documentation");
+            await seed.SaveChangesAsync();
+            artifactId = artifact.ArtifactId;
+            originalHolder = artifact.CurrentHolderType;
+            originalLocation = artifact.CurrentLocationId;
+            originalMovementCount = await seed.MovementRecords.CountAsync();
+        }
+
+        var pauseBeforeLosingSave = new PauseBeforeSaveInterceptor();
+        var losingOptions = new DbContextOptionsBuilder<Infrastructure.Persistence.MuseumDbContext>(fixture.Options)
+            .AddInterceptors(pauseBeforeLosingSave)
+            .Options;
+        await using var losingContext = new Infrastructure.Persistence.MuseumDbContext(losingOptions);
+        await using var winningContext = fixture.CreateContext();
+
+        var losingTask = CreateUseCase(losingContext).CreateDocumentationRecord(new(artifactId));
+        await pauseBeforeLosingSave.WaitUntilSavingAsync();
+
+        var winningResult = await CreateUseCase(winningContext).CreateDocumentationRecord(new(artifactId));
+        pauseBeforeLosingSave.Release();
+        var losingResult = await losingTask;
+
+        Assert.True(winningResult.Succeeded);
+        Assert.NotNull(winningResult.AuditReference);
+        Assert.False(losingResult.Succeeded);
+        Assert.True(losingResult.ConcurrencyConflict);
+        Assert.Null(losingResult.AuditReference);
+        Assert.Contains("Documentation Record was created", Assert.Single(losingResult.Messages));
+        Assert.False(losingContext.ChangeTracker.HasChanges());
+        Assert.Empty(losingContext.ChangeTracker.Entries());
+
+        var records = await losingContext.DocumentationRecords
+            .Where(record => record.ArtifactId == artifactId)
+            .ToListAsync();
+        var persisted = Assert.Single(records);
+        Assert.Equal(winningResult.Value!.Record.DocumentationRecordId, persisted.DocumentationRecordId);
+        Assert.DoesNotContain(losingContext.ChangeTracker.Entries<DocumentationRecord>(), entry => entry.State == EntityState.Added);
+
+        var auditEntries = await losingContext.AuditEntries.AsNoTracking()
+            .Where(item => item.ActionName == DocumentationAuditActions.RecordCreate &&
+                item.EntityId == persisted.DocumentationRecordId.ToString())
+            .ToListAsync();
+        var artifactAfter = await losingContext.Artifacts.AsNoTracking().SingleAsync(item => item.ArtifactId == artifactId);
+        Assert.Single(auditEntries);
+        Assert.Equal(originalHolder, artifactAfter.CurrentHolderType);
+        Assert.Equal(originalLocation, artifactAfter.CurrentLocationId);
+        Assert.Equal(originalMovementCount, await losingContext.MovementRecords.CountAsync());
+        Assert.False(losingContext.ChangeTracker.HasChanges());
+    }
+
     [Fact]
     public async Task Completed_documentation_correction_reports_database_race_without_failed_side_effects()
     {
@@ -56,18 +117,20 @@ public sealed class DocumentationConcurrencyTests(PostgresDocumentationTestFixtu
         Assert.False(secondResult.Succeeded);
         Assert.True(secondResult.ConcurrencyConflict);
         Assert.Null(secondResult.AuditReference);
+        Assert.False(secondContext.ChangeTracker.HasChanges());
+        Assert.Empty(secondContext.ChangeTracker.Entries());
 
-        await using var verify = fixture.CreateContext();
-        var persisted = await verify.DocumentationRecords.AsNoTracking()
+        var persisted = await secondContext.DocumentationRecords
             .Include(item => item.Revisions)
             .SingleAsync(item => item.DocumentationRecordId == recordId);
-        var artifactAfter = await verify.Artifacts.AsNoTracking().SingleAsync(item => item.ArtifactId == artifactId);
-        var auditEntries = await verify.AuditEntries.AsNoTracking()
+        var artifactAfter = await secondContext.Artifacts.AsNoTracking().SingleAsync(item => item.ArtifactId == artifactId);
+        var auditEntries = await secondContext.AuditEntries.AsNoTracking()
             .Where(item => item.ActionName == DocumentationAuditActions.RecordCorrectCompleted &&
                 item.EntityId == recordId.ToString())
             .ToListAsync();
         Assert.Contains("First correction", persisted.ValuesJson);
         Assert.DoesNotContain("Second correction", persisted.ValuesJson);
+        Assert.Equal(firstResult.Value!.Record.ConcurrencyToken, persisted.ConcurrencyToken);
         var revision = Assert.Single(persisted.Revisions);
         Assert.Equal(2, revision.RevisionNumber);
         Assert.Equal("First reason", revision.Reason);
@@ -75,10 +138,11 @@ public sealed class DocumentationConcurrencyTests(PostgresDocumentationTestFixtu
         Assert.Equal(DocumentationRecordStatus.Completed, persisted.Status);
         Assert.Equal(originalHolder, artifactAfter.CurrentHolderType);
         Assert.Equal(originalLocation, artifactAfter.CurrentLocationId);
-        Assert.Equal(originalMovementCount, await verify.MovementRecords.CountAsync());
+        Assert.Equal(originalMovementCount, await secondContext.MovementRecords.CountAsync());
         var auditEntry = Assert.Single(auditEntries);
         Assert.Contains("Revision 2", auditEntry.Summary);
         Assert.DoesNotContain("Second reason", auditEntry.ChangeSummary ?? string.Empty);
+        Assert.False(secondContext.ChangeTracker.HasChanges());
     }
 
     [Fact]
@@ -145,6 +209,17 @@ public sealed class DocumentationConcurrencyTests(PostgresDocumentationTestFixtu
     {
         var actorContext = new TestAuditActorContext();
         return new(context, new DocumentationChangeSummaryService(), new AuditWriter(context, actorContext), actorContext);
+    }
+
+    private static CreateDocumentationRecordUseCase CreateUseCase(Infrastructure.Persistence.MuseumDbContext context)
+    {
+        var actorContext = new TestAuditActorContext();
+        return new(
+            context,
+            new DocumentationTemplateResolver(context),
+            new DocumentationAvailabilityService(),
+            new AuditWriter(context, actorContext),
+            actorContext);
     }
 
     private static IReadOnlyList<DocumentationFieldValueInputDto> Values(string title) =>

@@ -50,7 +50,7 @@ public sealed class CorrectCompletedDocumentationUseCase(
 
         if (record.ConcurrencyToken != request.ExpectedConcurrencyToken)
         {
-            return UseCaseResult<CorrectCompletedDocumentationResultDto>.Conflict(
+            return DocumentationConcurrencyHandler.StaleRequest<CorrectCompletedDocumentationResultDto>(
                 "Documentation Record changed. Reload and review the latest record before correcting.");
         }
 
@@ -71,10 +71,12 @@ public sealed class CorrectCompletedDocumentationUseCase(
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
-        catch (DbUpdateConcurrencyException)
+        catch (DbUpdateConcurrencyException ex)
         {
             await transaction.RollbackAsync(cancellationToken);
-            return UseCaseResult<CorrectCompletedDocumentationResultDto>.Conflict(
+            return DocumentationConcurrencyHandler.OptimisticWriteConflict<CorrectCompletedDocumentationResultDto>(
+                dbContext,
+                ex,
                 "Documentation Record changed. Reload and review the latest record before correcting.");
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or JsonException)

@@ -23,13 +23,34 @@ dotnet test Museum-System.sln
 
 Feature-specific test filtering can be added during implementation, for example by namespace or test trait, without changing this plan.
 
+## Latest Automated Validation
+
+Validation date: 2026-08-23
+
+- `dotnet build Museum-System.sln`: Passed, 0 warnings, 0 errors.
+- `dotnet test tests/MuseumSystem.Domain.Tests/MuseumSystem.Domain.Tests.csproj`: Passed, 44 passed, 0 failed, 0 skipped.
+- `dotnet test tests/MuseumSystem.Application.Tests/MuseumSystem.Application.Tests.csproj`: Passed, 138 passed, 0 failed, 0 skipped.
+- `dotnet test tests/MuseumSystem.Web.AcceptanceTests/MuseumSystem.Web.AcceptanceTests.csproj`: Passed, 82 passed, 0 failed, 0 skipped.
+- `dotnet test tests/MuseumSystem.Integration.Tests/MuseumSystem.Integration.Tests.csproj`: Passed, 27 passed, 0 failed, 0 skipped.
+- `dotnet test Museum-System.sln`: Passed, 291 passed, 0 failed, 0 skipped.
+- Intentionally deferred non-Feature-002 failures: none.
+
 ## Manual Acceptance Measurements
 
 These checkpoints validate human timing and usability success criteria during guided UAT; do not replace them with fabricated automated tests.
 
-- **SC-001**: At least 95% of guided Documentation attempts can locate an eligible Artifact by Museum Number and open its documentation form in under 30 seconds.
-- **SC-008**: Staff can identify the Documentation revision sequence/history in under 1 minute during guided acceptance validation.
-- **SC-010**: At least 90% of participating Documentation staff rate the digital workflow as no more burdensome than the current paper workflow after guided validation.
+- **SC-001**: Locate an eligible Artifact by Museum Number and open its documentation form.
+  - Measurement procedure: During guided museum staff UAT, time each participating Documentation employee from entering the Museum Number search to the documentation form becoming available for an eligible artifact.
+  - Required threshold: At least 95% of attempts complete in under 30 seconds.
+  - Status: Pending manual museum staff UAT.
+- **SC-008**: Identify the Documentation revision sequence/history.
+  - Measurement procedure: During guided museum staff UAT, ask users with history permission to open a Completed record history and identify the ordered revision sequence.
+  - Required threshold: Each measured attempt identifies the sequence in under 1 minute.
+  - Status: Pending manual museum staff UAT.
+- **SC-010**: Rate the digital workflow compared with the paper workflow.
+  - Measurement procedure: After guided validation of the primary workflow, collect ratings from participating Documentation staff on whether the digital workflow is no more burdensome than the current paper process.
+  - Required threshold: At least 90% of participating Documentation staff rate it no more burdensome.
+  - Status: Pending manual museum staff UAT.
 
 ## Scenario 1: Template Setup for an Artifact Category
 
@@ -121,7 +142,7 @@ Validate each permission independently:
 
 ## PostgreSQL-Specific Persistence Checks
 
-Validate JSONB mappings, EF migrations, database uniqueness/active-version constraints, foreign keys, and optimistic-concurrency persistence behavior against PostgreSQL. SQLite may be used only where existing generic test patterns benefit from it. PostgreSQL integration testing does not make Docker a production deployment requirement.
+Validate JSONB mappings, EF migrations, database uniqueness/active-version constraints, foreign keys, and optimistic-concurrency persistence behavior against PostgreSQL. SQLite may be used only where existing generic test patterns benefit from it. PostgreSQL integration tests may use Docker/Testcontainers where appropriate, but Docker/Testcontainers are test infrastructure only and do not make Docker a production deployment requirement.
 
 ## Regression Checks for Feature 001
 
@@ -151,3 +172,12 @@ Confirm Documentation screens do not provide:
 - OCR or AI.
 - Feature 001 reimplementation controls.
 
+## Phase F Traceability Review
+
+Reviewed on 2026-08-23.
+
+- FR-001 through FR-045 remain traced to Phases A-E and the quickstart scenarios above: template setup, primary documentation, custody separation, template evolution, revision history, and authorization.
+- FR-046 is traced to Phase F stale-request application tests, Blazor reload/review acceptance tests, the shared EF concurrency handler, and the existing PostgreSQL optimistic-concurrency race coverage.
+- SC-002, SC-003, SC-004, SC-005, SC-006, SC-007, SC-009, and SC-011 have automated validation coverage through domain, application, web acceptance, and PostgreSQL integration tests.
+- SC-001, SC-008, and SC-010 are human acceptance measurements and remain pending manual museum staff UAT as recorded above.
+- Scope boundaries were rechecked in Phase F source-structure tests: no controllers/API layer, microservice/service-host project, external document storage, media management, approval/export/printing/OCR/AI workflow, or Feature 001 ownership mutation was introduced by Documentation.

@@ -27,6 +27,7 @@ public interface IMuseumDbContext
     DbSet<DocumentationRevision> DocumentationRevisions { get; }
 
     Task<IMuseumDbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
+    void ClearTrackedChanges();
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 

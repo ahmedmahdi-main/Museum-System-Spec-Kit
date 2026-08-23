@@ -18,7 +18,13 @@
 <section class="page-section">
     @if (!string.IsNullOrWhiteSpace(message))
     {
-        <div class="status-message">@message</div>
+        <div class="status-message @(isConflict ? "warning-message" : null)">@message</div>
+        @if (isConflict)
+        {
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" @onclick="ReloadLatestWorkspaceAsync">إعادة تحميل أحدث نسخة</button>
+            </div>
+        }
     }
 
     <EditForm Model="this" OnSubmit="SearchAsync" FormName="documentation-artifact-search">
@@ -124,6 +130,7 @@
     private string museumNumber = string.Empty;
     private string? message;
     private DocumentationWorkspaceDto? workspace;
+    private bool isConflict;
 
     private async Task SearchAsync() => await RefreshWorkspaceAsync(clearMessage: true);
 
@@ -132,6 +139,7 @@
         if (clearMessage)
         {
             message = null;
+            isConflict = false;
         }
 
         var permissions = await GetPermissionsAsync();
@@ -142,6 +150,7 @@
             if (clearMessage)
             {
                 message = FormatResult(result);
+                isConflict = result.ConcurrencyConflict;
             }
             return;
         }
@@ -149,8 +158,19 @@
         workspace = result.Value;
     }
 
+    private async Task ReloadLatestWorkspaceAsync()
+    {
+        await RefreshWorkspaceAsync(clearMessage: true);
+        if (workspace is not null)
+        {
+            message = "تم تحميل أحدث نسخة. راجع البيانات قبل المتابعة.";
+            isConflict = false;
+        }
+    }
+
     private async Task CreateAsync()
     {
+        isConflict = false;
         if (!await IsAuthorizedAsync(PermissionNames.DocumentationCreate))
         {
             message = "لا تملك صلاحية إنشاء سجلات التوثيق.";
@@ -169,12 +189,15 @@
         if (!result.Succeeded)
         {
             var failureMessage = FormatResult(result);
+            var conflict = result.ConcurrencyConflict;
             await RefreshWorkspaceAsync(clearMessage: false);
             message = failureMessage;
+            isConflict = conflict;
             return;
         }
 
         message = FormatResult(result);
+        isConflict = false;
         Navigation.NavigateTo(EditHref(result.Value!.Record.DocumentationRecordId));
     }
 
@@ -227,7 +250,7 @@
         if (message.Contains("not currently held by Documentation", StringComparison.OrdinalIgnoreCase)) return "القطعة ليست حالياً لدى قسم التوثيق.";
         if (message.Contains("No Active documentation template", StringComparison.OrdinalIgnoreCase)) return "لا يوجد قالب توثيق نشط لهذه الفئة.";
         if (message.Contains("Draft documentation record created", StringComparison.OrdinalIgnoreCase)) return "تم إنشاء مسودة التوثيق.";
-        if (message.Contains("Reload and review", StringComparison.OrdinalIgnoreCase)) return "تغيرت البيانات. أعد التحميل وراجع آخر نسخة قبل المتابعة.";
+        if (message.Contains("Reload and review", StringComparison.OrdinalIgnoreCase)) return "تغيرت البيانات بواسطة مستخدم آخر. أعد تحميل أحدث نسخة وراجعها قبل المتابعة.";
         if (message.Contains("not authorized", StringComparison.OrdinalIgnoreCase)) return "لا تملك الصلاحية المطلوبة.";
         if (message.Contains("Saved", StringComparison.OrdinalIgnoreCase)) return "تم الحفظ.";
         return message;

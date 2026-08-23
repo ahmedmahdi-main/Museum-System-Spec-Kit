@@ -34,7 +34,7 @@ public sealed class ActivateTemplateVersionUseCase(IMuseumDbContext dbContext, I
 
         if (version.ConcurrencyToken != request.ExpectedConcurrencyToken)
         {
-            return UseCaseResult<DocumentationTemplateVersionDetailsDto>.Conflict("Template version changed. Reload and review before activating.");
+            return DocumentationConcurrencyHandler.StaleRequest<DocumentationTemplateVersionDetailsDto>("Template version changed. Reload and review before activating.");
         }
 
         try
@@ -43,13 +43,18 @@ public sealed class ActivateTemplateVersionUseCase(IMuseumDbContext dbContext, I
             template.ActivateVersion(version, actor);
             await dbContext.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateConcurrencyException)
+        catch (DbUpdateConcurrencyException ex)
         {
-            return UseCaseResult<DocumentationTemplateVersionDetailsDto>.Conflict("Template version changed. Reload and review before activating.");
+            return DocumentationConcurrencyHandler.OptimisticWriteConflict<DocumentationTemplateVersionDetailsDto>(
+                dbContext,
+                ex,
+                "Template version changed. Reload and review before activating.");
         }
         catch (DbUpdateException)
         {
-            return UseCaseResult<DocumentationTemplateVersionDetailsDto>.Conflict("Another template version became active first. Reload and review the latest template state.");
+            return DocumentationConcurrencyHandler.CompetingWriteConflict<DocumentationTemplateVersionDetailsDto>(
+                dbContext,
+                "Another template version became active first. Reload and review the latest template state.");
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {

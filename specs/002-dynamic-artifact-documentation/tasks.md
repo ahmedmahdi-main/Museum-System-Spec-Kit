@@ -242,22 +242,22 @@
 
 ### Cross-Cutting Tests and Verification
 
-- [ ] T132 [P] Add application tests rejecting stale Draft saves without updating values in `tests/MuseumSystem.Application.Tests/Documentation/DocumentationConcurrencyUseCaseTests.cs`
-- [ ] T133 [P] Add application tests rejecting stale Complete attempts without creating Revision 1 in `tests/MuseumSystem.Application.Tests/Documentation/DocumentationConcurrencyUseCaseTests.cs`
-- [ ] T134 [P] Add application tests rejecting stale correction attempts without creating a correction revision in `tests/MuseumSystem.Application.Tests/Documentation/DocumentationConcurrencyUseCaseTests.cs`
-- [ ] T135 [P] Add lightweight xUnit acceptance tests for stale-save reload/review messaging in Documentation page source without adding Playwright or bUnit in `tests/MuseumSystem.Web.AcceptanceTests/Documentation/DocumentationConcurrencyFlowTests.cs`
-- [ ] T136 [P] Add lightweight xUnit acceptance tests covering quickstart workflows without adding Playwright or bUnit in `tests/MuseumSystem.Web.AcceptanceTests/Documentation/DocumentationQuickstartTests.cs`
-- [ ] T137 [P] Add source-structure tests proving Feature 002 does not add controllers, APIs, microservices, external document stores, duplicated Feature 001 ownership, or out-of-scope UI controls in `tests/MuseumSystem.Web.AcceptanceTests/Documentation/DocumentationScopeBoundaryTests.cs`
+- [X] T132 [P] Add application tests rejecting stale Draft saves without updating values in `tests/MuseumSystem.Application.Tests/Documentation/DocumentationConcurrencyUseCaseTests.cs`
+- [X] T133 [P] Add application tests rejecting stale Complete attempts without creating Revision 1 in `tests/MuseumSystem.Application.Tests/Documentation/DocumentationConcurrencyUseCaseTests.cs`
+- [X] T134 [P] Add application tests rejecting stale correction attempts without creating a correction revision in `tests/MuseumSystem.Application.Tests/Documentation/DocumentationConcurrencyUseCaseTests.cs`
+- [X] T135 [P] Add lightweight xUnit acceptance tests for stale-save reload/review messaging in Documentation page source without adding Playwright or bUnit in `tests/MuseumSystem.Web.AcceptanceTests/Documentation/DocumentationConcurrencyFlowTests.cs`
+- [X] T136 [P] Add lightweight xUnit acceptance tests covering quickstart workflows without adding Playwright or bUnit in `tests/MuseumSystem.Web.AcceptanceTests/Documentation/DocumentationQuickstartTests.cs`
+- [X] T137 [P] Add source-structure tests proving Feature 002 does not add controllers, APIs, microservices, external document stores, duplicated Feature 001 ownership, or out-of-scope UI controls in `tests/MuseumSystem.Web.AcceptanceTests/Documentation/DocumentationScopeBoundaryTests.cs`
 
 ### Cross-Cutting Implementation
 
-- [ ] T138 Implement shared Documentation concurrency handling that maps stale EF writes to existing `UseCaseResult.Conflict` or `UseCaseResult.ConcurrencyConflict` with clear reload/review messages in `src/MuseumSystem.Application/Modules/Documentation/DocumentationConcurrencyHandler.cs`
-- [ ] T139 Apply the shared concurrency handler to template, Draft save, completion, and correction use cases without modifying `src/MuseumSystem.Application/Common/UseCaseResult.cs` unless implementation proves a missing capability in `src/MuseumSystem.Application/Modules/Documentation/`
-- [ ] T140 Add Blazor stale-state messaging and reload/review affordances to Documentation workflows in `src/MuseumSystem.Web/Components/Pages/Documentation/Index.razor`, `src/MuseumSystem.Web/Components/Pages/Documentation/EditRecord.razor`, `src/MuseumSystem.Web/Components/Pages/Documentation/CorrectRecord.razor`, and `src/MuseumSystem.Web/Components/Pages/Documentation/TemplateVersionEditor.razor`
-- [ ] T141 Add or verify quickstart guidance that PostgreSQL integration tests may use Docker/test containers where appropriate without making Docker a production deployment requirement in `specs/002-dynamic-artifact-documentation/quickstart.md`
-- [ ] T142 Verify Documentation pages reuse existing validation summary and layout conventions and do not duplicate Feature 001 workflows in `src/MuseumSystem.Web/Components/Pages/Documentation/`
-- [ ] T143 Run `dotnet build Museum-System.sln` plus Documentation domain, application, integration, and web acceptance test suites, then record any intentionally deferred non-Feature-002 failures in `specs/002-dynamic-artifact-documentation/quickstart.md`
-- [ ] T144 Execute the Feature 002 quickstart validation scenarios, record manual UAT checkpoints for SC-001, SC-008, and SC-010 without fabricating automated substitutes, and perform final traceability review from requirements to tasks in `specs/002-dynamic-artifact-documentation/tasks.md`
+- [X] T138 Implement shared Documentation concurrency handling that maps stale EF writes to existing `UseCaseResult.Conflict` or `UseCaseResult.ConcurrencyConflict` with clear reload/review messages in `src/MuseumSystem.Application/Modules/Documentation/DocumentationConcurrencyHandler.cs`
+- [X] T139 Apply the shared concurrency handler to template, Draft save, completion, and correction use cases without modifying `src/MuseumSystem.Application/Common/UseCaseResult.cs` unless implementation proves a missing capability in `src/MuseumSystem.Application/Modules/Documentation/`
+- [X] T140 Add Blazor stale-state messaging and reload/review affordances to Documentation workflows in `src/MuseumSystem.Web/Components/Pages/Documentation/Index.razor`, `src/MuseumSystem.Web/Components/Pages/Documentation/EditRecord.razor`, `src/MuseumSystem.Web/Components/Pages/Documentation/CorrectRecord.razor`, and `src/MuseumSystem.Web/Components/Pages/Documentation/TemplateVersionEditor.razor`
+- [X] T141 Add or verify quickstart guidance that PostgreSQL integration tests may use Docker/test containers where appropriate without making Docker a production deployment requirement in `specs/002-dynamic-artifact-documentation/quickstart.md`
+- [X] T142 Verify Documentation pages reuse existing validation summary and layout conventions and do not duplicate Feature 001 workflows in `src/MuseumSystem.Web/Components/Pages/Documentation/`
+- [X] T143 Run `dotnet build Museum-System.sln` plus Documentation domain, application, integration, and web acceptance test suites, then record any intentionally deferred non-Feature-002 failures in `specs/002-dynamic-artifact-documentation/quickstart.md`
+- [X] T144 Execute the Feature 002 quickstart validation scenarios, record manual UAT checkpoints for SC-001, SC-008, and SC-010 without fabricating automated substitutes, and perform final traceability review from requirements to tasks in `specs/002-dynamic-artifact-documentation/tasks.md`
 
 **Checkpoint**: Feature 002 is implementation-ready when all phases pass their tests, quickstart scenarios are validated, and Feature 001 behavior remains stable.
 

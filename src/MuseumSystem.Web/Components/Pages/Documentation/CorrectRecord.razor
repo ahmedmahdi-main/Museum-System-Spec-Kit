@@ -18,6 +18,12 @@
     @if (!string.IsNullOrWhiteSpace(message))
     {
         <div class="status-message @(isConflict ? "warning-message" : null)">@message</div>
+        @if (isConflict)
+        {
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" @onclick="ReloadLatestRecordAsync">إعادة تحميل أحدث نسخة</button>
+            </div>
+        }
     }
 
     @if (record is not null)
@@ -89,8 +95,18 @@
         isConflict = result.ConcurrencyConflict;
         message = result.Succeeded
             ? $"تم حفظ التصحيح بنجاح بوصفه المراجعة {result.Value!.RevisionNumber}."
-            : result.ConcurrencyConflict ? "تغير السجل. أعد التحميل وراجع أحدث القيم قبل حفظ التصحيح." : FormatFailure(result);
+            : result.ConcurrencyConflict ? "تغيرت البيانات بواسطة مستخدم آخر. أعد تحميل أحدث نسخة وراجعها قبل المتابعة." : FormatFailure(result);
         if (result.Succeeded) await OnParametersSetAsync();
+    }
+
+    private async Task ReloadLatestRecordAsync()
+    {
+        await OnParametersSetAsync();
+        if (record is not null)
+        {
+            message = "تم تحميل أحدث نسخة. راجع البيانات قبل المتابعة.";
+            isConflict = false;
+        }
     }
 
     private async Task<bool> IsAuthorizedAsync(string policy)

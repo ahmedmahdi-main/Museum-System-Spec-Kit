@@ -26,7 +26,7 @@ public sealed class SaveTemplateVersionDraftUseCase(IMuseumDbContext dbContext, 
 
         if (version.ConcurrencyToken != request.ExpectedConcurrencyToken)
         {
-            return UseCaseResult<DocumentationTemplateVersionDetailsDto>.Conflict("Template version changed. Reload and review the latest Draft before saving.");
+            return DocumentationConcurrencyHandler.StaleRequest<DocumentationTemplateVersionDetailsDto>("Template version changed. Reload and review the latest Draft before saving.");
         }
 
         if (version.Status != DocumentationTemplateVersionStatus.Draft)
@@ -68,9 +68,12 @@ public sealed class SaveTemplateVersionDraftUseCase(IMuseumDbContext dbContext, 
             dbContext.DocumentationTemplateFields.AddRange(fields);
             await dbContext.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateConcurrencyException)
+        catch (DbUpdateConcurrencyException ex)
         {
-            return UseCaseResult<DocumentationTemplateVersionDetailsDto>.Conflict("Template version changed. Reload and review the latest Draft before saving.");
+            return DocumentationConcurrencyHandler.OptimisticWriteConflict<DocumentationTemplateVersionDetailsDto>(
+                dbContext,
+                ex,
+                "Template version changed. Reload and review the latest Draft before saving.");
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {

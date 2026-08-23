@@ -24,7 +24,7 @@ public sealed class CompleteDocumentationRecordUseCase(
         var (record, artifact, version) = loaded.Value;
         if (record.ConcurrencyToken != request.ExpectedConcurrencyToken)
         {
-            return UseCaseResult<DocumentationRecordSummaryDto>.Conflict("Documentation Record changed. Reload and review the latest Draft before completing.");
+            return DocumentationConcurrencyHandler.StaleRequest<DocumentationRecordSummaryDto>("Documentation Record changed. Reload and review the latest Draft before completing.");
         }
 
         if (record.Status != DocumentationRecordStatus.Draft)
@@ -44,9 +44,12 @@ public sealed class CompleteDocumentationRecordUseCase(
             record.Complete(values, version, actor);
             await dbContext.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateConcurrencyException)
+        catch (DbUpdateConcurrencyException ex)
         {
-            return UseCaseResult<DocumentationRecordSummaryDto>.Conflict("Documentation Record changed. Reload and review the latest Draft before completing.");
+            return DocumentationConcurrencyHandler.OptimisticWriteConflict<DocumentationRecordSummaryDto>(
+                dbContext,
+                ex,
+                "Documentation Record changed. Reload and review the latest Draft before completing.");
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {

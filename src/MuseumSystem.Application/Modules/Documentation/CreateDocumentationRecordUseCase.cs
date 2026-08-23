@@ -50,13 +50,18 @@ public sealed class CreateDocumentationRecordUseCase(
             dbContext.DocumentationRecords.Add(record);
             await dbContext.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateConcurrencyException)
+        catch (DbUpdateConcurrencyException ex)
         {
-            return UseCaseResult<DocumentationRecordEditDto>.Conflict("Active template version changed. Reload and review the latest Documentation workspace before creating a record.");
+            return DocumentationConcurrencyHandler.OptimisticWriteConflict<DocumentationRecordEditDto>(
+                dbContext,
+                ex,
+                "Active template version changed. Reload and review the latest Documentation workspace before creating a record.");
         }
         catch (DbUpdateException)
         {
-            return UseCaseResult<DocumentationRecordEditDto>.Conflict("A Documentation Record was created for this artifact first. Reload and review the latest record.");
+            return DocumentationConcurrencyHandler.CompetingWriteConflict<DocumentationRecordEditDto>(
+                dbContext,
+                "A Documentation Record was created for this artifact first. Reload and review the latest record.");
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {

@@ -17,7 +17,13 @@
 <section class="page-section">
     @if (!string.IsNullOrWhiteSpace(message))
     {
-        <div class="status-message">@message</div>
+        <div class="status-message @(isConflict ? "warning-message" : null)">@message</div>
+        @if (isConflict)
+        {
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" @onclick="ReloadLatestRecordAsync">إعادة تحميل أحدث نسخة</button>
+            </div>
+        }
     }
 
     @if (record is not null)
@@ -91,6 +97,7 @@
     private string? message;
     private bool canCorrectCompleted;
     private bool canViewHistory;
+    private bool isConflict;
 
     private bool IsFormReadOnly => record is null || record.Record.Status != DocumentationRecordStatus.Draft || !record.Actions.CanSaveDraft;
 
@@ -114,6 +121,7 @@
 
         var result = await SaveDraftUseCase.SaveDocumentationDraft(new SaveDocumentationDraftRequest(RecordId, record.Record.ConcurrencyToken, values));
         message = FormatResult(result);
+        isConflict = result.ConcurrencyConflict;
         if (result.Succeeded)
         {
             await ReloadAsync();
@@ -138,13 +146,23 @@
 
         var result = await CompleteUseCase.CompleteDocumentationRecord(new CompleteDocumentationRecordRequest(RecordId, record.Record.ConcurrencyToken, values));
         message = FormatResult(result);
+        isConflict = result.ConcurrencyConflict;
         if (result.Succeeded)
         {
             await ReloadAsync();
         }
     }
 
-    private async Task ReloadAsync()
+    private async Task ReloadLatestRecordAsync()
+    {
+        if (await ReloadAsync())
+        {
+            message = "تم تحميل أحدث نسخة. راجع البيانات قبل المتابعة.";
+            isConflict = false;
+        }
+    }
+
+    private async Task<bool> ReloadAsync()
     {
         canCorrectCompleted = await IsAuthorizedAsync(PermissionNames.DocumentationEdit);
         canViewHistory = await IsAuthorizedAsync(PermissionNames.DocumentationHistoryView);
@@ -153,11 +171,14 @@
         if (!result.Succeeded)
         {
             message = FormatResult(result);
-            return;
+            isConflict = result.ConcurrencyConflict;
+            return false;
         }
 
         record = result.Value!;
         values = ToInputs(record.Values);
+        isConflict = false;
+        return true;
     }
 
     private async Task<DocumentationActionPermissionSet> GetPermissionsAsync() => new(
@@ -202,7 +223,7 @@
         if (message.Contains("not currently held by Documentation", StringComparison.OrdinalIgnoreCase)) return "القطعة ليست حالياً لدى قسم التوثيق.";
         if (message.Contains("Draft documentation saved", StringComparison.OrdinalIgnoreCase)) return "تم حفظ المسودة.";
         if (message.Contains("documentation record completed", StringComparison.OrdinalIgnoreCase)) return "تم إكمال التوثيق.";
-        if (message.Contains("Reload and review", StringComparison.OrdinalIgnoreCase)) return "تغيرت البيانات. أعد التحميل وراجع آخر نسخة قبل المتابعة.";
+        if (message.Contains("Reload and review", StringComparison.OrdinalIgnoreCase)) return "تغيرت البيانات بواسطة مستخدم آخر. أعد تحميل أحدث نسخة وراجعها قبل المتابعة.";
         if (message.Contains("Only Draft", StringComparison.OrdinalIgnoreCase)) return "يمكن حفظ سجلات المسودة فقط.";
         if (message.Contains("required", StringComparison.OrdinalIgnoreCase)) return "توجد حقول مطلوبة لم تكتمل.";
         if (message.Contains("not authorized", StringComparison.OrdinalIgnoreCase)) return "لا تملك الصلاحية المطلوبة.";

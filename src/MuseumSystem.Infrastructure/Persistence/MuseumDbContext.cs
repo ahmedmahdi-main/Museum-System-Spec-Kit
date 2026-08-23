@@ -31,6 +31,8 @@ public sealed class MuseumDbContext(DbContextOptions<MuseumDbContext> options)
     public DbSet<DocumentationRecord> DocumentationRecords => Set<DocumentationRecord>();
     public DbSet<DocumentationRevision> DocumentationRevisions => Set<DocumentationRevision>();
 
+    public void ClearTrackedChanges() => ChangeTracker.Clear();
+
     public async Task<IMuseumDbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
         if (!Database.IsRelational())
