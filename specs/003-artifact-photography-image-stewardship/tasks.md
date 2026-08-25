@@ -28,15 +28,15 @@
 
 **Purpose**: Package, configuration, and repository prerequisites only.
 
-- [ ] T001 Evaluate the JPEG/PNG processing package, verify license/project compatibility, and record the selected package in specs/003-artifact-photography-image-stewardship/implementation-decisions.md
-- [ ] T002 Add the approved image-processing package reference only after T001 compatibility approval in src/MuseumSystem.Infrastructure/MuseumSystem.Infrastructure.csproj
-- [ ] T003 Add the MinIO .NET SDK package reference for Infrastructure-only usage in src/MuseumSystem.Infrastructure/MuseumSystem.Infrastructure.csproj
-- [ ] T004 Add Photography storage, image-size, thumbnail, preview, and idempotency retention configuration keys without secrets in src/MuseumSystem.Web/appsettings.json
-- [ ] T005 Add local development Photography storage configuration placeholders without secrets in src/MuseumSystem.Web/appsettings.Development.json
-- [ ] T006 [P] Create the Photography domain test folder marker in tests/MuseumSystem.Domain.Tests/Photography/.gitkeep
-- [ ] T007 [P] Create the Photography application test folder marker in tests/MuseumSystem.Application.Tests/Photography/.gitkeep
-- [ ] T008 [P] Create the Photography integration test folder marker in tests/MuseumSystem.Integration.Tests/Photography/.gitkeep
-- [ ] T009 [P] Create the Photography web acceptance test folder marker in tests/MuseumSystem.Web.AcceptanceTests/Photography/.gitkeep
+- [x] T001 Evaluate the JPEG/PNG processing package, verify license/project compatibility, and record the selected package in specs/003-artifact-photography-image-stewardship/implementation-decisions.md
+- [x] T002 Add the approved image-processing package reference only after T001 compatibility approval in src/MuseumSystem.Infrastructure/MuseumSystem.Infrastructure.csproj
+- [x] T003 Add the MinIO .NET SDK package reference for Infrastructure-only usage in src/MuseumSystem.Infrastructure/MuseumSystem.Infrastructure.csproj
+- [x] T004 Add Photography storage, image-size, thumbnail, preview, and idempotency retention configuration keys without secrets in src/MuseumSystem.Web/appsettings.json
+- [x] T005 Add local development Photography storage configuration placeholders without secrets in src/MuseumSystem.Web/appsettings.Development.json
+- [x] T006 [P] Create the Photography domain test folder marker in tests/MuseumSystem.Domain.Tests/Photography/.gitkeep
+- [x] T007 [P] Create the Photography application test folder marker in tests/MuseumSystem.Application.Tests/Photography/.gitkeep
+- [x] T008 [P] Create the Photography integration test folder marker in tests/MuseumSystem.Integration.Tests/Photography/.gitkeep
+- [x] T009 [P] Create the Photography web acceptance test folder marker in tests/MuseumSystem.Web.AcceptanceTests/Photography/.gitkeep
 
 ---
 
@@ -50,7 +50,7 @@
 
 ### Tests for Foundational Architecture
 
-- [ ] T010 [P] Add domain invariant tests for Photography purpose values and package-neutral model behavior in tests/MuseumSystem.Domain.Tests/Photography/PhotographyPurposeTests.cs
+- [x] T010 [P] Add domain invariant tests for Photography purpose values and package-neutral model behavior in tests/MuseumSystem.Domain.Tests/Photography/PhotographyPurposeTests.cs
 - [ ] T011 [P] Add application authorization-policy tests proving only the five approved Photography permissions exist in tests/MuseumSystem.Application.Tests/Photography/PhotographyPermissionPolicyTests.cs
 - [ ] T012 [P] Add PostgreSQL migration/schema tests covering core Photography table creation and required indexes excluding PhotographyRequest in tests/MuseumSystem.Integration.Tests/Photography/PhotographyMigrationTests.cs
 - [ ] T013 [P] Add PostgreSQL tests for Artifact FKs, PhotographySet composite uniqueness, ArtifactImage composite FK, unique object keys, and idempotency uniqueness in tests/MuseumSystem.Integration.Tests/Photography/PhotographyRelationalInvariantTests.cs
@@ -58,14 +58,14 @@
 
 ### Implementation for Foundational Architecture
 
-- [ ] T015 [P] Create shared Photography enum and value-object definitions for purposes, image status, derivative kind, deletion mode, and object keys excluding request-specific types in src/MuseumSystem.Domain/Modules/Photography/PhotographyTypes.cs
-- [ ] T016 [P] Create PhotographySet aggregate with ArtifactId, purpose, photography date, photographer, and immutable set context rules in src/MuseumSystem.Domain/Modules/Photography/PhotographySet.cs
-- [ ] T017 [P] Create ArtifactImage aggregate with ArtifactId, PhotographySetId, immutable original metadata, deletion status, and no persisted IsPrimary authority in src/MuseumSystem.Domain/Modules/Photography/ArtifactImage.cs
-- [ ] T018 [P] Create ArtifactImageDerivative entity for thumbnail and preview metadata in src/MuseumSystem.Domain/Modules/Photography/ArtifactImageDerivative.cs
-- [ ] T019 [P] Create ArtifactPhotographyState aggregate with authoritative nullable PrimaryImageId and concurrency token in src/MuseumSystem.Domain/Modules/Photography/ArtifactPhotographyState.cs
-- [ ] T020 [P] Create PhotographyUploadOperation and PhotographyUploadFileOutcome entities for persistent idempotency and per-file outcomes in src/MuseumSystem.Domain/Modules/Photography/PhotographyUploadOperation.cs
-- [ ] T021 [P] Create StorageOperationRecovery entity for internal recoverable consistency records in src/MuseumSystem.Domain/Modules/Photography/StorageOperationRecovery.cs
-- [ ] T022 Create shared Photography domain service rules for set/image association, primary eligibility, deletion reason, grace-period, and server-time boundaries excluding PhotographyRequest fulfillment rules in src/MuseumSystem.Domain/Modules/Photography/PhotographyRules.cs
+- [x] T015 [P] Create shared Photography enum and value-object definitions for purposes, image status, derivative kind, deletion mode, and object keys excluding request-specific types in src/MuseumSystem.Domain/Modules/Photography/PhotographyTypes.cs
+- [x] T016 [P] Create PhotographySet aggregate with ArtifactId, purpose, photography date, photographer, and immutable set context rules in src/MuseumSystem.Domain/Modules/Photography/PhotographySet.cs
+- [x] T017 [P] Create ArtifactImage aggregate with ArtifactId, PhotographySetId, immutable original metadata, deletion status, and no persisted IsPrimary authority in src/MuseumSystem.Domain/Modules/Photography/ArtifactImage.cs
+- [x] T018 [P] Create ArtifactImageDerivative entity for thumbnail and preview metadata in src/MuseumSystem.Domain/Modules/Photography/ArtifactImageDerivative.cs
+- [x] T019 [P] Create ArtifactPhotographyState aggregate with authoritative nullable PrimaryImageId and concurrency token in src/MuseumSystem.Domain/Modules/Photography/ArtifactPhotographyState.cs
+- [x] T020 [P] Create PhotographyUploadOperation and PhotographyUploadFileOutcome entities for persistent idempotency and per-file outcomes in src/MuseumSystem.Domain/Modules/Photography/PhotographyUploadOperation.cs
+- [x] T021 [P] Create StorageOperationRecovery entity for internal recoverable consistency records in src/MuseumSystem.Domain/Modules/Photography/StorageOperationRecovery.cs
+- [x] T022 Create shared Photography domain service rules for set/image association, primary eligibility, deletion reason, grace-period, and server-time boundaries excluding PhotographyRequest fulfillment rules in src/MuseumSystem.Domain/Modules/Photography/PhotographyRules.cs
 - [ ] T023 Add shared Photography DbSet members excluding PhotographyRequest to the application persistence abstraction in src/MuseumSystem.Application/Common/Persistence/IMuseumDbContext.cs
 - [ ] T024 [P] Add shared non-request Photography DTOs, command records, result records, and staff-safe summary shapes in src/MuseumSystem.Application/Modules/Photography/Contracts/PhotographyDtos.cs
 - [ ] T025 [P] Add package-neutral image processor abstraction and structured validation/derivative result types in src/MuseumSystem.Application/Modules/Photography/Imaging/IArtifactImageProcessor.cs
