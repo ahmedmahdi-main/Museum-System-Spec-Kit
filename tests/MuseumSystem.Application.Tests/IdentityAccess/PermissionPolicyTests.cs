@@ -42,7 +42,12 @@ public sealed class PermissionPolicyTests
             "Documentation.Complete",
             "Documentation.History.View",
             "Documentation.Templates.View",
-            "Documentation.Templates.Manage"
+            "Documentation.Templates.Manage",
+            "Photography.View",
+            "Photography.Upload",
+            "Photography.Manage",
+            "Photography.Request",
+            "Photography.Delete"
         ];
 
         Assert.Equal(expected.Order(), PermissionNames.All.Order());

@@ -51,7 +51,7 @@
 ### Tests for Foundational Architecture
 
 - [x] T010 [P] Add domain invariant tests for Photography purpose values and package-neutral model behavior in tests/MuseumSystem.Domain.Tests/Photography/PhotographyPurposeTests.cs
-- [ ] T011 [P] Add application authorization-policy tests proving only the five approved Photography permissions exist in tests/MuseumSystem.Application.Tests/Photography/PhotographyPermissionPolicyTests.cs
+- [x] T011 [P] Add application authorization-policy tests proving only the five approved Photography permissions exist in tests/MuseumSystem.Application.Tests/Photography/PhotographyPermissionPolicyTests.cs
 - [ ] T012 [P] Add PostgreSQL migration/schema tests covering core Photography table creation and required indexes excluding PhotographyRequest in tests/MuseumSystem.Integration.Tests/Photography/PhotographyMigrationTests.cs
 - [ ] T013 [P] Add PostgreSQL tests for Artifact FKs, PhotographySet composite uniqueness, ArtifactImage composite FK, unique object keys, and idempotency uniqueness in tests/MuseumSystem.Integration.Tests/Photography/PhotographyRelationalInvariantTests.cs
 - [ ] T014 [P] Add PostgreSQL optimistic concurrency tests for image, set, upload operation, and ArtifactPhotographyState rows excluding PhotographyRequest in tests/MuseumSystem.Integration.Tests/Photography/PhotographyOptimisticConcurrencyTests.cs
@@ -67,13 +67,13 @@
 - [x] T021 [P] Create StorageOperationRecovery entity for internal recoverable consistency records in src/MuseumSystem.Domain/Modules/Photography/StorageOperationRecovery.cs
 - [x] T022 Create shared Photography domain service rules for set/image association, primary eligibility, deletion reason, grace-period, and server-time boundaries excluding PhotographyRequest fulfillment rules in src/MuseumSystem.Domain/Modules/Photography/PhotographyRules.cs
 - [ ] T023 Add shared Photography DbSet members excluding PhotographyRequest to the application persistence abstraction in src/MuseumSystem.Application/Common/Persistence/IMuseumDbContext.cs
-- [ ] T024 [P] Add shared non-request Photography DTOs, command records, result records, and staff-safe summary shapes in src/MuseumSystem.Application/Modules/Photography/Contracts/PhotographyDtos.cs
-- [ ] T025 [P] Add package-neutral image processor abstraction and structured validation/derivative result types in src/MuseumSystem.Application/Modules/Photography/Imaging/IArtifactImageProcessor.cs
-- [ ] T026 [P] Add package-neutral object-storage abstraction and structured storage result types in src/MuseumSystem.Application/Modules/Photography/Storage/IArtifactImageStorage.cs
-- [ ] T027 [P] Add upload idempotency fingerprint service using artifact/set/purpose/date/photographer, file ordinal, size, content hash, and detected media descriptors in src/MuseumSystem.Application/Modules/Photography/PhotographyUploadFingerprintService.cs
-- [ ] T028 Add the five approved Photography permission constants and no recovery permission in src/MuseumSystem.Application/Modules/IdentityAccess/PermissionNames.cs
-- [ ] T029 Register Photography permissions and role/policy metadata through the existing authorization model in src/MuseumSystem.Application/Modules/IdentityAccess/Permissions.cs
-- [ ] T030 Add Photography audit action names for upload, metadata, primary, request lifecycle, deletion, and storage recovery through existing audit infrastructure in src/MuseumSystem.Application/Modules/Photography/PhotographyAuditActions.cs
+- [x] T024 [P] Add shared non-request Photography DTOs, command records, result records, and staff-safe summary shapes in src/MuseumSystem.Application/Modules/Photography/Contracts/PhotographyDtos.cs
+- [x] T025 [P] Add package-neutral image processor abstraction and structured validation/derivative result types in src/MuseumSystem.Application/Modules/Photography/Imaging/IArtifactImageProcessor.cs
+- [x] T026 [P] Add package-neutral object-storage abstraction and structured storage result types in src/MuseumSystem.Application/Modules/Photography/Storage/IArtifactImageStorage.cs
+- [x] T027 [P] Add upload idempotency fingerprint service using artifact/set/purpose/date/photographer, file ordinal, size, content hash, and detected media descriptors in src/MuseumSystem.Application/Modules/Photography/PhotographyUploadFingerprintService.cs
+- [x] T028 Add the five approved Photography permission constants and no recovery permission in src/MuseumSystem.Application/Modules/IdentityAccess/PermissionNames.cs
+- [x] T029 Register Photography permissions and role/policy metadata through the existing authorization model in src/MuseumSystem.Application/Modules/IdentityAccess/Permissions.cs
+- [x] T030 Add Photography audit action names for upload, metadata, primary, request lifecycle, deletion, and storage recovery through existing audit infrastructure in src/MuseumSystem.Application/Modules/Photography/PhotographyAuditActions.cs
 - [ ] T031 Add shared Photography entities excluding PhotographyRequest to MuseumDbContext DbSets and model discovery in src/MuseumSystem.Infrastructure/Persistence/MuseumDbContext.cs
 - [ ] T032 Create EF Core core Photography mappings excluding PhotographyRequest with all shared FKs, composite FK, unique constraints, check constraints, object-key uniqueness, and concurrency tokens in src/MuseumSystem.Infrastructure/Persistence/Configurations/PhotographyConfiguration.cs
 - [ ] T033 Create the core Photography schema migration excluding PhotographyRequest with PostgreSQL constraints and indexes in src/MuseumSystem.Infrastructure/Persistence/Migrations/20260824000100_AddPhotographyCoreSchema.cs

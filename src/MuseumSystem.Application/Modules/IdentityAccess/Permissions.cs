@@ -8,6 +8,8 @@ public static class MuseumRoleNames
     public const string InventoryOfficer = "InventoryOfficer";
     public const string Viewer = "Viewer";
     public const string DocumentationStaff = "DocumentationStaff";
+    public const string Photographer = "Photographer";
+    public const string PhotographySupervisor = "PhotographySupervisor";
 }
 
 public static class MuseumRolePresets
@@ -48,6 +50,20 @@ public static class MuseumRolePresets
                 PermissionNames.DocumentationComplete,
                 PermissionNames.DocumentationHistoryView,
                 PermissionNames.DocumentationTemplatesView
+            ],
+            [MuseumRoleNames.Photographer] =
+            [
+                PermissionNames.PhotographyView,
+                PermissionNames.PhotographyUpload,
+                PermissionNames.PhotographyManage
+            ],
+            [MuseumRoleNames.PhotographySupervisor] =
+            [
+                PermissionNames.PhotographyView,
+                PermissionNames.PhotographyUpload,
+                PermissionNames.PhotographyManage,
+                PermissionNames.PhotographyRequest,
+                PermissionNames.PhotographyDelete
             ]
         };
 }

@@ -23,6 +23,11 @@ public static class PermissionNames
     public const string DocumentationHistoryView = "Documentation.History.View";
     public const string DocumentationTemplatesView = "Documentation.Templates.View";
     public const string DocumentationTemplatesManage = "Documentation.Templates.Manage";
+    public const string PhotographyView = "Photography.View";
+    public const string PhotographyUpload = "Photography.Upload";
+    public const string PhotographyManage = "Photography.Manage";
+    public const string PhotographyRequest = "Photography.Request";
+    public const string PhotographyDelete = "Photography.Delete";
 
     public static IReadOnlyList<string> All { get; } =
     [
@@ -43,7 +48,12 @@ public static class PermissionNames
         DocumentationComplete,
         DocumentationHistoryView,
         DocumentationTemplatesView,
-        DocumentationTemplatesManage
+        DocumentationTemplatesManage,
+        PhotographyView,
+        PhotographyUpload,
+        PhotographyManage,
+        PhotographyRequest,
+        PhotographyDelete
     ];
 }
 
