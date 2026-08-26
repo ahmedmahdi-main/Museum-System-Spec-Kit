@@ -2,13 +2,16 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using MuseumSystem.Application.Common.Persistence;
 using MuseumSystem.Application.Common.Audit;
 using MuseumSystem.Application.Modules.Import;
+using MuseumSystem.Application.Modules.Photography;
 using MuseumSystem.Infrastructure.Excel;
 using MuseumSystem.Infrastructure.Identity;
 using MuseumSystem.Infrastructure.Persistence;
 using MuseumSystem.Infrastructure.Audit;
+using MuseumSystem.Infrastructure.Photography.Storage;
 
 namespace MuseumSystem.Infrastructure;
 
@@ -25,6 +28,10 @@ public static class DependencyInjection
         services.AddScoped<IExcelImportReader, ClosedXmlImportReader>();
         services.AddScoped<IAuditActorContext, HttpAuditActorContext>();
         services.AddScoped<IAuditWriter, AuditWriter>();
+        services.AddScoped<PhotographyUploadFingerprintService>();
+        services.AddSingleton<IValidateOptions<MinioArtifactImageStorageOptions>, MinioArtifactImageStorageOptionsValidator>();
+        services.AddOptions<MinioArtifactImageStorageOptions>()
+            .Bind(configuration.GetSection(MinioArtifactImageStorageOptions.SectionName));
 
         services.AddIdentityCore<ApplicationUser>()
             .AddRoles<ApplicationRole>()

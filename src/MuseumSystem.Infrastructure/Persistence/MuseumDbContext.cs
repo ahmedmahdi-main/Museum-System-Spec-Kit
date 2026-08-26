@@ -7,6 +7,7 @@ using MuseumSystem.Domain.Modules.StorehouseOperations;
 using MuseumSystem.Domain.Modules.Import;
 using MuseumSystem.Domain.Modules.IdentityAccess;
 using MuseumSystem.Domain.Modules.Documentation;
+using MuseumSystem.Domain.Modules.Photography;
 using MuseumSystem.Infrastructure.Identity;
 
 namespace MuseumSystem.Infrastructure.Persistence;
@@ -30,6 +31,13 @@ public sealed class MuseumDbContext(DbContextOptions<MuseumDbContext> options)
     public DbSet<DocumentationTemplateFieldOption> DocumentationTemplateFieldOptions => Set<DocumentationTemplateFieldOption>();
     public DbSet<DocumentationRecord> DocumentationRecords => Set<DocumentationRecord>();
     public DbSet<DocumentationRevision> DocumentationRevisions => Set<DocumentationRevision>();
+    public DbSet<PhotographySet> PhotographySets => Set<PhotographySet>();
+    public DbSet<ArtifactImage> ArtifactImages => Set<ArtifactImage>();
+    public DbSet<ArtifactImageDerivative> ArtifactImageDerivatives => Set<ArtifactImageDerivative>();
+    public DbSet<ArtifactPhotographyState> ArtifactPhotographyStates => Set<ArtifactPhotographyState>();
+    public DbSet<PhotographyUploadOperation> PhotographyUploadOperations => Set<PhotographyUploadOperation>();
+    public DbSet<PhotographyUploadFileOutcome> PhotographyUploadFileOutcomes => Set<PhotographyUploadFileOutcome>();
+    public DbSet<StorageOperationRecovery> StorageOperationRecoveries => Set<StorageOperationRecovery>();
 
     public void ClearTrackedChanges() => ChangeTracker.Clear();
 

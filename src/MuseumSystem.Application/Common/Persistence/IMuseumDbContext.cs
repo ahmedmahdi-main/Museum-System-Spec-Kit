@@ -4,6 +4,7 @@ using MuseumSystem.Domain.Modules.StorehouseOperations;
 using MuseumSystem.Domain.Modules.Import;
 using MuseumSystem.Domain.Modules.IdentityAccess;
 using MuseumSystem.Domain.Modules.Documentation;
+using MuseumSystem.Domain.Modules.Photography;
 
 namespace MuseumSystem.Application.Common.Persistence;
 
@@ -25,6 +26,13 @@ public interface IMuseumDbContext
     DbSet<DocumentationTemplateFieldOption> DocumentationTemplateFieldOptions { get; }
     DbSet<DocumentationRecord> DocumentationRecords { get; }
     DbSet<DocumentationRevision> DocumentationRevisions { get; }
+    DbSet<PhotographySet> PhotographySets { get; }
+    DbSet<ArtifactImage> ArtifactImages { get; }
+    DbSet<ArtifactImageDerivative> ArtifactImageDerivatives { get; }
+    DbSet<ArtifactPhotographyState> ArtifactPhotographyStates { get; }
+    DbSet<PhotographyUploadOperation> PhotographyUploadOperations { get; }
+    DbSet<PhotographyUploadFileOutcome> PhotographyUploadFileOutcomes { get; }
+    DbSet<StorageOperationRecovery> StorageOperationRecoveries { get; }
 
     Task<IMuseumDbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
     void ClearTrackedChanges();
