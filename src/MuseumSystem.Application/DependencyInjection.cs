@@ -4,6 +4,7 @@ using MuseumSystem.Application.Modules.ArtifactRegistry;
 using MuseumSystem.Application.Modules.Documentation;
 using MuseumSystem.Application.Modules.IdentityAccess;
 using MuseumSystem.Application.Modules.Import;
+using MuseumSystem.Application.Modules.Photography;
 using MuseumSystem.Application.Modules.StorehouseOperations;
 
 namespace MuseumSystem.Application;
@@ -49,6 +50,10 @@ public static class DependencyInjection
         services.AddScoped<ReviewReconciliationResultsUseCase>();
         services.AddScoped<RecordReconciliationItemsUseCase>();
         services.AddScoped<StartReconciliationSessionUseCase>();
+        services.AddScoped<PhotographyObjectKeyFactory>();
+        services.AddScoped<PhotographyUploadPersistenceService>();
+        services.AddScoped<PhotographyUploadAuditService>();
+        services.AddScoped<PhotographyResponseMapper>();
         return services;
     }
 }
