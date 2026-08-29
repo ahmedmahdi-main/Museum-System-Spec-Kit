@@ -7,10 +7,13 @@ using MuseumSystem.Application.Common.Persistence;
 using MuseumSystem.Application.Common.Audit;
 using MuseumSystem.Application.Modules.Import;
 using MuseumSystem.Application.Modules.Photography;
+using MuseumSystem.Application.Modules.Photography.Imaging;
+using MuseumSystem.Application.Modules.Photography.Storage;
 using MuseumSystem.Infrastructure.Excel;
 using MuseumSystem.Infrastructure.Identity;
 using MuseumSystem.Infrastructure.Persistence;
 using MuseumSystem.Infrastructure.Audit;
+using MuseumSystem.Infrastructure.Photography.Imaging;
 using MuseumSystem.Infrastructure.Photography.Storage;
 
 namespace MuseumSystem.Infrastructure;
@@ -29,6 +32,21 @@ public static class DependencyInjection
         services.AddScoped<IAuditActorContext, HttpAuditActorContext>();
         services.AddScoped<IAuditWriter, AuditWriter>();
         services.AddScoped<PhotographyUploadFingerprintService>();
+        services.AddScoped<IArtifactImageProcessor, ArtifactImageProcessor>();
+        services.AddScoped<IArtifactImageStorage, MinioArtifactImageStorage>();
+        services.AddSingleton<IValidateOptions<ArtifactImageProcessingOptions>, ArtifactImageProcessingOptionsValidator>();
+        services.Configure<ArtifactImageProcessingOptions>(options =>
+        {
+            options.MaximumOriginalBytes = configuration.GetValue<long?>("Photography:Uploads:MaximumOriginalBytes") ?? options.MaximumOriginalBytes;
+            options.Thumbnail = new DerivativeOptions(
+                configuration.GetValue<int?>("Photography:Derivatives:Thumbnail:MaxWidth") ?? options.Thumbnail.MaxWidth,
+                configuration.GetValue<int?>("Photography:Derivatives:Thumbnail:MaxHeight") ?? options.Thumbnail.MaxHeight,
+                configuration.GetValue<int?>("Photography:Derivatives:Thumbnail:JpegQuality") ?? options.Thumbnail.JpegQuality);
+            options.Preview = new DerivativeOptions(
+                configuration.GetValue<int?>("Photography:Derivatives:Preview:MaxWidth") ?? options.Preview.MaxWidth,
+                configuration.GetValue<int?>("Photography:Derivatives:Preview:MaxHeight") ?? options.Preview.MaxHeight,
+                configuration.GetValue<int?>("Photography:Derivatives:Preview:JpegQuality") ?? options.Preview.JpegQuality);
+        });
         services.AddSingleton<IValidateOptions<MinioArtifactImageStorageOptions>, MinioArtifactImageStorageOptionsValidator>();
         services.AddOptions<MinioArtifactImageStorageOptions>()
             .Bind(configuration.GetSection(MinioArtifactImageStorageOptions.SectionName));
