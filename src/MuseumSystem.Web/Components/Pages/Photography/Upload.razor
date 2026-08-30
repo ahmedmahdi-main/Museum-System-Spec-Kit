@@ -1,0 +1,445 @@
+@page "/photography/upload"
+@attribute [Authorize(Policy = PermissionNames.PhotographyUpload)]
+@rendermode InteractiveServer
+@inject ArtifactReadUseCases ArtifactReadUseCases
+@inject CreatePhotographySetWithImagesUseCase CreateUseCase
+
+<PageTitle>رفع صور القطعة</PageTitle>
+
+<div class="workflow-page">
+    <section class="page-header">
+        <div>
+            <p class="eyebrow">التصوير</p>
+            <h1>رفع صور القطعة</h1>
+            <p>اختر قطعة مسجلة ثم أنشئ مجموعة تصوير جديدة لهذه المناسبة وارفع ملفات JPEG أو PNG مع نتيجة واضحة لكل ملف.</p>
+        </div>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="@messageClass" role="status">@message</div>
+    }
+
+    <section class="page-section">
+        <div class="section-header">
+            <div>
+                <p class="eyebrow">بحث القطعة</p>
+                <h2>اختيار القطعة</h2>
+                <p>ابحث برقم المتحف أو الوصف أو الفئة، ثم اختر القطعة التي ستضاف إليها مجموعة التصوير.</p>
+            </div>
+        </div>
+
+        <div class="section-body">
+            <div class="register-toolbar">
+                <label>
+                    <span>بحث القطعة</span>
+                    <InputText @bind-Value="artifactQuery" class="form-control" />
+                </label>
+                <button type="button" class="btn-primary" @onclick="SearchArtifactsAsync">بحث</button>
+                <div class="register-context" aria-live="polite">
+                    @if (hasSearched)
+                    {
+                        <span>عدد النتائج: <strong>@artifactResults.Count</strong></span>
+                    }
+                    else
+                    {
+                        <span>ابدأ البحث لاختيار القطعة.</span>
+                    }
+                </div>
+            </div>
+
+            @if (selectedArtifact is not null)
+            {
+                <div class="artifact-state" aria-label="القطعة المختارة للرفع">
+                    <div class="artifact-state-item critical">
+                        <span>معلومات القطعة</span>
+                        <strong><span class="ref">@selectedArtifact.MuseumNumber</span></strong>
+                    </div>
+                    <div class="artifact-state-item">
+                        <span>الحالة الحالية</span>
+                        <strong><span class="badge-status @CurrentStatusClass(selectedArtifact.CurrentStatus)">@CurrentStatusText(selectedArtifact.CurrentStatus)</span></strong>
+                    </div>
+                    <div class="artifact-state-item">
+                        <span>الموقع أو الحيازة</span>
+                        <strong>@(selectedArtifact.CurrentLocationName ?? selectedArtifact.CurrentHolderName ?? "-")</strong>
+                    </div>
+                </div>
+            }
+
+            @if (!hasSearched)
+            {
+                <div class="empty-state">
+                    <strong>لم تُحدَّد قطعة بعد.</strong>
+                    <span>استخدم البحث لاختيار قطعة موجودة قبل رفع الصور.</span>
+                </div>
+            }
+            else if (artifactResults.Count == 0)
+            {
+                <div class="empty-state">
+                    <strong>لا توجد نتائج مطابقة.</strong>
+                    <span>راجع رقم المتحف أو الوصف ثم حاول مرة أخرى.</span>
+                </div>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>رقم المتحف</th>
+                                <th>الفئة</th>
+                                <th>الوصف</th>
+                                <th>الحالة</th>
+                                <th>الموقع / الحيازة</th>
+                                <th class="actions-cell">الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var artifact in artifactResults)
+                            {
+                                <tr>
+                                    <td><a class="ref" href="/artifacts/@artifact.ArtifactId">@artifact.MuseumNumber</a></td>
+                                    <td>@artifact.CategoryCode</td>
+                                    <td>@artifact.BasicDescription</td>
+                                    <td><span class="badge-status @CurrentStatusClass(artifact.CurrentStatus)">@CurrentStatusText(artifact.CurrentStatus)</span></td>
+                                    <td>@(artifact.CurrentLocationName ?? artifact.CurrentHolderName ?? "-")</td>
+                                    <td class="actions-cell">
+                                        <button type="button" class="btn-secondary compact" @onclick="() => SelectArtifact(artifact)">اختيار</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="page-section">
+        <div class="section-header">
+            <div>
+                <p class="eyebrow">تفاصيل الصورة</p>
+                <h2>مجموعة تصوير جديدة</h2>
+                <p>هذه الشاشة تنشئ مجموعة جديدة فقط. إضافة صور إلى مجموعة قائمة مؤجلة إلى أن تتوفر أداة بحث آمنة للمجموعات.</p>
+            </div>
+        </div>
+
+        <div class="section-body">
+            <div class="form-grid">
+                <label>
+                    <span>الغرض</span>
+                    <InputSelect @bind-Value="selectedPurpose" class="form-control">
+                        <option value="@PhotographyPurpose.GeneralDocumentation">توثيق عام</option>
+                        <option value="@PhotographyPurpose.PreMaintenance">قبل الصيانة</option>
+                        <option value="@PhotographyPurpose.DuringMaintenance">أثناء الصيانة</option>
+                        <option value="@PhotographyPurpose.PostMaintenance">بعد الصيانة</option>
+                    </InputSelect>
+                </label>
+
+                <label>
+                    <span>تاريخ التصوير</span>
+                    <InputDate @bind-Value="photographyDate" class="form-control" />
+                </label>
+
+                <label>
+                    <span>المصور</span>
+                    <InputText @bind-Value="photographerUserId" class="form-control" />
+                </label>
+
+                <label class="span-all">
+                    <span>اختيار الصور</span>
+                    <div class="file-picker">
+                        <InputFile id="PhotographyUploadFileInput" class="file-picker-input" OnChange="OnFilesSelectedAsync" multiple accept=".jpg,.jpeg,.png,image/jpeg,image/png" aria-label="اختيار صور القطعة" />
+                        <span class="file-picker-button">اختيار ملفات</span>
+                        <span class="file-picker-name">@SelectedFilesText</span>
+                    </div>
+                </label>
+
+                <div class="form-actions span-all">
+                    <button type="button" class="btn-primary" disabled="@(!CanUpload)" @onclick="UploadAsync">ابدأ الرفع</button>
+                    <button type="button" class="btn-secondary" disabled="@(selectedFiles.Count == 0 || isUploading)" @onclick="ClearFiles">مسح الملفات</button>
+                </div>
+            </div>
+
+            @if (selectedFiles.Count == 0)
+            {
+                <div class="empty-state">
+                    <strong>لم تُحدّد أي صور بعد.</strong>
+                    <span>اختر قطعة أولاً ثم حدد صور JPEG أو PNG.</span>
+                </div>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>معاينة</th>
+                                <th>اسم الملف</th>
+                                <th>الحجم</th>
+                                <th>ملاحظة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var selected in selectedFiles)
+                            {
+                                <tr>
+                                    <td>
+                                        @if (localPreviewDataUrls.TryGetValue(selected.Ordinal, out var previewDataUrl))
+                                        {
+                                            <div class="media-thumb">
+                                                <img src="@previewDataUrl" alt="" />
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="muted">لا توجد معاينة</span>
+                                        }
+                                    </td>
+                                    <td><code>@selected.File.Name</code></td>
+                                    <td>@FormatBytes(selected.File.Size)</td>
+                                    <td>@selected.Note</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </section>
+
+    <PhotographyUploadResults Result="uploadResult" LocalPreviewDataUrls="localPreviewDataUrls" />
+</div>
+
+@code {
+    private const long MaxUploadBytes = 25 * 1024 * 1024;
+    private const int MaxFilesPerUpload = 24;
+    private const long MaxPreviewBytes = 512 * 1024;
+
+    private string? artifactQuery;
+    private bool hasSearched;
+    private List<ArtifactSearchResultDto> artifactResults = [];
+    private ArtifactSearchResultDto? selectedArtifact;
+    private PhotographyPurpose selectedPurpose = PhotographyPurpose.GeneralDocumentation;
+    private DateOnly photographyDate = DateOnly.FromDateTime(DateTime.Today);
+    private string photographerUserId = string.Empty;
+    private List<SelectedPhotographyFile> selectedFiles = [];
+    private Dictionary<int, string> localPreviewDataUrls = [];
+    private PhotographyUploadOperationResultDto? uploadResult;
+    private string currentAttemptIdempotencyKey = CreateIdempotencyKey();
+    private bool isUploading;
+    private string? message;
+    private string messageClass = "status-message";
+
+    private bool CanUpload =>
+        !isUploading
+        && selectedArtifact is not null
+        && selectedFiles.Any(selected => IsSupportedImage(selected.File))
+        && !string.IsNullOrWhiteSpace(photographerUserId)
+        && photographyDate != default;
+
+    private string SelectedFilesText => selectedFiles.Count == 0
+        ? "لم يتم اختيار ملفات"
+        : $"{selectedFiles.Count} ملف جاهز للرفع";
+
+    private async Task SearchArtifactsAsync()
+    {
+        hasSearched = true;
+        artifactResults = (await ArtifactReadUseCases.SearchArtifacts(artifactQuery)).ToList();
+
+        if (selectedArtifact is not null && artifactResults.All(artifact => artifact.ArtifactId != selectedArtifact.ArtifactId))
+        {
+            selectedArtifact = null;
+        }
+    }
+
+    private void SelectArtifact(ArtifactSearchResultDto artifact)
+    {
+        selectedArtifact = artifact;
+        message = $"تم اختيار القطعة {artifact.MuseumNumber}.";
+        messageClass = "status-message";
+        ResetAttempt();
+    }
+
+    private async Task OnFilesSelectedAsync(InputFileChangeEventArgs args)
+    {
+        uploadResult = null;
+        selectedFiles = args.GetMultipleFiles(MaxFilesPerUpload)
+            .Select((file, index) => new SelectedPhotographyFile(index, file, FileNote(file)))
+            .ToList();
+        localPreviewDataUrls = [];
+
+        foreach (var selected in selectedFiles)
+        {
+            var preview = await BuildLocalPreviewDataUrlAsync(selected.File);
+            if (preview is not null)
+            {
+                localPreviewDataUrls[selected.Ordinal] = preview;
+            }
+        }
+
+        message = selectedFiles.Count == 0
+            ? "لم تُحدّد أي صور بعد."
+            : selectedFiles.Any(selected => IsSupportedImage(selected.File))
+                ? "ستظهر الملفات غير المقبولة ضمن نتيجة كل ملف. الصيغ المقبولة هي JPEG أو PNG."
+                : "لا توجد صور صالحة للرفع.";
+        messageClass = message == "لا توجد صور صالحة للرفع." ? "warning-message" : "status-message";
+        ResetAttempt();
+    }
+
+    private async Task UploadAsync()
+    {
+        if (!CanUpload)
+        {
+            message = "اختر قطعة وملفات وصِف تفاصيل التصوير قبل الإرسال.";
+            messageClass = "warning-message";
+            return;
+        }
+
+        isUploading = true;
+        message = "جاري رفع الصور.";
+        messageClass = "status-message";
+
+        var openedStreams = new List<Stream>();
+        try
+        {
+            var uploadFiles = new List<PhotographyUploadFileInput>(selectedFiles.Count);
+            foreach (var selected in selectedFiles)
+            {
+                var stream = selected.File.OpenReadStream(MaxUploadBytes);
+                openedStreams.Add(stream);
+                uploadFiles.Add(new PhotographyUploadFileInput(
+                    selected.Ordinal,
+                    selected.File.Name,
+                    stream,
+                    selected.File.Size));
+            }
+
+            var command = new CreatePhotographySetWithImagesCommand(
+                selectedArtifact!.ArtifactId,
+                selectedPurpose,
+                photographyDate,
+                photographerUserId,
+                currentAttemptIdempotencyKey,
+                uploadFiles);
+
+            var result = await CreateUseCase.CreatePhotographySetWithImages(command);
+            uploadResult = result.Value;
+            message = ResultMessage(result);
+            messageClass = result.Succeeded ? "status-message" : "warning-message";
+
+            if (result.Succeeded)
+            {
+                currentAttemptIdempotencyKey = CreateIdempotencyKey();
+            }
+        }
+        catch (IOException)
+        {
+            message = "تعذر قراءة ملف محدد. تحقق من حجم الملفات ثم حاول مرة أخرى.";
+            messageClass = "warning-message";
+        }
+        finally
+        {
+            foreach (var stream in openedStreams)
+            {
+                await stream.DisposeAsync();
+            }
+
+            isUploading = false;
+        }
+    }
+
+    private void ClearFiles()
+    {
+        selectedFiles = [];
+        localPreviewDataUrls = [];
+        uploadResult = null;
+        message = "لم تُحدّد أي صور بعد.";
+        messageClass = "status-message";
+        ResetAttempt();
+    }
+
+    private void ResetAttempt()
+    {
+        currentAttemptIdempotencyKey = CreateIdempotencyKey();
+    }
+
+    private static async Task<string?> BuildLocalPreviewDataUrlAsync(IBrowserFile file)
+    {
+        if (!IsSupportedImage(file))
+        {
+            return null;
+        }
+
+        try
+        {
+            var previewFile = await file.RequestImageFileAsync("image/jpeg", 220, 220);
+            await using var stream = previewFile.OpenReadStream(MaxPreviewBytes);
+            using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            return $"data:image/jpeg;base64,{Convert.ToBase64String(memory.ToArray())}";
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+    }
+
+    private static bool IsSupportedImage(IBrowserFile file) =>
+        file.Name.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+        || file.Name.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
+        || file.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(file.ContentType, "image/jpeg", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(file.ContentType, "image/png", StringComparison.OrdinalIgnoreCase);
+
+    private static string FileNote(IBrowserFile file) =>
+        IsSupportedImage(file)
+            ? "جاهز للفحص عند الرفع"
+            : "قد يرفضه النظام إن لم يكن JPEG أو PNG";
+
+    private static string ResultMessage(UseCaseResult<PhotographyUploadOperationResultDto> result)
+    {
+        if (result.Succeeded && result.Value is not null)
+        {
+            var succeeded = result.Value.FileResults.Count(file => file.Status == PhotographyUploadFileOutcomeStatus.Succeeded);
+            var rejectedOrFailed = result.Value.FileResults.Count - succeeded;
+            return rejectedOrFailed == 0
+                ? "تم حفظ كل الصور المقبولة."
+                : $"بعض الملفات لم تُقبل. تم حفظ {succeeded} ملف وتحتاج {rejectedOrFailed} ملفات إلى مراجعة.";
+        }
+
+        if (result.ConcurrencyConflict)
+        {
+            return string.Join(" ", result.Messages);
+        }
+
+        return string.Join(" ", result.ValidationIssues.Select(issue => issue.Message));
+    }
+
+    private static string FormatBytes(long bytes) =>
+        bytes >= 1024 * 1024
+            ? $"{bytes / 1024d / 1024d:0.#} MB"
+            : $"{Math.Max(1, bytes / 1024d):0.#} KB";
+
+    private static string CurrentStatusText(ArtifactCurrentStatus status) => status switch
+    {
+        ArtifactCurrentStatus.InStorage => "داخل المخزن",
+        ArtifactCurrentStatus.OutOfStorage => "خارج المخزن",
+        _ => status.ToString()
+    };
+
+    private static string CurrentStatusClass(ArtifactCurrentStatus status) => status switch
+    {
+        ArtifactCurrentStatus.InStorage => "badge-storage",
+        ArtifactCurrentStatus.OutOfStorage => "badge-out",
+        _ => string.Empty
+    };
+
+    private static string CreateIdempotencyKey() => Guid.NewGuid().ToString("N");
+
+    private sealed record SelectedPhotographyFile(int Ordinal, IBrowserFile File, string Note);
+}

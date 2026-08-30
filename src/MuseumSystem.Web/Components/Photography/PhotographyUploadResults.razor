@@ -1,0 +1,106 @@
+@namespace MuseumSystem.Web.Components.Photography
+
+@if (Result is not null)
+{
+    <section class="page-section" aria-labelledby="photography-upload-results-title">
+        <div class="section-header">
+            <div>
+                <p class="eyebrow">نتائج الرفع</p>
+                <h2 id="photography-upload-results-title">حالة الملفات</h2>
+                <p>@OperationStatusText(Result.Status)</p>
+            </div>
+        </div>
+
+        <div class="section-body">
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <span>الملفات الناجحة</span>
+                    <strong>@Count(PhotographyUploadFileOutcomeStatus.Succeeded)</strong>
+                </div>
+                <div class="summary-item">
+                    <span>الملفات المرفوضة</span>
+                    <strong>@Count(PhotographyUploadFileOutcomeStatus.Rejected)</strong>
+                </div>
+                <div class="summary-item">
+                    <span>الملفات الفاشلة</span>
+                    <strong>@Count(PhotographyUploadFileOutcomeStatus.Failed)</strong>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>معاينة</th>
+                            <th>اسم الملف</th>
+                            <th>الحالة</th>
+                            <th>رسالة للفريق</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var file in Result.FileResults.OrderBy(file => file.ClientFileOrdinal))
+                        {
+                            <tr>
+                                <td>
+                                    @if (localPreviewDataUrls.TryGetValue(file.ClientFileOrdinal, out var previewDataUrl))
+                                    {
+                                        <div class="media-thumb">
+                                            <img src="@previewDataUrl" alt="" />
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">لا توجد معاينة</span>
+                                    }
+                                </td>
+                                <td><code>@file.OriginalFilename</code></td>
+                                <td><span class="badge-status @StatusClass(file.Status)">@StatusText(file.Status)</span></td>
+                                <td>@file.StaffFacingMessage</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter] public PhotographyUploadOperationResultDto? Result { get; set; }
+    [Parameter] public IReadOnlyDictionary<int, string>? LocalPreviewDataUrls { get; set; }
+
+    private IReadOnlyDictionary<int, string> localPreviewDataUrls => LocalPreviewDataUrls ?? new Dictionary<int, string>();
+
+    private int Count(PhotographyUploadFileOutcomeStatus status) =>
+        Result?.FileResults.Count(file => file.Status == status) ?? 0;
+
+    private static string StatusText(PhotographyUploadFileOutcomeStatus status) => status switch
+    {
+        PhotographyUploadFileOutcomeStatus.Succeeded => "نجح",
+        PhotographyUploadFileOutcomeStatus.Rejected => "مرفوض",
+        PhotographyUploadFileOutcomeStatus.Failed => "فشل الرفع",
+        PhotographyUploadFileOutcomeStatus.CleanupPending => "ينتظر التنظيف",
+        PhotographyUploadFileOutcomeStatus.RecoveryNeeded => "يتطلب متابعة",
+        _ => status.ToString()
+    };
+
+    private static string StatusClass(PhotographyUploadFileOutcomeStatus status) => status switch
+    {
+        PhotographyUploadFileOutcomeStatus.Succeeded => "badge-active",
+        PhotographyUploadFileOutcomeStatus.Rejected => "badge-draft",
+        PhotographyUploadFileOutcomeStatus.Failed => "badge-retired",
+        PhotographyUploadFileOutcomeStatus.CleanupPending => "badge-draft",
+        PhotographyUploadFileOutcomeStatus.RecoveryNeeded => "badge-retired",
+        _ => string.Empty
+    };
+
+    private static string OperationStatusText(PhotographyUploadOperationStatus status) => status switch
+    {
+        PhotographyUploadOperationStatus.Completed => "اكتمل رفع جميع الملفات المقبولة.",
+        PhotographyUploadOperationStatus.CompletedWithFailures => "اكتمل الرفع مع نتائج مختلفة لكل ملف.",
+        PhotographyUploadOperationStatus.Failed => "لم يتم حفظ أي صورة من هذه المحاولة.",
+        PhotographyUploadOperationStatus.RecoveryNeeded => "تحتاج هذه العملية إلى متابعة تخزين داخلية.",
+        PhotographyUploadOperationStatus.InProgress => "الرفع قيد المعالجة.",
+        _ => status.ToString()
+    };
+}

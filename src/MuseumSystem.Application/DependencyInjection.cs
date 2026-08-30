@@ -54,6 +54,7 @@ public static class DependencyInjection
         services.AddScoped<PhotographyUploadPersistenceService>();
         services.AddScoped<PhotographyUploadAuditService>();
         services.AddScoped<PhotographyResponseMapper>();
+        services.AddScoped<CreatePhotographySetWithImagesUseCase>();
         return services;
     }
 }

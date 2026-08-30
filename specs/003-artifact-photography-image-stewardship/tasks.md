@@ -102,7 +102,7 @@
 - [x] T043 [P] [US1] Add image-processing tests with actual JPEG, JPG, PNG, spoofed extension/MIME rejection, dimensions, bounded preview, thumbnail, original immutability, and configured max size in tests/MuseumSystem.Integration.Tests/Photography/ArtifactImageProcessorTests.cs
 - [x] T044 [P] [US1] Add MinIO/provider integration tests for upload, stat, read, private bucket behavior, object-key stability, and derivative creation in tests/MuseumSystem.Integration.Tests/Photography/ArtifactImageStorageUploadTests.cs
 - [x] T045 [P] [US1] Add PostgreSQL integration tests proving prior successful file records survive later per-file failures and rejected files create no ArtifactImage rows in tests/MuseumSystem.Integration.Tests/Photography/PhotographyUploadPersistenceTests.cs
-- [ ] T046 [P] [US1] Add web acceptance tests for Arabic/RTL artifact search/select, multi-image upload, intentional partial-success feedback, thumbnails, and no raw storage internals in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyUploadFlowTests.cs
+- [x] T046 [P] [US1] Add web acceptance tests for Arabic/RTL artifact search/select, multi-image upload, intentional partial-success feedback, thumbnails, and no raw storage internals in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyUploadFlowTests.cs
 
 ### Implementation for User Story 1
 
@@ -114,9 +114,9 @@
 - [x] T052 [US1] Implement deterministic object-key generation independent of Museum Number, Artifact names, and OS paths in src/MuseumSystem.Application/Modules/Photography/PhotographyObjectKeyFactory.cs
 - [x] T053 [US1] Implement upload audit writing for accepted files, rejected files, failed files, and recovery-needed outcomes through existing audit writer in src/MuseumSystem.Application/Modules/Photography/PhotographyUploadAuditService.cs
 - [x] T054 [US1] Implement staff-safe upload response mapping with no bucket, object key, endpoint, UUID-only storage identifier, or provider detail exposure in src/MuseumSystem.Application/Modules/Photography/PhotographyResponseMapper.cs
-- [ ] T055 [US1] Build the Blazor Photography upload workflow after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Pages/Photography/Upload.razor
-- [ ] T056 [US1] Build shared upload result and thumbnail components after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Photography/PhotographyUploadResults.razor
-- [ ] T057 [US1] Add Photography navigation entry using existing shared layout patterns after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Layout/NavMenu.razor
+- [x] T055 [US1] Build the Blazor Photography upload workflow after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Pages/Photography/Upload.razor
+- [x] T056 [US1] Build shared upload result and thumbnail components after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Photography/PhotographyUploadResults.razor
+- [x] T057 [US1] Add Photography navigation entry using existing shared layout patterns after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Layout/NavMenu.razor
 
 **Checkpoint**: US1 is independently functional and testable as the first implementation slice.
 

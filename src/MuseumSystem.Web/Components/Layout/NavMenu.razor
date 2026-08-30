@@ -72,6 +72,15 @@
     </div>
 
     <div class="nav-group">
+        <AuthorizeView Policy="@PermissionNames.PhotographyUpload">
+            <Authorized>
+                <div class="nav-section">التصوير</div>
+                <NavLink class="nav-link" href="photography/upload" Match="NavLinkMatch.All">رفع صور القطعة</NavLink>
+            </Authorized>
+        </AuthorizeView>
+    </div>
+
+    <div class="nav-group">
         <AuthorizeView Policy="@PermissionNames.AuditView">
             <Authorized>
                 <div class="nav-section">الإدارة</div>
