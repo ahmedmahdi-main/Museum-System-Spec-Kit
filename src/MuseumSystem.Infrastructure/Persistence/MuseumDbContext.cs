@@ -31,6 +31,7 @@ public sealed class MuseumDbContext(DbContextOptions<MuseumDbContext> options)
     public DbSet<DocumentationTemplateFieldOption> DocumentationTemplateFieldOptions => Set<DocumentationTemplateFieldOption>();
     public DbSet<DocumentationRecord> DocumentationRecords => Set<DocumentationRecord>();
     public DbSet<DocumentationRevision> DocumentationRevisions => Set<DocumentationRevision>();
+    public DbSet<PhotographyRequest> PhotographyRequests => Set<PhotographyRequest>();
     public DbSet<PhotographySet> PhotographySets => Set<PhotographySet>();
     public DbSet<ArtifactImage> ArtifactImages => Set<ArtifactImage>();
     public DbSet<ArtifactImageDerivative> ArtifactImageDerivatives => Set<ArtifactImageDerivative>();

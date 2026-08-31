@@ -26,6 +26,7 @@ public interface IMuseumDbContext
     DbSet<DocumentationTemplateFieldOption> DocumentationTemplateFieldOptions { get; }
     DbSet<DocumentationRecord> DocumentationRecords { get; }
     DbSet<DocumentationRevision> DocumentationRevisions { get; }
+    DbSet<PhotographyRequest> PhotographyRequests { get; }
     DbSet<PhotographySet> PhotographySets { get; }
     DbSet<ArtifactImage> ArtifactImages { get; }
     DbSet<ArtifactImageDerivative> ArtifactImageDerivatives { get; }

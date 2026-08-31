@@ -130,18 +130,18 @@
 
 ### Request Persistence Prerequisites for User Story 2
 
-- [ ] T058 [US2] Create PhotographyRequest aggregate with request-specific types, Pending/Completed/Cancelled lifecycle, fulfillment rules, and concurrency token in src/MuseumSystem.Domain/Modules/Photography/PhotographyRequest.cs
-- [ ] T059 [US2] Add PhotographyRequest DbSet to the application persistence abstraction after T058 in src/MuseumSystem.Application/Common/Persistence/IMuseumDbContext.cs
-- [ ] T060 [US2] Add PhotographyRequest DbSet and model discovery after T058 in src/MuseumSystem.Infrastructure/Persistence/MuseumDbContext.cs
-- [ ] T061 [US2] Create EF Core PhotographyRequest mapping with status constraints, FulfillingPhotographySet relationship, many-requests-per-set support, request indexes, concurrency token, and fulfillment consistency hooks after T058-T060 in src/MuseumSystem.Infrastructure/Persistence/Configurations/PhotographyRequestConfiguration.cs
-- [ ] T062 [US2] Create the request-specific PostgreSQL migration after T061 for PhotographyRequest table, columns, FKs, indexes, status constraints, fulfilling-set relationship, and concurrency configuration in src/MuseumSystem.Infrastructure/Persistence/Migrations/20260824000200_AddPhotographyRequestSchema.cs
-- [ ] T063 [US2] Update the EF model snapshot for the request-specific PhotographyRequest schema after T062 in src/MuseumSystem.Infrastructure/Persistence/Migrations/MuseumDbContextModelSnapshot.cs
+- [x] T058 [US2] Create PhotographyRequest aggregate with request-specific types, Pending/Completed/Cancelled lifecycle, fulfillment rules, and concurrency token in src/MuseumSystem.Domain/Modules/Photography/PhotographyRequest.cs
+- [x] T059 [US2] Add PhotographyRequest DbSet to the application persistence abstraction after T058 in src/MuseumSystem.Application/Common/Persistence/IMuseumDbContext.cs
+- [x] T060 [US2] Add PhotographyRequest DbSet and model discovery after T058 in src/MuseumSystem.Infrastructure/Persistence/MuseumDbContext.cs
+- [x] T061 [US2] Create EF Core PhotographyRequest mapping with status constraints, FulfillingPhotographySet relationship, many-requests-per-set support, request indexes, concurrency token, and fulfillment consistency hooks after T058-T060 in src/MuseumSystem.Infrastructure/Persistence/Configurations/PhotographyRequestConfiguration.cs
+- [x] T062 [US2] Create the request-specific PostgreSQL migration after T061 for PhotographyRequest table, columns, FKs, indexes, status constraints, fulfilling-set relationship, and concurrency configuration in src/MuseumSystem.Infrastructure/Persistence/Migrations/20260824000200_AddPhotographyRequestSchema.cs
+- [x] T063 [US2] Update the EF model snapshot for the request-specific PhotographyRequest schema after T062 in src/MuseumSystem.Infrastructure/Persistence/Migrations/MuseumDbContextModelSnapshot.cs
 
 ### Tests for User Story 2
 
-- [ ] T064 [P] [US2] Add domain tests for PhotographyRequest lifecycle, terminal states, completion validation, cancellation rules, and request fulfillment invariants in tests/MuseumSystem.Domain.Tests/Photography/PhotographyRequestTests.cs
-- [ ] T065 [P] [US2] Add PostgreSQL tests after T062-T063 for request status constraints, Completed fulfilling-set requirement, many requests referencing one set, and terminal-state persistence in tests/MuseumSystem.Integration.Tests/Photography/PhotographyRequestPersistenceTests.cs
-- [ ] T066 [P] [US2] Add PostgreSQL concurrency tests after T062-T063 for request complete/cancel races and stale losing writes in tests/MuseumSystem.Integration.Tests/Photography/PhotographyRequestConcurrencyTests.cs
+- [x] T064 [P] [US2] Add domain tests for PhotographyRequest lifecycle, terminal states, completion validation, cancellation rules, and request fulfillment invariants in tests/MuseumSystem.Domain.Tests/Photography/PhotographyRequestTests.cs
+- [x] T065 [P] [US2] Add PostgreSQL tests after T062-T063 for request status constraints, Completed fulfilling-set requirement, many requests referencing one set, and terminal-state persistence in tests/MuseumSystem.Integration.Tests/Photography/PhotographyRequestPersistenceTests.cs
+- [x] T066 [P] [US2] Add PostgreSQL concurrency tests after T062-T063 for request complete/cancel races and stale losing writes in tests/MuseumSystem.Integration.Tests/Photography/PhotographyRequestConcurrencyTests.cs
 - [ ] T067 [P] [US2] Add application tests for CreatePhotographyRequest authorization, existing Artifact requirement, Pending defaults, no Artifact data duplication, and audit in tests/MuseumSystem.Application.Tests/Photography/CreatePhotographyRequestUseCaseTests.cs
 - [ ] T068 [P] [US2] Add application tests for CancelPhotographyRequest own-Pending, Manage-any-Pending, Request-only forbidden, Completed forbidden, terminal state, conflict, and audit in tests/MuseumSystem.Application.Tests/Photography/CancelPhotographyRequestUseCaseTests.cs
 - [ ] T069 [P] [US2] Add application tests for CompletePhotographyRequest requiring Photography.Upload, same Artifact, same purpose, at least one available image, many requests per set, explicit independent completion, and audit in tests/MuseumSystem.Application.Tests/Photography/CompletePhotographyRequestUseCaseTests.cs

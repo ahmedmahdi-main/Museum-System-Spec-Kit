@@ -6,7 +6,7 @@ namespace MuseumSystem.Integration.Tests.Photography;
 public sealed class PhotographyMigrationTests(PostgresPhotographyTestFixture fixture)
 {
     [Fact]
-    public async Task Photography_core_migration_is_applied_without_request_schema()
+    public async Task Photography_core_and_request_schema_are_applied()
     {
         await using var context = fixture.CreateContext();
 
@@ -32,7 +32,7 @@ public sealed class PhotographyMigrationTests(PostgresPhotographyTestFixture fix
 
         Assert.Equal("20260824000100_AddPhotographyCoreSchema", migration);
         Assert.Equal(7, coreTableCount);
-        Assert.Equal(0, requestTableCount);
+        Assert.Equal(1, requestTableCount);
     }
 
     [Fact]

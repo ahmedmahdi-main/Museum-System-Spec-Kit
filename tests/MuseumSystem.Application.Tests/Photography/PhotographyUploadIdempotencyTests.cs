@@ -963,6 +963,7 @@ internal sealed class FaultingMuseumDbContext(MuseumDbContext inner) : IMuseumDb
     public DbSet<DocumentationTemplateFieldOption> DocumentationTemplateFieldOptions => inner.DocumentationTemplateFieldOptions;
     public DbSet<DocumentationRecord> DocumentationRecords => inner.DocumentationRecords;
     public DbSet<DocumentationRevision> DocumentationRevisions => inner.DocumentationRevisions;
+    public DbSet<PhotographyRequest> PhotographyRequests => inner.PhotographyRequests;
     public DbSet<PhotographySet> PhotographySets => inner.PhotographySets;
     public DbSet<ArtifactImage> ArtifactImages => inner.ArtifactImages;
     public DbSet<ArtifactImageDerivative> ArtifactImageDerivatives => inner.ArtifactImageDerivatives;
