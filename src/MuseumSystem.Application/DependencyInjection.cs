@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using MuseumSystem.Application.Modules.Audit;
 using MuseumSystem.Application.Modules.ArtifactRegistry;
 using MuseumSystem.Application.Modules.Documentation;
@@ -55,6 +56,11 @@ public static class DependencyInjection
         services.AddScoped<PhotographyUploadAuditService>();
         services.AddScoped<PhotographyResponseMapper>();
         services.AddScoped<CreatePhotographySetWithImagesUseCase>();
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddScoped<CreatePhotographyRequestUseCase>();
+        services.AddScoped<CancelPhotographyRequestUseCase>();
+        services.AddScoped<CompletePhotographyRequestUseCase>();
+        services.AddScoped<PhotographyRequestQueries>();
         return services;
     }
 }

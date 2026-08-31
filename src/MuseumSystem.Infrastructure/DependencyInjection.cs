@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using MuseumSystem.Application.Common.Persistence;
 using MuseumSystem.Application.Common.Audit;
 using MuseumSystem.Application.Modules.Import;
+using MuseumSystem.Application.Modules.IdentityAccess;
 using MuseumSystem.Application.Modules.Photography;
 using MuseumSystem.Application.Modules.Photography.Imaging;
 using MuseumSystem.Application.Modules.Photography.Storage;
@@ -31,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<IExcelImportReader, ClosedXmlImportReader>();
         services.AddScoped<IAuditActorContext, HttpAuditActorContext>();
         services.AddScoped<IAuditWriter, AuditWriter>();
+        services.AddScoped<ICurrentActorPermissionChecker, HttpCurrentActorPermissionChecker>();
         services.AddScoped<PhotographyUploadFingerprintService>();
         services.AddScoped<IArtifactImageProcessor, ArtifactImageProcessor>();
         services.AddScoped<IArtifactImageStorage, MinioArtifactImageStorage>();
