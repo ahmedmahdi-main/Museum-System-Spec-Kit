@@ -1,0 +1,26 @@
+<div class="register-toolbar photography-gallery-toolbar" aria-label="أدوات معرض صور القطعة">
+    <div class="register-context">
+        <strong>عدد الصور:</strong>
+        <span>@TotalImageCount</span>
+    </div>
+    <div class="register-context">
+        <strong>@(HasSelectedImage ? "معاينة محددة" : "اختر صورة للمعاينة")</strong>
+    </div>
+    <div class="form-actions">
+        <button type="button" class="btn-secondary compact" disabled="@IsRefreshing" @onclick="RefreshAsync">
+            @(IsRefreshing ? "جاري التحديث" : "تحديث العرض")
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int TotalImageCount { get; set; }
+
+    [Parameter] public bool HasSelectedImage { get; set; }
+
+    [Parameter] public bool IsRefreshing { get; set; }
+
+    [Parameter] public EventCallback OnRefresh { get; set; }
+
+    private async Task RefreshAsync() => await OnRefresh.InvokeAsync();
+}

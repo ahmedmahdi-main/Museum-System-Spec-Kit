@@ -1,0 +1,262 @@
+@page "/photography/artifacts/{ArtifactId:guid}"
+@attribute [Authorize(Policy = PermissionNames.PhotographyView)]
+@rendermode InteractiveServer
+@inject ViewArtifactImagesUseCase ViewImagesUseCase
+
+<PageTitle>صور القطعة</PageTitle>
+
+<div class="register-page photography-gallery-page">
+    @if (gallery is null && isLoading)
+    {
+        <section class="page-header">
+            <div>
+                <p class="eyebrow">سجل التصوير</p>
+                <h1>صور القطعة</h1>
+                <p>جاري تحميل صور القطعة.</p>
+            </div>
+        </section>
+    }
+    else if (gallery is null)
+    {
+        <section class="page-header">
+            <div>
+                <p class="eyebrow">سجل التصوير</p>
+                <h1>صور القطعة</h1>
+                <p>@(loadMessage ?? "تعذر تحميل صور القطعة.")</p>
+            </div>
+        </section>
+    }
+    else
+    {
+        <section class="page-header">
+            <div>
+                <p class="eyebrow">سجل التصوير</p>
+                <h1>صور القطعة <span class="ref ref-lead">@gallery.Artifact.MuseumNumber</span></h1>
+                <p>@gallery.Artifact.BasicDescription</p>
+            </div>
+            <div class="page-header-actions">
+                <a class="btn-secondary" href="@ArtifactHref">العودة إلى تفاصيل القطعة</a>
+            </div>
+        </section>
+
+        <div class="artifact-state" aria-label="الحالة التشغيلية الحالية للقطعة">
+            <div class="artifact-state-item critical">
+                <span>الحالة الحالية</span>
+                <strong><span class="badge-status @CurrentStatusClass(gallery.Artifact.CurrentStatus)">@CurrentStatusText(gallery.Artifact.CurrentStatus)</span></strong>
+            </div>
+            <div class="artifact-state-item critical">
+                <span>الموقع الحالي</span>
+                <strong>@(gallery.Artifact.CurrentLocationName ?? "لا يوجد موقع محدد")</strong>
+            </div>
+            <div class="artifact-state-item">
+                <span>الحيازة الحالية</span>
+                <strong>@CurrentHolderText(gallery.Artifact)</strong>
+            </div>
+        </div>
+
+        <section class="page-section photography-gallery-section">
+            <div class="section-header">
+                <div>
+                    <p class="eyebrow">معرض الصور</p>
+                    <h2>الصور المتاحة</h2>
+                    <p>معاينات مصغرة وآمنة للصور المتاحة عبر حدود التطبيق.</p>
+                </div>
+            </div>
+            <div class="section-body">
+                <PhotographyGalleryToolbar TotalImageCount="gallery.Images.Count"
+                                           HasSelectedImage="selectedImage is not null"
+                                           IsRefreshing="isLoading"
+                                           OnRefresh="LoadGalleryAsync" />
+
+                @if (isLoading)
+                {
+                    <div class="status-message">جاري تحميل صور القطعة.</div>
+                }
+                else if (!string.IsNullOrWhiteSpace(loadMessage))
+                {
+                    <div class="warning-message">@loadMessage</div>
+                }
+
+                @if (gallery.State == ArtifactImageGalleryState.NoImages)
+                {
+                    <div class="empty-state">
+                        <strong>لا توجد صور متاحة لهذه القطعة.</strong>
+                        <span>ستظهر الصور هنا بعد إتاحتها من مسار التصوير المعتمد.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="photography-gallery-layout">
+                        <div class="photography-gallery-list" aria-label="صور القطعة المتاحة">
+                            @foreach (var image in gallery.Images)
+                            {
+                                <button type="button"
+                                        class="photography-gallery-item @(selectedImage?.ArtifactImageId == image.ArtifactImageId ? "selected" : string.Empty)"
+                                        aria-pressed="@(selectedImage?.ArtifactImageId == image.ArtifactImageId)"
+                                        @onclick="() => SelectImage(image)">
+                                    <span class="photography-gallery-frame">
+                                        @if (CanShowRendition(image.Thumbnail))
+                                        {
+                                            <img src="@ImageSource(image.Thumbnail.Access!)" alt="@ImageAlt(image)" />
+                                        }
+                                        else
+                                        {
+                                            <span class="media-unavailable" role="status">الصورة غير متاحة مؤقتا.</span>
+                                        }
+                                    </span>
+                                    <span class="photography-gallery-meta">
+                                        <strong>@(image.Caption ?? PurposeText(image.Purpose))</strong>
+                                        <span>@PurposeText(image.Purpose)</span>
+                                        <span>@FormatDate(image.PhotographyDate)</span>
+                                    </span>
+                                </button>
+                            }
+                        </div>
+
+                        <div class="photography-preview-panel" aria-live="polite">
+                            @if (selectedImage is null)
+                            {
+                                <div class="empty-state">
+                                    <strong>اختر صورة للمعاينة.</strong>
+                                    <span>تظهر تفاصيل الصورة المختارة في هذه المساحة.</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="photography-preview-frame">
+                                    @if (CanShowRendition(selectedImage.Preview))
+                                    {
+                                        <img src="@ImageSource(selectedImage.Preview.Access!)" alt="@ImageAlt(selectedImage)" />
+                                    }
+                                    else
+                                    {
+                                        <div class="media-unavailable" role="status">المعاينة ليست متاحة الآن لهذه الصورة.</div>
+                                    }
+                                </div>
+
+                                <dl class="summary-grid">
+                                    <div class="summary-item">
+                                        <span>الغرض</span>
+                                        <strong>@PurposeText(selectedImage.Purpose)</strong>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span>تاريخ التصوير</span>
+                                        <strong>@FormatDate(selectedImage.PhotographyDate)</strong>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span>المصور</span>
+                                        <strong>@selectedImage.PhotographerUserId</strong>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span>اسم الملف</span>
+                                        <strong dir="ltr">@selectedImage.OriginalFilename</strong>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span>الأبعاد</span>
+                                        <strong dir="ltr">@selectedImage.PixelWidth x @selectedImage.PixelHeight</strong>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span>وقت الإتاحة</span>
+                                        <strong>@FormatDateTime(selectedImage.UploadedAt)</strong>
+                                    </div>
+                                </dl>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid ArtifactId { get; set; }
+
+    private ArtifactImageGalleryDto? gallery;
+    private PhotographyGalleryImageDto? selectedImage;
+    private bool isLoading;
+    private string? loadMessage;
+
+    private string ArtifactHref => $"/artifacts/{ArtifactId}";
+
+    protected override async Task OnParametersSetAsync() => await LoadGalleryAsync();
+
+    private async Task LoadGalleryAsync()
+    {
+        isLoading = true;
+        loadMessage = null;
+
+        var result = await ViewImagesUseCase.ViewArtifactImages(new ViewArtifactImagesQuery(ArtifactId));
+        if (!result.Succeeded || result.Value is null)
+        {
+            gallery = null;
+            selectedImage = null;
+            loadMessage = FailureMessage(result);
+            isLoading = false;
+            return;
+        }
+
+        gallery = result.Value;
+        selectedImage = gallery.Images.FirstOrDefault(image => CanShowRendition(image.Preview))
+            ?? gallery.Images.FirstOrDefault();
+        isLoading = false;
+    }
+
+    private void SelectImage(PhotographyGalleryImageDto image) => selectedImage = image;
+
+    private static bool CanShowRendition(PhotographyGalleryRenditionDto rendition) =>
+        rendition.Availability == PhotographyImageRenditionAvailability.Available && rendition.Access is not null;
+
+    private static string ImageSource(PhotographyImageAccessReferenceDto access) =>
+        $"/photography/images/{access.ArtifactImageId}/{access.Rendition.ToString().ToLowerInvariant()}";
+
+    private string ImageAlt(PhotographyGalleryImageDto image)
+    {
+        var caption = string.IsNullOrWhiteSpace(image.Caption) ? PurposeText(image.Purpose) : image.Caption;
+        return $"صورة القطعة {gallery?.Artifact.MuseumNumber}: {caption}";
+    }
+
+    private static string FailureMessage(UseCaseResult<ArtifactImageGalleryDto> result)
+    {
+        var code = result.ValidationIssues.FirstOrDefault()?.Code;
+        return code switch
+        {
+            "Artifact.NotFound" => "لم يتم العثور على القطعة.",
+            "Artifact.Required" => "رابط القطعة غير مكتمل.",
+            "Photography.PermissionDenied" => "لا تملك صلاحية عرض صور القطعة.",
+            _ => "تعذر تحميل صور القطعة."
+        };
+    }
+
+    private static string PurposeText(PhotographyPurpose purpose) => purpose switch
+    {
+        PhotographyPurpose.GeneralDocumentation => "توثيق عام",
+        PhotographyPurpose.PreMaintenance => "قبل الصيانة",
+        PhotographyPurpose.DuringMaintenance => "أثناء الصيانة",
+        PhotographyPurpose.PostMaintenance => "بعد الصيانة",
+        _ => purpose.ToString()
+    };
+
+    private static string CurrentHolderText(PhotographyGalleryArtifactDto artifact) =>
+        string.IsNullOrWhiteSpace(artifact.CurrentHolderName)
+            ? "لا توجد حيازة خارجية"
+            : $"{artifact.CurrentHolderType}: {artifact.CurrentHolderName}";
+
+    private static string CurrentStatusText(ArtifactCurrentStatus status) => status switch
+    {
+        ArtifactCurrentStatus.InStorage => "داخل المخزن",
+        ArtifactCurrentStatus.OutOfStorage => "خارج المخزن",
+        _ => status.ToString()
+    };
+
+    private static string CurrentStatusClass(ArtifactCurrentStatus status) => status switch
+    {
+        ArtifactCurrentStatus.InStorage => "badge-storage",
+        ArtifactCurrentStatus.OutOfStorage => "badge-out",
+        _ => string.Empty
+    };
+
+    private static string FormatDate(DateOnly date) => date.ToString("yyyy-MM-dd");
+
+    private static string FormatDateTime(DateTimeOffset value) => value.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+}

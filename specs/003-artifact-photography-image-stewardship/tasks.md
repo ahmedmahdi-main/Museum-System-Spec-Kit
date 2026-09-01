@@ -170,17 +170,17 @@
 
 - [x] T077 [P] [US3] Add application tests for ViewArtifactImages permission boundaries, no management rights, no raw storage identifiers, no-image state, and missing-object unavailable result in tests/MuseumSystem.Application.Tests/Photography/ViewArtifactImagesUseCaseTests.cs
 - [x] T078 [P] [US3] Add object-storage integration tests for application-mediated read streaming, stat/read unavailable mapping, private bucket behavior, and no raw MinIO URL exposure in tests/MuseumSystem.Integration.Tests/Photography/ArtifactImageAccessBoundaryTests.cs
-- [ ] T079 [P] [US3] Add web acceptance tests for Documentation/Laboratory/Storehouse viewer roles, Arabic/RTL gallery, no-image state, missing-binary message, and blocked management actions in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyGalleryFlowTests.cs
-- [ ] T080 [P] [US3] Add security acceptance tests proving raw bucket names, object keys, provider endpoints, and provider presigned URLs never appear in staff HTML or responses in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyStorageBoundaryTests.cs
+- [x] T079 [P] [US3] Add web acceptance tests for Documentation/Laboratory/Storehouse viewer roles, Arabic/RTL gallery, no-image state, missing-binary message, and blocked management actions in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyGalleryFlowTests.cs
+- [x] T080 [P] [US3] Add security acceptance tests proving raw bucket names, object keys, provider endpoints, and provider presigned URLs never appear in staff HTML or responses in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyStorageBoundaryTests.cs
 
 ### Implementation for User Story 3
 
 - [x] T081 [US3] Implement ViewArtifactImages query use case with permission checks, available-image filtering, no-image response, missing-object detection, and staff-safe view models in src/MuseumSystem.Application/Modules/Photography/ViewArtifactImagesUseCase.cs
 - [x] T082 [US3] Implement opaque application image streaming endpoint authorization and storage read mapping in src/MuseumSystem.Web/Components/Pages/Photography/ImageStreamEndpoint.cs
 - [x] T083 [US3] Implement gallery query mapping for thumbnails, previews, unavailable states, and no storage internals in src/MuseumSystem.Application/Modules/Photography/PhotographyGalleryMapper.cs
-- [ ] T084 [US3] Build the Blazor Artifact image gallery after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Pages/Photography/Gallery.razor
-- [ ] T085 [US3] Integrate the authorized image panel into Artifact details after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Pages/Artifacts/Details.razor
-- [ ] T086 [US3] Add permission-aware UI state for view-only users after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Photography/PhotographyGalleryToolbar.razor
+- [x] T084 [US3] Build the Blazor Artifact image gallery after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Pages/Photography/Gallery.razor
+- [x] T085 [US3] Integrate the authorized image panel into Artifact details after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Pages/Artifacts/Details.razor
+- [x] T086 [US3] Add permission-aware UI state for view-only users after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Photography/PhotographyGalleryToolbar.razor
 
 **Checkpoint**: US3 is independently functional and proves viewing does not imply image stewardship permissions.
 

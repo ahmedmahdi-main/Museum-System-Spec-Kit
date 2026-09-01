@@ -4,6 +4,9 @@
 @inject ArtifactReadUseCases ArtifactReadUseCases
 @inject ArtifactWriteUseCases ArtifactWriteUseCases
 @inject MovementHistoryUseCase MovementHistoryUseCase
+@inject ViewArtifactImagesUseCase ViewImagesUseCase
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>تفاصيل القطعة</PageTitle>
 
@@ -99,6 +102,57 @@ else
                         }
                     </div>
                 </section>
+
+                @if (canViewPhotography)
+                {
+                    <section class="page-section">
+                        <div class="section-header">
+                            <div>
+                                <p class="eyebrow">التصوير</p>
+                                <h2>صور القطعة</h2>
+                                <p>لمحة سريعة عن صور القطعة المتاحة عبر حدود التطبيق.</p>
+                            </div>
+                            @if (photographyGallery is not null)
+                            {
+                                <div class="page-header-actions">
+                                    <a class="btn-secondary compact" href="@PhotographyGalleryHref">عرض جميع الصور</a>
+                                </div>
+                            }
+                        </div>
+                        <div class="section-body">
+                            @if (photographyGallery is null)
+                            {
+                                <div class="empty-state">
+                                    <strong>@(photographyMessage ?? "تعذر تحميل صور القطعة حاليًا.")</strong>
+                                </div>
+                            }
+                            else if (photographyGallery.State == ArtifactImageGalleryState.NoImages)
+                            {
+                                <div class="empty-state">
+                                    <strong>لا توجد صور متاحة لهذه القطعة.</strong>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="photography-strip" aria-label="لمحة عن صور القطعة">
+                                    @foreach (var image in photographyGallery.Images.Take(4))
+                                    {
+                                        <div class="photography-strip-item">
+                                            @if (CanShowRendition(image.Thumbnail))
+                                            {
+                                                <img src="@ImageSource(image.Thumbnail.Access!)" alt="@ImageAlt(image)" />
+                                            }
+                                            else
+                                            {
+                                                <span class="media-unavailable" role="status">الصورة مسجلة ولكن الملف غير متاح حاليًا.</span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </section>
+                }
             </main>
 
             <aside class="detail-aside">
@@ -157,16 +211,43 @@ else
     private string basicDescription = string.Empty;
     private string? message;
     private List<MovementHistoryDto> movementHistory = [];
+    private bool canViewPhotography;
+    private ArtifactImageGalleryDto? photographyGallery;
+    private string? photographyMessage;
 
     private string CurrentHolderText => string.IsNullOrWhiteSpace(artifact?.CurrentHolderName)
         ? "لا توجد حيازة خارجية"
         : $"{artifact.CurrentHolderType}: {artifact.CurrentHolderName}";
+
+    private string PhotographyGalleryHref => $"/photography/artifacts/{ArtifactId}";
 
     protected override async Task OnParametersSetAsync()
     {
         artifact = await ArtifactReadUseCases.GetArtifactDetails(ArtifactId);
         basicDescription = artifact?.BasicDescription ?? string.Empty;
         movementHistory = (await MovementHistoryUseCase.GetMovementHistory(ArtifactId)).ToList();
+
+        if (artifact is not null)
+        {
+            await LoadPhotographyAsync();
+        }
+    }
+
+    private async Task LoadPhotographyAsync()
+    {
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        canViewPhotography = (await AuthorizationService.AuthorizeAsync(state.User, PermissionNames.PhotographyView)).Succeeded;
+
+        if (!canViewPhotography)
+        {
+            photographyGallery = null;
+            photographyMessage = null;
+            return;
+        }
+
+        var result = await ViewImagesUseCase.ViewArtifactImages(new ViewArtifactImagesQuery(ArtifactId));
+        photographyGallery = result.Succeeded ? result.Value : null;
+        photographyMessage = result.Succeeded ? null : PhotographyFailureMessage(result);
     }
 
     private async Task UpdateAsync()
@@ -195,4 +276,36 @@ else
     private static string MovementHolderText(MovementHistoryDto movement) => movement.MovementType == MovementType.Return
         ? "المخزن"
         : $"{movement.RecipientType}: {movement.RecipientName}";
+
+    private static bool CanShowRendition(PhotographyGalleryRenditionDto rendition) =>
+        rendition.Availability == PhotographyImageRenditionAvailability.Available && rendition.Access is not null;
+
+    private static string ImageSource(PhotographyImageAccessReferenceDto access) =>
+        $"/photography/images/{access.ArtifactImageId}/{access.Rendition.ToString().ToLowerInvariant()}";
+
+    private string ImageAlt(PhotographyGalleryImageDto image)
+    {
+        var caption = string.IsNullOrWhiteSpace(image.Caption) ? PurposeText(image.Purpose) : image.Caption;
+        return $"صورة للقطعة {artifact?.MuseumNumber} — {caption}";
+    }
+
+    private static string PurposeText(PhotographyPurpose purpose) => purpose switch
+    {
+        PhotographyPurpose.GeneralDocumentation => "توثيق عام",
+        PhotographyPurpose.PreMaintenance => "قبل الصيانة",
+        PhotographyPurpose.DuringMaintenance => "أثناء الصيانة",
+        PhotographyPurpose.PostMaintenance => "بعد الصيانة",
+        _ => purpose.ToString()
+    };
+
+    private static string PhotographyFailureMessage(UseCaseResult<ArtifactImageGalleryDto> result)
+    {
+        var code = result.ValidationIssues.FirstOrDefault()?.Code;
+        return code switch
+        {
+            "Artifact.NotFound" => "لم يتم العثور على القطعة.",
+            "Photography.PermissionDenied" => "لا تملك صلاحية عرض صور القطعة.",
+            _ => "تعذر تحميل صور القطعة حاليًا."
+        };
+    }
 }
