@@ -4,6 +4,7 @@ using MuseumSystem.Application.Modules.IdentityAccess;
 using MuseumSystem.Infrastructure;
 using MuseumSystem.Infrastructure.Identity;
 using MuseumSystem.Web.Components;
+using MuseumSystem.Web.Components.Pages.Photography;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +36,7 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorPages();
+app.MapPhotographyImageStreamEndpoint();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

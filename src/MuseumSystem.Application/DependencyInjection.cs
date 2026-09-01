@@ -61,6 +61,8 @@ public static class DependencyInjection
         services.AddScoped<CancelPhotographyRequestUseCase>();
         services.AddScoped<CompletePhotographyRequestUseCase>();
         services.AddScoped<PhotographyRequestQueries>();
+        services.AddScoped<PhotographyGalleryMapper>();
+        services.AddScoped<ViewArtifactImagesUseCase>();
         return services;
     }
 }
