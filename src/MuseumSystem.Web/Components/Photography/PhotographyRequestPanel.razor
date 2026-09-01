@@ -50,10 +50,6 @@ else
                     <span>تاريخ الطلب</span>
                     <strong><code>@FormatDateTime(Request.Request.RequestedAt)</code></strong>
                 </div>
-                <div class="summary-item">
-                    <span>رمز المراجعة</span>
-                    <strong><code>@Request.Request.ConcurrencyToken</code></strong>
-                </div>
             </div>
 
             @if (!string.IsNullOrWhiteSpace(message))

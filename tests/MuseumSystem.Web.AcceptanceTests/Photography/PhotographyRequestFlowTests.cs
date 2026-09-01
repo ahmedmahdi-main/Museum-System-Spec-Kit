@@ -78,6 +78,7 @@ public sealed class PhotographyRequestFlowTests
         Assert.Contains("Request.Request.PhotographyRequestId", panel);
         Assert.Contains("Request.Request.ConcurrencyToken", panel);
         Assert.Contains("CancelUseCase.CancelPhotographyRequest", panel);
+        Assert.DoesNotContain("رمز المراجعة", panel);
         Assert.DoesNotContain("MuseumRoleNames", panel);
         Assert.DoesNotContain("ExpectedConcurrencyToken = 0", panel);
     }
