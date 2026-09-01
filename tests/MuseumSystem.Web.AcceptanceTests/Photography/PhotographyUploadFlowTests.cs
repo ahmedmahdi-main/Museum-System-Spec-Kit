@@ -100,15 +100,16 @@ public sealed class PhotographyUploadFlowTests
     }
 
     [Fact]
-    public void Navigation_exposes_only_upload_entry_when_user_has_upload_permission()
+    public void Navigation_keeps_upload_entry_and_allows_request_register_entry()
     {
         var root = FindRepositoryRoot();
         var nav = Read(root, "src", "MuseumSystem.Web", "Components", "Layout", "NavMenu.razor");
 
-        Assert.Contains($"Policy=\"@PermissionNames.{nameof(PermissionNames.PhotographyUpload)}\"", nav);
+        Assert.Contains(nameof(PermissionNames.PhotographyUpload), nav);
         Assert.Contains("href=\"photography/upload\"", nav);
         Assert.Contains("رفع صور القطع", nav);
-        Assert.DoesNotContain("photography/requests", nav, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("href=\"photography/requests\"", nav);
+        Assert.Contains("طلبات التصوير", nav);
         Assert.DoesNotContain("photography/gallery", nav, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("photography/delete", nav, StringComparison.OrdinalIgnoreCase);
     }

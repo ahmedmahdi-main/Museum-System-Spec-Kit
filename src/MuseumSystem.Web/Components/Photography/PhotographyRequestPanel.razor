@@ -1,0 +1,362 @@
+@namespace MuseumSystem.Web.Components.Photography
+@inject CancelPhotographyRequestUseCase CancelUseCase
+@inject CompletePhotographyRequestUseCase CompleteUseCase
+@inject PhotographyRequestQueries RequestQueries
+
+@if (Request is null)
+{
+    <div class="context-panel">
+        <h2>تفاصيل الطلب</h2>
+        <div class="empty-state">
+            <strong>لم يتم اختيار طلب.</strong>
+            <span>اختر طلبا من السجل لعرض الإجراء المناسب.</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="workflow-stack">
+        <div class="context-panel" aria-label="تفاصيل طلب التصوير المختار">
+            <div>
+                <p class="eyebrow">الطلب المختار</p>
+                <h2><span class="ref ref-lead">@Request.Artifact.MuseumNumber</span></h2>
+            </div>
+
+            <div class="artifact-state" aria-label="سياق القطعة في الطلب">
+                <div class="artifact-state-item critical">
+                    <span>رقم المتحف</span>
+                    <strong><span class="ref">@Request.Artifact.MuseumNumber</span></strong>
+                </div>
+                <div class="artifact-state-item">
+                    <span>الحالة الحالية</span>
+                    <strong><span class="badge-status @CurrentStatusClass(Request.Artifact.CurrentStatus)">@CurrentStatusText(Request.Artifact.CurrentStatus)</span></strong>
+                </div>
+                <div class="artifact-state-item">
+                    <span>الموقع / العهدة</span>
+                    <strong>@ArtifactPlacement(Request.Artifact)</strong>
+                </div>
+            </div>
+
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <span>غرض التصوير</span>
+                    <strong>@PurposeText(Request.Request.Purpose)</strong>
+                </div>
+                <div class="summary-item">
+                    <span>حالة الطلب</span>
+                    <strong><span class="badge-status @RequestStatusClass(Request.Request.Status)">@RequestStatusText(Request.Request.Status)</span></strong>
+                </div>
+                <div class="summary-item">
+                    <span>تاريخ الطلب</span>
+                    <strong><code>@FormatDateTime(Request.Request.RequestedAt)</code></strong>
+                </div>
+                <div class="summary-item">
+                    <span>رمز المراجعة</span>
+                    <strong><code>@Request.Request.ConcurrencyToken</code></strong>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(message))
+            {
+                <div class="@messageClass" role="status">@message</div>
+            }
+        </div>
+
+        @if (Request.Request.Status == PhotographyRequestStatus.Pending)
+        {
+            @if (CanCancelRequest)
+            {
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <h3>إلغاء الطلب</h3>
+                        <p>الإلغاء إجراء نهائي لهذا الطلب ولا يغيّر عهدة القطعة أو موقعها.</p>
+                    </div>
+                    <label class="checkbox-row">
+                        <InputCheckbox @bind-Value="confirmCancellation" />
+                        <span>أؤكد إلغاء طلب التصوير نهائيا.</span>
+                    </label>
+                    <div class="form-actions">
+                        <button type="button" class="btn-danger" disabled="@(!confirmCancellation || isBusy)" @onclick="CancelAsync">إلغاء الطلب</button>
+                    </div>
+                </div>
+            }
+
+            @if (CanUpload)
+            {
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <h3>إكمال الطلب</h3>
+                        <p>اختر مجموعة تصوير مؤهلة لنفس القطعة ونفس الغرض. لا يتم إدخال معرف مجموعة يدوي.</p>
+                    </div>
+
+                    @if (eligibleSets.Count == 0)
+                    {
+                        <div class="warning-message">لا توجد مجموعة تصوير مؤهلة لإكمال هذا الطلب.</div>
+                        <div class="form-actions">
+                            <a class="btn-secondary" href="/photography/upload">رفع صور القطعة</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <label>
+                            <span>مجموعة التصوير المؤهلة</span>
+                            <InputSelect @bind-Value="selectedFulfillingSetId" class="form-control">
+                                @foreach (var set in eligibleSets)
+                                {
+                                    <option value="@set.PhotographySetId">@EligibleSetText(set)</option>
+                                }
+                            </InputSelect>
+                        </label>
+                        <div class="form-actions">
+                            <button type="button" class="btn-primary" disabled="@(!CanCompleteRequest)" @onclick="CompleteAsync">إكمال الطلب</button>
+                        </div>
+                    }
+                </div>
+            }
+        }
+        else
+        {
+            <div class="form-section">
+                <div class="form-section-title">
+                    <h3>حالة نهائية</h3>
+                    <p>هذا الطلب لم يعد قيد الانتظار، لذلك لا تظهر إجراءات الإلغاء أو الإكمال.</p>
+                </div>
+                @if (Request.FulfillingSet is not null)
+                {
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <span>تاريخ التصوير</span>
+                            <strong><code>@Request.FulfillingSet.PhotographyDate.ToString("yyyy-MM-dd")</code></strong>
+                        </div>
+                        <div class="summary-item">
+                            <span>المصور</span>
+                            <strong>@Request.FulfillingSet.PhotographerUserId</strong>
+                        </div>
+                        <div class="summary-item">
+                            <span>الصور المحفوظة</span>
+                            <strong>@Request.FulfillingSet.AvailableImageCount</strong>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public PhotographyRequestSummaryDto? Request { get; set; }
+    [Parameter] public string? CurrentUserId { get; set; }
+    [Parameter] public bool CanManage { get; set; }
+    [Parameter] public bool CanUpload { get; set; }
+    [Parameter] public EventCallback<Guid> OnRequestChanged { get; set; }
+
+    private Guid? previousRequestId;
+    private List<PhotographyRequestFulfillingSetSummaryDto> eligibleSets = [];
+    private Guid? selectedFulfillingSetId;
+    private bool confirmCancellation;
+    private bool isBusy;
+    private string? message;
+    private string messageClass = "status-message";
+
+    private bool IsOwnRequest =>
+        Request is not null
+        && !string.IsNullOrWhiteSpace(CurrentUserId)
+        && string.Equals(CurrentUserId, Request.Request.RequestedByUserId, StringComparison.Ordinal);
+
+    private bool CanCancelRequest =>
+        Request?.Request.Status == PhotographyRequestStatus.Pending
+        && (CanManage || IsOwnRequest);
+
+    private bool CanCompleteRequest =>
+        Request?.Request.Status == PhotographyRequestStatus.Pending
+        && CanUpload
+        && selectedFulfillingSetId.HasValue
+        && !isBusy;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var currentRequestId = Request?.Request.PhotographyRequestId;
+        if (currentRequestId == previousRequestId)
+        {
+            return;
+        }
+
+        previousRequestId = currentRequestId;
+        confirmCancellation = false;
+        message = null;
+        eligibleSets = [];
+        selectedFulfillingSetId = null;
+
+        if (Request?.Request.Status == PhotographyRequestStatus.Pending && CanUpload)
+        {
+            await LoadEligibleSetsAsync();
+        }
+    }
+
+    private async Task LoadEligibleSetsAsync()
+    {
+        if (Request is null)
+        {
+            return;
+        }
+
+        var result = await RequestQueries.ListEligibleFulfillingSetsForRequest(Request.Request.PhotographyRequestId);
+        if (!result.Succeeded)
+        {
+            message = FormatResult(result, "تم تحميل المجموعات المؤهلة.");
+            messageClass = "warning-message";
+            return;
+        }
+
+        eligibleSets = result.Value?.ToList() ?? [];
+        selectedFulfillingSetId = eligibleSets.FirstOrDefault()?.PhotographySetId;
+    }
+
+    private async Task CancelAsync()
+    {
+        if (Request is null)
+        {
+            return;
+        }
+
+        if (!confirmCancellation)
+        {
+            message = "أكد الإلغاء النهائي قبل المتابعة.";
+            messageClass = "warning-message";
+            return;
+        }
+
+        isBusy = true;
+        try
+        {
+            var result = await CancelUseCase.CancelPhotographyRequest(new CancelPhotographyRequestCommand(
+                Request.Request.PhotographyRequestId,
+                Request.Request.ConcurrencyToken));
+
+            message = FormatResult(result, "تم إلغاء طلب التصوير.");
+            messageClass = result.Succeeded ? "status-message" : "warning-message";
+            confirmCancellation = false;
+
+            if (result.Succeeded || result.ConcurrencyConflict)
+            {
+                await OnRequestChanged.InvokeAsync(Request.Request.PhotographyRequestId);
+            }
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task CompleteAsync()
+    {
+        if (Request is null)
+        {
+            return;
+        }
+
+        if (!selectedFulfillingSetId.HasValue)
+        {
+            message = "لا توجد مجموعة تصوير مؤهلة لإكمال هذا الطلب.";
+            messageClass = "warning-message";
+            return;
+        }
+
+        isBusy = true;
+        try
+        {
+            var result = await CompleteUseCase.CompletePhotographyRequest(new CompletePhotographyRequestCommand(
+                Request.Request.PhotographyRequestId,
+                selectedFulfillingSetId.Value,
+                Request.Request.ConcurrencyToken));
+
+            message = FormatResult(result, "تم إكمال طلب التصوير.");
+            messageClass = result.Succeeded ? "status-message" : "warning-message";
+
+            if (result.Succeeded || result.ConcurrencyConflict)
+            {
+                await OnRequestChanged.InvokeAsync(Request.Request.PhotographyRequestId);
+            }
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private static string ArtifactPlacement(PhotographyRequestArtifactSummaryDto artifact) =>
+        artifact.CurrentLocationName ?? artifact.CurrentHolderName ?? "-";
+
+    private static string CurrentStatusText(ArtifactCurrentStatus status) => status switch
+    {
+        ArtifactCurrentStatus.InStorage => "داخل المخزن",
+        ArtifactCurrentStatus.OutOfStorage => "خارج المخزن",
+        _ => status.ToString()
+    };
+
+    private static string CurrentStatusClass(ArtifactCurrentStatus status) => status switch
+    {
+        ArtifactCurrentStatus.InStorage => "badge-storage",
+        ArtifactCurrentStatus.OutOfStorage => "badge-out",
+        _ => string.Empty
+    };
+
+    private static string RequestStatusText(PhotographyRequestStatus status) => status switch
+    {
+        PhotographyRequestStatus.Pending => "قيد الانتظار",
+        PhotographyRequestStatus.Completed => "مكتمل",
+        PhotographyRequestStatus.Cancelled => "ملغى",
+        _ => status.ToString()
+    };
+
+    private static string RequestStatusClass(PhotographyRequestStatus status) => status switch
+    {
+        PhotographyRequestStatus.Pending => "badge-draft",
+        PhotographyRequestStatus.Completed => "badge-completed",
+        PhotographyRequestStatus.Cancelled => "badge-retired",
+        _ => string.Empty
+    };
+
+    private static string PurposeText(PhotographyPurpose purpose) => purpose switch
+    {
+        PhotographyPurpose.GeneralDocumentation => "توثيق عام",
+        PhotographyPurpose.PreMaintenance => "قبل الصيانة",
+        PhotographyPurpose.DuringMaintenance => "أثناء الصيانة",
+        PhotographyPurpose.PostMaintenance => "بعد الصيانة",
+        _ => purpose.ToString()
+    };
+
+    private static string EligibleSetText(PhotographyRequestFulfillingSetSummaryDto set) =>
+        $"{set.PhotographyDate:yyyy-MM-dd} - {set.PhotographerUserId} - {set.AvailableImageCount} صورة محفوظة";
+
+    private static string FormatDateTime(DateTimeOffset value) =>
+        value.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+
+    private static string FormatResult<T>(UseCaseResult<T> result, string successMessage)
+    {
+        if (result.Succeeded)
+        {
+            return successMessage;
+        }
+
+        if (result.ConcurrencyConflict)
+        {
+            return "تغيّر طلب التصوير. حدّث السجل وراجع آخر حالة قبل المتابعة.";
+        }
+
+        return string.Join(" ", result.ValidationIssues.Select(issue => LocalizeMessage(issue.Message)));
+    }
+
+    private static string LocalizeMessage(string value)
+    {
+        if (value.Contains("Permission", StringComparison.OrdinalIgnoreCase)) return "لا تملك الصلاحية المطلوبة لهذا الإجراء.";
+        if (value.Contains("Only pending", StringComparison.OrdinalIgnoreCase)) return "يمكن تنفيذ هذا الإجراء على الطلبات قيد الانتظار فقط.";
+        if (value.Contains("Photography request was not found", StringComparison.OrdinalIgnoreCase)) return "لم يتم العثور على طلب التصوير.";
+        if (value.Contains("Photography set was not found", StringComparison.OrdinalIgnoreCase)) return "لم يتم العثور على مجموعة التصوير.";
+        if (value.Contains("same artifact", StringComparison.OrdinalIgnoreCase) || value.Contains("requested artifact", StringComparison.OrdinalIgnoreCase)) return "مجموعة التصوير لا تخص القطعة المطلوبة.";
+        if (value.Contains("same purpose", StringComparison.OrdinalIgnoreCase) || value.Contains("requested purpose", StringComparison.OrdinalIgnoreCase)) return "مجموعة التصوير لا تطابق غرض الطلب.";
+        if (value.Contains("available image", StringComparison.OrdinalIgnoreCase)) return "لا توجد صورة محفوظة مؤهلة في هذه المجموعة.";
+        if (value.Contains("Authenticated actor", StringComparison.OrdinalIgnoreCase)) return "يتطلب الإجراء مستخدما مسجلا.";
+        return value;
+    }
+}

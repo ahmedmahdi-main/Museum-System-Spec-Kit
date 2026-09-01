@@ -152,9 +152,9 @@
 - [x] T071 [US2] Implement CancelPhotographyRequest use case after T064-T069 with requester/Manage authorization, expected concurrency token, terminal-state checks, and audit in src/MuseumSystem.Application/Modules/Photography/CancelPhotographyRequestUseCase.cs
 - [x] T072 [US2] Implement CompletePhotographyRequest use case after T064-T069 with Upload permission, matching Artifact/Purpose, available image count validation, concurrency, terminal-state rules, and audit in src/MuseumSystem.Application/Modules/Photography/CompletePhotographyRequestUseCase.cs
 - [x] T073 [US2] Implement request DTOs plus list/detail query use cases after request persistence exists with staff-safe artifact summaries from the central registry in src/MuseumSystem.Application/Modules/Photography/PhotographyRequestQueries.cs
-- [ ] T074 [US2] Add web acceptance tests after T070-T073 for Arabic/RTL request create, own cancellation, Manage cancellation, valid completion, invalid fulfillment display, and no Documentation/Laboratory ownership in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyRequestFlowTests.cs
-- [ ] T075 [US2] Build the Blazor Photography request workflow after T070-T074 and after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Pages/Photography/Requests.razor
-- [ ] T076 [US2] Build request create/cancel/complete components after T070-T074 and after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Photography/PhotographyRequestPanel.razor
+- [x] T074 [US2] Add web acceptance tests after T070-T073 for Arabic/RTL request create, own cancellation, Manage cancellation, valid completion, invalid fulfillment display, and no Documentation/Laboratory ownership in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyRequestFlowTests.cs
+- [x] T075 [US2] Build the Blazor Photography request workflow after T070-T074 and after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Pages/Photography/Requests.razor
+- [x] T076 [US2] Build request create/cancel/complete components after T070-T074 and after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Photography/PhotographyRequestPanel.razor
 
 **Checkpoint**: US2 is independently functional and testable without requiring Laboratory or Documentation workflow implementation.
 

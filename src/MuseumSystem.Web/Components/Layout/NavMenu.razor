@@ -1,4 +1,6 @@
 @* Labels here match each page's own heading, so a link and the page it opens are named the same thing. *@
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 <nav class="nav-menu" aria-label="قائمة النظام">
     <div class="nav-group nav-home">
         <NavLink class="nav-link" href="" Match="NavLinkMatch.All">الرئيسية</NavLink>
@@ -72,12 +74,18 @@
     </div>
 
     <div class="nav-group">
-        <AuthorizeView Policy="@PermissionNames.PhotographyUpload">
-            <Authorized>
-                <div class="nav-section">التصوير</div>
+        @if (canUploadPhotography || canUsePhotographyRequests)
+        {
+            <div class="nav-section">التصوير</div>
+            @if (canUploadPhotography)
+            {
                 <NavLink class="nav-link" href="photography/upload" Match="NavLinkMatch.All">رفع صور القطعة</NavLink>
-            </Authorized>
-        </AuthorizeView>
+            }
+            @if (canUsePhotographyRequests)
+            {
+                <NavLink class="nav-link" href="photography/requests" Match="NavLinkMatch.All">طلبات التصوير</NavLink>
+            }
+        }
     </div>
 
     <div class="nav-group">
@@ -89,3 +97,20 @@
         </AuthorizeView>
     </div>
 </nav>
+@code {
+    private bool canUploadPhotography;
+    private bool canUsePhotographyRequests;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        canUploadPhotography = await IsAuthorizedAsync(state, PermissionNames.PhotographyUpload);
+        canUsePhotographyRequests =
+            await IsAuthorizedAsync(state, PermissionNames.PhotographyRequest)
+            || await IsAuthorizedAsync(state, PermissionNames.PhotographyManage)
+            || canUploadPhotography;
+    }
+
+    private async Task<bool> IsAuthorizedAsync(AuthenticationState state, string policy) =>
+        (await AuthorizationService.AuthorizeAsync(state.User, policy)).Succeeded;
+}

@@ -1,0 +1,466 @@
+@page "/photography/requests"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@using System.Security.Claims
+@inject ArtifactReadUseCases ArtifactReadUseCases
+@inject PhotographyRequestQueries RequestQueries
+@inject CreatePhotographyRequestUseCase CreateUseCase
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>طلبات التصوير</PageTitle>
+
+<div class="workflow-page">
+    <section class="page-header">
+        <div>
+            <p class="eyebrow">التصوير</p>
+            <h1>طلبات التصوير</h1>
+            <p>سجل تشغيلي لطلبات تصوير القطع، يبدأ من رقم المتحف وينتهي بإكمال الطلب بمجموعة تصوير مؤهلة.</p>
+        </div>
+        <div class="page-header-actions">
+            <button type="button" class="btn-secondary" disabled="@(!hasRequestWorkflowAccess || isLoadingRequests)" @onclick="LoadRequestsAsync">تحديث السجل</button>
+        </div>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="@messageClass" role="status">@message</div>
+    }
+
+    @if (!hasRequestWorkflowAccess)
+    {
+        <section class="page-section">
+            <div class="section-body">
+                <div class="empty-state">
+                    <strong>لا تملك صلاحية استخدام سجل طلبات التصوير.</strong>
+                    <span>يتطلب هذا المسار إحدى صلاحيات طلب التصوير أو إدارته أو رفعه.</span>
+                </div>
+            </div>
+        </section>
+    }
+    else
+    {
+        <section class="page-section">
+            <div class="section-header">
+                <div>
+                    <p class="eyebrow">طلب جديد</p>
+                    <h2>اختيار القطعة والغرض</h2>
+                    <p>ابحث عن قطعة مسجلة، راجع سياقها المركزي، ثم أنشئ طلب تصوير بغرض واحد معتمد.</p>
+                </div>
+            </div>
+
+            <div class="section-body">
+                <EditForm Model="this" OnSubmit="SearchArtifactsAsync" FormName="photography-request-artifact-search">
+                    <div class="register-toolbar">
+                        <label>
+                            <span>بحث القطعة</span>
+                            <InputText @bind-Value="artifactQuery" class="form-control" />
+                        </label>
+                        <button type="submit" class="btn-primary">بحث</button>
+                        <div class="register-context" aria-live="polite">
+                            @if (hasSearched)
+                            {
+                                <span>نتائج القطع: <strong>@artifactResults.Count</strong></span>
+                            }
+                            else
+                            {
+                                <span>ابدأ برقم المتحف أو الوصف أو الفئة.</span>
+                            }
+                        </div>
+                    </div>
+                </EditForm>
+
+                @if (selectedArtifact is not null)
+                {
+                    <div class="artifact-state" aria-label="سياق القطعة المختارة">
+                        <div class="artifact-state-item critical">
+                            <span>رقم المتحف</span>
+                            <strong><span class="ref ref-lead">@selectedArtifact.MuseumNumber</span></strong>
+                        </div>
+                        <div class="artifact-state-item">
+                            <span>وصف القطعة</span>
+                            <strong>@selectedArtifact.BasicDescription</strong>
+                        </div>
+                        <div class="artifact-state-item">
+                            <span>الحالة الحالية</span>
+                            <strong><span class="badge-status @CurrentStatusClass(selectedArtifact.CurrentStatus)">@CurrentStatusText(selectedArtifact.CurrentStatus)</span></strong>
+                        </div>
+                        <div class="artifact-state-item">
+                            <span>الموقع / العهدة</span>
+                            <strong>@ArtifactPlacement(selectedArtifact)</strong>
+                        </div>
+                    </div>
+                }
+
+                @if (hasSearched && artifactResults.Count > 0)
+                {
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>رقم المتحف</th>
+                                    <th>الفئة</th>
+                                    <th>الوصف</th>
+                                    <th>الحالة</th>
+                                    <th>الموقع / العهدة</th>
+                                    <th class="actions-cell">الإجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var artifact in artifactResults)
+                                {
+                                    <tr>
+                                        <td><a class="ref" href="/artifacts/@artifact.ArtifactId">@artifact.MuseumNumber</a></td>
+                                        <td>@artifact.CategoryCode</td>
+                                        <td>@artifact.BasicDescription</td>
+                                        <td><span class="badge-status @CurrentStatusClass(artifact.CurrentStatus)">@CurrentStatusText(artifact.CurrentStatus)</span></td>
+                                        <td>@ArtifactPlacement(artifact)</td>
+                                        <td class="actions-cell">
+                                            <button type="button" class="btn-secondary compact" @onclick="() => SelectArtifact(artifact)">اختيار</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else if (hasSearched)
+                {
+                    <div class="empty-state">
+                        <strong>لم يتم العثور على قطعة.</strong>
+                        <span>غيّر رقم المتحف أو الوصف ثم أعد البحث.</span>
+                    </div>
+                }
+
+                <div class="form-grid">
+                    <label>
+                        <span>غرض التصوير</span>
+                        <InputSelect @bind-Value="selectedPurpose" class="form-control" disabled="@(!canRequest)">
+                            <option value="@PhotographyPurpose.GeneralDocumentation">توثيق عام</option>
+                            <option value="@PhotographyPurpose.PreMaintenance">قبل الصيانة</option>
+                            <option value="@PhotographyPurpose.DuringMaintenance">أثناء الصيانة</option>
+                            <option value="@PhotographyPurpose.PostMaintenance">بعد الصيانة</option>
+                        </InputSelect>
+                    </label>
+                    <div class="form-actions">
+                        <button type="button" class="btn-primary" disabled="@(!CanCreateRequest)" @onclick="CreateRequestAsync">إنشاء طلب تصوير</button>
+                    </div>
+                    @if (!canRequest)
+                    {
+                        <p class="muted span-all">يمكنك متابعة السجل، لكن إنشاء طلب جديد يتطلب صلاحية طلب التصوير.</p>
+                    }
+                </div>
+            </div>
+        </section>
+
+        <section class="page-section">
+            <div class="section-header">
+                <div>
+                    <p class="eyebrow">السجل</p>
+                    <h2>طلبات التصوير المسجلة</h2>
+                    <p>القائمة تعرض الحالة الرسمية من التطبيق؛ اختر طلبا لعرض إجراءات الإلغاء أو الإكمال المسموحة.</p>
+                </div>
+            </div>
+
+            <div class="section-body">
+                <div class="register-toolbar">
+                    <label>
+                        <span>حالة الطلب</span>
+                        <InputSelect @bind-Value="requestStatusFilter" class="form-control">
+                            <option value="Pending">قيد الانتظار</option>
+                            <option value="Completed">مكتمل</option>
+                            <option value="Cancelled">ملغى</option>
+                            <option value="">كل الحالات</option>
+                        </InputSelect>
+                    </label>
+                    <button type="button" class="btn-secondary" disabled="@isLoadingRequests" @onclick="LoadRequestsAsync">عرض</button>
+                    <div class="register-context" aria-live="polite">
+                        <span>عدد الطلبات: <strong>@requests.Count</strong></span>
+                    </div>
+                </div>
+
+                <div class="workflow-layout">
+                    <PhotographyRequestPanel Request="selectedRequest"
+                                             CurrentUserId="@currentUserId"
+                                             CanManage="@canManage"
+                                             CanUpload="@canUpload"
+                                             OnRequestChanged="HandlePanelRequestChangedAsync" />
+
+                    <div class="management-register">
+                        @if (isLoadingRequests)
+                        {
+                            <div class="empty-state">
+                                <strong>جاري تحميل سجل الطلبات.</strong>
+                                <span>يتم جلب الحالة الرسمية من التطبيق.</span>
+                            </div>
+                        }
+                        else if (requests.Count == 0)
+                        {
+                            <div class="empty-state">
+                                <strong>لا توجد طلبات ضمن هذا المرشح.</strong>
+                                <span>غيّر الحالة أو أنشئ طلبا جديدا لقطعة مسجلة.</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-wrap">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>رقم المتحف</th>
+                                            <th>غرض التصوير</th>
+                                            <th>الحالة</th>
+                                            <th>تاريخ الطلب</th>
+                                            <th>الطالب</th>
+                                            <th>الإكمال</th>
+                                            <th class="actions-cell">الإجراء</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in requests)
+                                        {
+                                            <tr>
+                                                <td><a class="ref" href="/artifacts/@item.Artifact.ArtifactId">@item.Artifact.MuseumNumber</a></td>
+                                                <td>@PurposeText(item.Request.Purpose)</td>
+                                                <td><span class="badge-status @RequestStatusClass(item.Request.Status)">@RequestStatusText(item.Request.Status)</span></td>
+                                                <td><code>@FormatDateTime(item.Request.RequestedAt)</code></td>
+                                                <td>@RequesterText(item.Request)</td>
+                                                <td>@FulfillmentText(item)</td>
+                                                <td class="actions-cell">
+                                                    <button type="button" class="btn-secondary compact" @onclick="() => SelectRequest(item)">عرض</button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </section>
+    }
+</div>
+
+@code {
+    private string? artifactQuery;
+    private bool hasSearched;
+    private List<ArtifactSearchResultDto> artifactResults = [];
+    private ArtifactSearchResultDto? selectedArtifact;
+    private PhotographyPurpose selectedPurpose = PhotographyPurpose.GeneralDocumentation;
+
+    private string requestStatusFilter = PhotographyRequestStatus.Pending.ToString();
+    private List<PhotographyRequestSummaryDto> requests = [];
+    private PhotographyRequestSummaryDto? selectedRequest;
+    private Guid? selectedRequestId;
+
+    private string? currentUserId;
+    private bool canRequest;
+    private bool canManage;
+    private bool canUpload;
+    private bool hasRequestWorkflowAccess;
+    private bool isLoadingRequests;
+    private bool isCreating;
+    private string? message;
+    private string messageClass = "status-message";
+
+    private bool CanCreateRequest => canRequest && selectedArtifact is not null && !isCreating;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCapabilitiesAsync();
+        if (hasRequestWorkflowAccess)
+        {
+            await LoadRequestsAsync();
+        }
+    }
+
+    private async Task LoadCapabilitiesAsync()
+    {
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        currentUserId = state.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        canRequest = await IsAuthorizedAsync(state, PermissionNames.PhotographyRequest);
+        canManage = await IsAuthorizedAsync(state, PermissionNames.PhotographyManage);
+        canUpload = await IsAuthorizedAsync(state, PermissionNames.PhotographyUpload);
+        hasRequestWorkflowAccess = canRequest || canManage || canUpload;
+    }
+
+    private async Task SearchArtifactsAsync()
+    {
+        hasSearched = true;
+        artifactResults = (await ArtifactReadUseCases.SearchArtifacts(artifactQuery)).ToList();
+
+        if (selectedArtifact is not null && artifactResults.All(artifact => artifact.ArtifactId != selectedArtifact.ArtifactId))
+        {
+            selectedArtifact = null;
+        }
+    }
+
+    private void SelectArtifact(ArtifactSearchResultDto artifact)
+    {
+        selectedArtifact = artifact;
+        message = $"تم اختيار القطعة {artifact.MuseumNumber}.";
+        messageClass = "status-message";
+    }
+
+    private async Task CreateRequestAsync()
+    {
+        if (!CanCreateRequest)
+        {
+            message = canRequest
+                ? "اختر قطعة مسجلة قبل إنشاء طلب التصوير."
+                : "لا تملك صلاحية إنشاء طلب تصوير.";
+            messageClass = "warning-message";
+            return;
+        }
+
+        isCreating = true;
+        try
+        {
+            var result = await CreateUseCase.CreatePhotographyRequest(new CreatePhotographyRequestCommand(
+                selectedArtifact!.ArtifactId,
+                selectedPurpose));
+
+            message = FormatResult(result, "تم إنشاء طلب التصوير.");
+            messageClass = result.Succeeded ? "status-message" : "warning-message";
+
+            if (result.Succeeded && result.Value is not null)
+            {
+                selectedRequestId = result.Value.PhotographyRequestId;
+                requestStatusFilter = PhotographyRequestStatus.Pending.ToString();
+                await LoadRequestsAsync();
+            }
+        }
+        finally
+        {
+            isCreating = false;
+        }
+    }
+
+    private async Task LoadRequestsAsync()
+    {
+        if (!hasRequestWorkflowAccess)
+        {
+            return;
+        }
+
+        isLoadingRequests = true;
+        try
+        {
+            requests = (await RequestQueries.ListPhotographyRequests(new PhotographyRequestListQuery(ParseStatusFilter()))).ToList();
+            selectedRequest = selectedRequestId.HasValue
+                ? requests.FirstOrDefault(item => item.Request.PhotographyRequestId == selectedRequestId.Value)
+                : requests.FirstOrDefault();
+
+            if (selectedRequest is null && selectedRequestId.HasValue)
+            {
+                var detail = await RequestQueries.GetPhotographyRequestDetail(selectedRequestId.Value);
+                selectedRequest = detail.Succeeded ? detail.Value : null;
+            }
+
+            selectedRequestId = selectedRequest?.Request.PhotographyRequestId;
+        }
+        finally
+        {
+            isLoadingRequests = false;
+        }
+    }
+
+    private void SelectRequest(PhotographyRequestSummaryDto request)
+    {
+        selectedRequest = request;
+        selectedRequestId = request.Request.PhotographyRequestId;
+    }
+
+    private async Task HandlePanelRequestChangedAsync(Guid requestId)
+    {
+        selectedRequestId = requestId;
+        await LoadRequestsAsync();
+    }
+
+    private PhotographyRequestStatus? ParseStatusFilter() =>
+        Enum.TryParse<PhotographyRequestStatus>(requestStatusFilter, out var status)
+            ? status
+            : null;
+
+    private async Task<bool> IsAuthorizedAsync(AuthenticationState state, string policy) =>
+        (await AuthorizationService.AuthorizeAsync(state.User, policy)).Succeeded;
+
+    private static string ArtifactPlacement(ArtifactSearchResultDto artifact) =>
+        artifact.CurrentLocationName ?? artifact.CurrentHolderName ?? "-";
+
+    private static string CurrentStatusText(ArtifactCurrentStatus status) => status switch
+    {
+        ArtifactCurrentStatus.InStorage => "داخل المخزن",
+        ArtifactCurrentStatus.OutOfStorage => "خارج المخزن",
+        _ => status.ToString()
+    };
+
+    private static string CurrentStatusClass(ArtifactCurrentStatus status) => status switch
+    {
+        ArtifactCurrentStatus.InStorage => "badge-storage",
+        ArtifactCurrentStatus.OutOfStorage => "badge-out",
+        _ => string.Empty
+    };
+
+    private static string RequestStatusText(PhotographyRequestStatus status) => status switch
+    {
+        PhotographyRequestStatus.Pending => "قيد الانتظار",
+        PhotographyRequestStatus.Completed => "مكتمل",
+        PhotographyRequestStatus.Cancelled => "ملغى",
+        _ => status.ToString()
+    };
+
+    private static string RequestStatusClass(PhotographyRequestStatus status) => status switch
+    {
+        PhotographyRequestStatus.Pending => "badge-draft",
+        PhotographyRequestStatus.Completed => "badge-completed",
+        PhotographyRequestStatus.Cancelled => "badge-retired",
+        _ => string.Empty
+    };
+
+    private static string PurposeText(PhotographyPurpose purpose) => purpose switch
+    {
+        PhotographyPurpose.GeneralDocumentation => "توثيق عام",
+        PhotographyPurpose.PreMaintenance => "قبل الصيانة",
+        PhotographyPurpose.DuringMaintenance => "أثناء الصيانة",
+        PhotographyPurpose.PostMaintenance => "بعد الصيانة",
+        _ => purpose.ToString()
+    };
+
+    private static string RequesterText(PhotographyRequestDto request) =>
+        string.IsNullOrWhiteSpace(request.RequestedByUserId) ? "-" : request.RequestedByUserId;
+
+    private static string FulfillmentText(PhotographyRequestSummaryDto request) =>
+        request.Request.Status == PhotographyRequestStatus.Completed && request.FulfillingSet is not null
+            ? $"{request.FulfillingSet.AvailableImageCount} صورة محفوظة"
+            : "-";
+
+    private static string FormatDateTime(DateTimeOffset value) =>
+        value.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+
+    private static string FormatResult<T>(UseCaseResult<T> result, string successMessage)
+    {
+        if (result.Succeeded)
+        {
+            return successMessage;
+        }
+
+        if (result.ConcurrencyConflict)
+        {
+            return "تغيّر طلب التصوير. حدّث السجل وراجع آخر حالة قبل المتابعة.";
+        }
+
+        return string.Join(" ", result.ValidationIssues.Select(issue => LocalizeMessage(issue.Message)));
+    }
+
+    private static string LocalizeMessage(string value)
+    {
+        if (value.Contains("Permission", StringComparison.OrdinalIgnoreCase)) return "لا تملك الصلاحية المطلوبة لهذا الإجراء.";
+        if (value.Contains("Artifact was not found", StringComparison.OrdinalIgnoreCase)) return "لم يتم العثور على القطعة.";
+        if (value.Contains("purpose", StringComparison.OrdinalIgnoreCase)) return "غرض التصوير غير معتمد.";
+        if (value.Contains("Authenticated actor", StringComparison.OrdinalIgnoreCase)) return "يتطلب الإجراء مستخدما مسجلا.";
+        return value;
+    }
+}
