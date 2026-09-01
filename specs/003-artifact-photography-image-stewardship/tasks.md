@@ -194,11 +194,11 @@
 
 ### Tests for User Story 4
 
-- [ ] T087 [P] [US4] Add domain tests for Primary Image eligibility, same-Artifact requirement, deleted image rejection, no auto replacement, and ArtifactPhotographyState authority in tests/MuseumSystem.Domain.Tests/Photography/PrimaryImageRulesTests.cs
+- [x] T087 [P] [US4] Add domain tests for Primary Image eligibility, same-Artifact requirement, deleted image rejection, no auto replacement, and ArtifactPhotographyState authority in tests/MuseumSystem.Domain.Tests/Photography/PrimaryImageRulesTests.cs
 - [ ] T088 [P] [US4] Add application tests for metadata update permission, audit, concurrency, and original binary immutability in tests/MuseumSystem.Application.Tests/Photography/UpdateArtifactImageMetadataUseCaseTests.cs
 - [ ] T089 [P] [US4] Add application tests for SetPrimary requiring Photography.Manage, replacing current primary, blocking missing/deleted/different-Artifact targets, stale write conflicts, and expected audit record with Artifact, previous Primary Image, new Primary Image, acting user, and server timestamp in tests/MuseumSystem.Application.Tests/Photography/SetPrimaryArtifactImageUseCaseTests.cs
-- [ ] T090 [P] [US4] Add PostgreSQL tests for ArtifactPhotographyState primary FK, same-Artifact relational constraint, nullable PrimaryImageId, and absence of independent ArtifactImage.IsPrimary authority in tests/MuseumSystem.Integration.Tests/Photography/ArtifactPhotographyStatePersistenceTests.cs
-- [ ] T091 [P] [US4] Add PostgreSQL race tests for SetPrimary/SetPrimary, SetPrimary/DeletePrimary, and DeletePrimary/SetPrimary using the ArtifactPhotographyState concurrency token in tests/MuseumSystem.Integration.Tests/Photography/PrimaryImageConcurrencyTests.cs
+- [x] T090 [P] [US4] Add PostgreSQL tests for ArtifactPhotographyState primary FK, same-Artifact relational constraint, nullable PrimaryImageId, and absence of independent ArtifactImage.IsPrimary authority in tests/MuseumSystem.Integration.Tests/Photography/ArtifactPhotographyStatePersistenceTests.cs
+- [x] T091 [P] [US4] Add PostgreSQL race tests for SetPrimary/SetPrimary, SetPrimary/DeletePrimary, and DeletePrimary/SetPrimary using the ArtifactPhotographyState concurrency token in tests/MuseumSystem.Integration.Tests/Photography/PrimaryImageConcurrencyTests.cs
 - [ ] T092 [P] [US4] Add web acceptance tests for metadata editing, primary selection, primary replacement, blocked invalid primary targets, Arabic/RTL layout, and no raw storage internals in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyManagementFlowTests.cs
 
 ### Implementation for User Story 4
