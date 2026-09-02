@@ -222,11 +222,11 @@
 
 ### Tests for User Story 5
 
-- [ ] T099 [P] [US5] Add domain tests for grace-period deletion boundaries, server-authoritative UTC, current Photography.Upload requirement, uploader identity, permission revocation, privileged reason requirement, and deletion mode metadata in tests/MuseumSystem.Domain.Tests/Photography/ArtifactImageDeletionRulesTests.cs
+- [x] T099 [P] [US5] Add domain tests for grace-period deletion boundaries, server-authoritative UTC, current Photography.Upload requirement, uploader identity, permission revocation, privileged reason requirement, and deletion mode metadata in tests/MuseumSystem.Domain.Tests/Photography/ArtifactImageDeletionRulesTests.cs
 - [ ] T100 [P] [US5] Add application tests for DeleteArtifactImageByUploaderGrace at 59 minutes, exactly 60 minutes, after 60 minutes, after Upload revocation, other-user block, audit, and current Primary clearing audit trace through existing audit infrastructure in tests/MuseumSystem.Application.Tests/Photography/DeleteArtifactImageByUploaderGraceUseCaseTests.cs
 - [ ] T101 [P] [US5] Add application tests for DeleteArtifactImagePrivileged requiring Photography.Delete, mandatory non-empty reason, audit metadata, binary non-retention, derivative deletion, and current Primary clearing audit trace through existing audit infrastructure in tests/MuseumSystem.Application.Tests/Photography/DeleteArtifactImagePrivilegedUseCaseTests.cs
 - [ ] T102 [P] [US5] Add object-storage integration tests for deleting original objects, thumbnails, previews, already-missing object handling, and partial derivative failure recovery in tests/MuseumSystem.Integration.Tests/Photography/ArtifactImageStorageDeletionTests.cs
-- [ ] T103 [P] [US5] Add PostgreSQL integration tests for DeletePending/Deleted lifecycle, deleted image primary ineligibility, audit metadata retention, and PrimaryImageId nulling in tests/MuseumSystem.Integration.Tests/Photography/ArtifactImageDeletionPersistenceTests.cs
+- [x] T103 [P] [US5] Add PostgreSQL integration tests for DeletePending/Deleted lifecycle, deleted image primary ineligibility, audit metadata retention, and PrimaryImageId nulling in tests/MuseumSystem.Integration.Tests/Photography/ArtifactImageDeletionPersistenceTests.cs
 - [ ] T104 [P] [US5] Add web acceptance tests for grace deletion, privileged deletion with mandatory reason, blocked unauthorized deletion, current Primary deletion, Arabic/RTL deletion dialogs, and no raw storage internals in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyDeletionFlowTests.cs
 
 ### Implementation for User Story 5
