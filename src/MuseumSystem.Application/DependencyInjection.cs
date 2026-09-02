@@ -67,6 +67,8 @@ public static class DependencyInjection
         services.AddScoped<SetPrimaryArtifactImageUseCase>();
         services.AddScoped<ArtifactPhotographyStateService>();
         services.AddScoped<PrimaryImageProjectionQueries>();
+        services.AddScoped<ArtifactImageDeletionFinalizationService>();
+        services.AddScoped<ArtifactImageDeletionService>();
         return services;
     }
 }
