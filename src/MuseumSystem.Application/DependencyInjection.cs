@@ -63,6 +63,10 @@ public static class DependencyInjection
         services.AddScoped<PhotographyRequestQueries>();
         services.AddScoped<PhotographyGalleryMapper>();
         services.AddScoped<ViewArtifactImagesUseCase>();
+        services.AddScoped<UpdateArtifactImageMetadataUseCase>();
+        services.AddScoped<SetPrimaryArtifactImageUseCase>();
+        services.AddScoped<ArtifactPhotographyStateService>();
+        services.AddScoped<PrimaryImageProjectionQueries>();
         return services;
     }
 }
