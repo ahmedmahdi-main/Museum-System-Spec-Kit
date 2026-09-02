@@ -199,7 +199,7 @@
 - [x] T089 [P] [US4] Add application tests for SetPrimary requiring Photography.Manage, replacing current primary, blocking missing/deleted/different-Artifact targets, stale write conflicts, and expected audit record with Artifact, previous Primary Image, new Primary Image, acting user, and server timestamp in tests/MuseumSystem.Application.Tests/Photography/SetPrimaryArtifactImageUseCaseTests.cs
 - [x] T090 [P] [US4] Add PostgreSQL tests for ArtifactPhotographyState primary FK, same-Artifact relational constraint, nullable PrimaryImageId, and absence of independent ArtifactImage.IsPrimary authority in tests/MuseumSystem.Integration.Tests/Photography/ArtifactPhotographyStatePersistenceTests.cs
 - [x] T091 [P] [US4] Add PostgreSQL race tests for SetPrimary/SetPrimary, SetPrimary/DeletePrimary, and DeletePrimary/SetPrimary using the ArtifactPhotographyState concurrency token in tests/MuseumSystem.Integration.Tests/Photography/PrimaryImageConcurrencyTests.cs
-- [ ] T092 [P] [US4] Add web acceptance tests for metadata editing, primary selection, primary replacement, blocked invalid primary targets, Arabic/RTL layout, and no raw storage internals in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyManagementFlowTests.cs
+- [x] T092 [P] [US4] Add web acceptance tests for metadata editing, primary selection, primary replacement, blocked invalid primary targets, Arabic/RTL layout, and no raw storage internals in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyManagementFlowTests.cs
 
 ### Implementation for User Story 4
 
@@ -207,8 +207,8 @@
 - [x] T094 [US4] Implement SetPrimaryArtifactImage use case using ArtifactPhotographyState.PrimaryImageId as the only authoritative persisted primary state and writing the existing audit event with Artifact, previous Primary Image, new Primary Image, acting user, and server timestamp through the normal audit infrastructure in src/MuseumSystem.Application/Modules/Photography/SetPrimaryArtifactImageUseCase.cs
 - [x] T095 [US4] Implement ArtifactPhotographyState query/update helpers with same-Artifact validation and concurrency conflict mapping in src/MuseumSystem.Application/Modules/Photography/ArtifactPhotographyStateService.cs
 - [x] T096 [US4] Implement Primary Image summary projection for artifact search/details and Documentation reuse without duplicating image binaries in src/MuseumSystem.Application/Modules/Photography/PrimaryImageProjectionQueries.cs
-- [ ] T097 [US4] Build metadata and Primary Image management UI after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Photography/PhotographyImageManagementPanel.razor
-- [ ] T098 [US4] Add Primary Image display integration to Artifact search after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Pages/Artifacts/Search.razor
+- [x] T097 [US4] Build metadata and Primary Image management UI after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Photography/PhotographyImageManagementPanel.razor
+- [x] T098 [US4] Add Primary Image display integration to Artifact search after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Pages/Artifacts/Search.razor
 
 **Checkpoint**: US4 is independently functional and confirms exactly one authoritative Primary Image relation per Artifact.
 
