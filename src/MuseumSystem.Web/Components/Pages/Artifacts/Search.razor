@@ -2,6 +2,9 @@
 @attribute [Authorize(Policy = PermissionNames.ArtifactsView)]
 @rendermode InteractiveServer
 @inject ArtifactReadUseCases ArtifactReadUseCases
+@inject PrimaryImageProjectionQueries PrimaryImageProjectionQueries
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>البحث عن القطع</PageTitle>
 
@@ -74,6 +77,10 @@
                                     <th>رمز الفئة</th>
                                     <th>الحالة</th>
                                     <th>الموقع / الحيازة الحالية</th>
+                                    @if (canViewPhotography)
+                                    {
+                                        <th>الصورة الرئيسية</th>
+                                    }
                                     <th class="actions-cell">الإجراء</th>
                                 </tr>
                             </thead>
@@ -85,6 +92,32 @@
                                         <td>@artifact.CategoryCode</td>
                                         <td><span class="badge-status @CurrentStatusClass(artifact.CurrentStatus)">@CurrentStatusText(artifact.CurrentStatus)</span></td>
                                         <td>@(artifact.CurrentLocationName ?? artifact.CurrentHolderName ?? "-")</td>
+                                        @if (canViewPhotography)
+                                        {
+                                            <td class="primary-image-cell">
+                                                @if (primaryProjectionUnavailable)
+                                                {
+                                                    <span class="media-unavailable" role="status">تعذر تحميل الصورة الرئيسية.</span>
+                                                }
+                                                else if (primaryImagesByArtifactId.TryGetValue(artifact.ArtifactId, out var primaryImage) && primaryImage is not null)
+                                                {
+                                                    <a class="primary-image-link" href="/photography/artifacts/@artifact.ArtifactId">
+                                                        @if (primaryImage.Thumbnail is not null)
+                                                        {
+                                                            <img src="@PrimaryThumbnailSource(primaryImage)" alt="@PrimaryImageAlt(artifact, primaryImage)" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="media-unavailable" role="status">الصورة الرئيسية مسجلة دون معاينة متاحة.</span>
+                                                        }
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="primary-image-empty">لا توجد صورة رئيسية</span>
+                                                }
+                                            </td>
+                                        }
                                         <td class="actions-cell"><a class="btn-secondary compact" href="/artifacts/@artifact.ArtifactId">التفاصيل</a></td>
                                     </tr>
                                 }
@@ -104,7 +137,10 @@
     private string? query;
     private string? appliedIncomingQuery;
     private List<ArtifactSearchResultDto> results = [];
+    private Dictionary<Guid, PrimaryImageProjectionDto?> primaryImagesByArtifactId = [];
     private bool hasSearched;
+    private bool canViewPhotography;
+    private bool primaryProjectionUnavailable;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -125,6 +161,31 @@
     {
         hasSearched = true;
         results = (await ArtifactReadUseCases.SearchArtifacts(query)).ToList();
+        await LoadPrimaryImagesAsync();
+    }
+
+    private async Task LoadPrimaryImagesAsync()
+    {
+        primaryImagesByArtifactId.Clear();
+        primaryProjectionUnavailable = false;
+
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        canViewPhotography = (await AuthorizationService.AuthorizeAsync(state.User, PermissionNames.PhotographyView)).Succeeded;
+        if (!canViewPhotography || results.Count == 0)
+        {
+            primaryImagesByArtifactId.Clear();
+            return;
+        }
+
+        var projectionResult = await PrimaryImageProjectionQueries.GetPrimaryImagesForArtifacts(
+            new PrimaryImagesForArtifactsQuery(results.Select(artifact => artifact.ArtifactId).ToArray()));
+        if (projectionResult.Succeeded && projectionResult.Value is not null)
+        {
+            primaryImagesByArtifactId = projectionResult.Value.ToDictionary(item => item.Key, item => item.Value);
+            return;
+        }
+
+        primaryProjectionUnavailable = true;
     }
 
     private static string CurrentStatusText(ArtifactCurrentStatus status) => status switch
@@ -139,5 +200,23 @@
         ArtifactCurrentStatus.InStorage => "badge-storage",
         ArtifactCurrentStatus.OutOfStorage => "badge-out",
         _ => string.Empty
+    };
+
+    private static string PrimaryThumbnailSource(PrimaryImageProjectionDto image) =>
+        $"/photography/images/{image.Thumbnail!.ArtifactImageId}/thumbnail";
+
+    private static string PrimaryImageAlt(ArtifactSearchResultDto artifact, PrimaryImageProjectionDto image)
+    {
+        var caption = string.IsNullOrWhiteSpace(image.Caption) ? PurposeText(image.PhotographyPurpose) : image.Caption;
+        return $"الصورة الرئيسية للقطعة {artifact.MuseumNumber}: {caption}";
+    }
+
+    private static string PurposeText(PhotographyPurpose purpose) => purpose switch
+    {
+        PhotographyPurpose.GeneralDocumentation => "توثيق عام",
+        PhotographyPurpose.PreMaintenance => "قبل الصيانة",
+        PhotographyPurpose.DuringMaintenance => "أثناء الصيانة",
+        PhotographyPurpose.PostMaintenance => "بعد الصيانة",
+        _ => purpose.ToString()
     };
 }

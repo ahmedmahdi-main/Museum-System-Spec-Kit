@@ -31,6 +31,7 @@ public sealed class PhotographyGalleryMapper
             image.PixelHeight,
             image.UploadedAt,
             image.UploadedByUserId,
+            image.ConcurrencyToken,
             thumbnail,
             preview);
 
@@ -141,6 +142,7 @@ public sealed record PhotographyGalleryImageDto(
     int PixelHeight,
     DateTimeOffset UploadedAt,
     string UploadedByUserId,
+    int ConcurrencyToken,
     PhotographyGalleryRenditionDto Thumbnail,
     PhotographyGalleryRenditionDto Preview);
 

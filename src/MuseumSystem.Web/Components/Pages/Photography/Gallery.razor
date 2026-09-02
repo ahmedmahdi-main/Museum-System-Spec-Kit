@@ -163,6 +163,14 @@
                             }
                         </div>
                     </div>
+
+                    <AuthorizeView Policy="@PermissionNames.PhotographyManage">
+                        <Authorized>
+                            <PhotographyImageManagementPanel ArtifactId="ArtifactId"
+                                                             SelectedImage="selectedImage"
+                                                             OnImageChanged="RefreshAfterManagementAsync" />
+                        </Authorized>
+                    </AuthorizeView>
                 }
             </div>
         </section>
@@ -197,10 +205,22 @@
         }
 
         gallery = result.Value;
-        selectedImage = gallery.Images.FirstOrDefault(image => CanShowRendition(image.Preview))
-            ?? gallery.Images.FirstOrDefault();
+        selectedImage = SelectPreferredImage(selectedImage?.ArtifactImageId);
         isLoading = false;
     }
+
+    private async Task RefreshAfterManagementAsync(Guid artifactImageId)
+    {
+        var previouslySelected = selectedImage;
+        selectedImage = gallery?.Images.FirstOrDefault(image => image.ArtifactImageId == artifactImageId) ?? previouslySelected;
+        await LoadGalleryAsync();
+        selectedImage = gallery?.Images.FirstOrDefault(image => image.ArtifactImageId == artifactImageId) ?? selectedImage;
+    }
+
+    private PhotographyGalleryImageDto? SelectPreferredImage(Guid? preferredImageId) =>
+        gallery?.Images.FirstOrDefault(image => image.ArtifactImageId == preferredImageId)
+            ?? gallery?.Images.FirstOrDefault(image => CanShowRendition(image.Preview))
+            ?? gallery?.Images.FirstOrDefault();
 
     private void SelectImage(PhotographyGalleryImageDto image) => selectedImage = image;
 

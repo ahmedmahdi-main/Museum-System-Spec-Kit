@@ -1,0 +1,236 @@
+@inject UpdateArtifactImageMetadataUseCase MetadataUseCase
+@inject SetPrimaryArtifactImageUseCase PrimaryImageUseCase
+@inject ArtifactPhotographyStateService StateService
+
+<div class="photography-management-panel" aria-label="إدارة بيانات الصورة المختارة">
+    <div class="section-header">
+        <div>
+            <p class="eyebrow">إدارة الصورة</p>
+            <h2>الوصف والصورة الرئيسية</h2>
+            <p>تعديل وصف الصورة المختارة أو اعتمادها كصورة رئيسية للقطعة.</p>
+        </div>
+    </div>
+    <div class="section-body">
+        @if (SelectedImage is null)
+        {
+            <div class="empty-state">
+                <strong>اختر صورة لإدارتها.</strong>
+                <span>تظهر أدوات الإدارة بعد اختيار صورة من المعرض.</span>
+            </div>
+        }
+        else
+        {
+            @if (!string.IsNullOrWhiteSpace(message))
+            {
+                <div class="@messageClass" role="@messageRole" aria-live="@messageLiveMode">@message</div>
+            }
+
+            <EditForm Model="this" OnSubmit="SaveCaptionAsync" FormName="manage-photography-image-caption">
+                <label for="photography-image-caption">
+                    <span>وصف الصورة</span>
+                    <InputTextArea id="photography-image-caption"
+                                   @bind-Value="editableCaption"
+                                   class="form-control"
+                                   maxlength="1000"
+                                   aria-describedby="photography-caption-help" />
+                </label>
+                <div id="photography-caption-help" class="form-help">الحد الأقصى 1000 حرف.</div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary compact" disabled="@isSavingCaption">حفظ الوصف</button>
+                </div>
+            </EditForm>
+
+            <div class="primary-image-control">
+                <div>
+                    <span>الصورة الرئيسية</span>
+                    <strong>@PrimaryStatusText</strong>
+                </div>
+                @if (IsCurrentPrimary)
+                {
+                    <span class="badge-status badge-storage">الصورة الرئيسية الحالية</span>
+                }
+                else
+                {
+                    <button type="button" class="btn-secondary compact" disabled="@isSettingPrimary" @onclick="SetPrimaryAsync">
+                        تعيين كصورة رئيسية
+                    </button>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid ArtifactId { get; set; }
+    [Parameter] public PhotographyGalleryImageDto? SelectedImage { get; set; }
+    [Parameter] public EventCallback<Guid> OnImageChanged { get; set; }
+
+    private Guid? selectedImageId;
+    private int? selectedImageToken;
+    private string? editableCaption;
+    private ArtifactPhotographyStateSnapshot? primaryState;
+    private bool isSavingCaption;
+    private bool isSettingPrimary;
+    private string? message;
+    private string messageClass = "status-message";
+    private string messageRole = "status";
+    private string messageLiveMode = "polite";
+
+    private bool IsCurrentPrimary =>
+        SelectedImage is not null && primaryState?.PrimaryImageId == SelectedImage.ArtifactImageId;
+
+    private string PrimaryStatusText
+    {
+        get
+        {
+            if (primaryState?.PrimaryImageId is null)
+            {
+                return "لا توجد صورة رئيسية محددة.";
+            }
+
+            return IsCurrentPrimary
+                ? "هذه الصورة معتمدة كصورة رئيسية."
+                : "سيتم استبدال الصورة الرئيسية الحالية بهذه الصورة.";
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SelectedImage is null)
+        {
+            selectedImageId = null;
+            selectedImageToken = null;
+            editableCaption = null;
+            primaryState = null;
+            message = null;
+            return;
+        }
+
+        var imageChanged = selectedImageId != SelectedImage.ArtifactImageId;
+        var tokenChanged = selectedImageToken != SelectedImage.ConcurrencyToken;
+        if (imageChanged || tokenChanged)
+        {
+            selectedImageId = SelectedImage.ArtifactImageId;
+            selectedImageToken = SelectedImage.ConcurrencyToken;
+            editableCaption = SelectedImage.Caption;
+            if (imageChanged)
+            {
+                message = null;
+            }
+
+            await LoadPrimaryStateAsync();
+        }
+    }
+
+    private async Task SaveCaptionAsync()
+    {
+        if (SelectedImage is null)
+        {
+            return;
+        }
+
+        isSavingCaption = true;
+        ClearMessage();
+
+        var result = await MetadataUseCase.UpdateArtifactImageMetadata(new UpdateArtifactImageMetadataCommand(
+            SelectedImage.ArtifactImageId,
+            editableCaption,
+            SelectedImage.ConcurrencyToken));
+
+        isSavingCaption = false;
+        if (result.Succeeded)
+        {
+            SetStatus(result.Messages.Any(message => message.Contains("already current", StringComparison.OrdinalIgnoreCase))
+                ? "لا يوجد تغيير على وصف الصورة."
+                : "تم حفظ وصف الصورة.");
+            await OnImageChanged.InvokeAsync(SelectedImage.ArtifactImageId);
+            return;
+        }
+
+        if (result.ConcurrencyConflict)
+        {
+            SetWarning("تم تغيير وصف الصورة بواسطة مستخدم آخر. تم تحميل البيانات الأحدث؛ راجعها قبل المحاولة مرة أخرى.");
+            await OnImageChanged.InvokeAsync(SelectedImage.ArtifactImageId);
+            return;
+        }
+
+        SetWarning(FailureMessage(result.ValidationIssues.FirstOrDefault()?.Code));
+    }
+
+    private async Task SetPrimaryAsync()
+    {
+        if (SelectedImage is null)
+        {
+            return;
+        }
+
+        isSettingPrimary = true;
+        ClearMessage();
+        primaryState ??= await StateService.GetSnapshot(ArtifactId);
+        var previousPrimaryImageId = primaryState.PrimaryImageId;
+
+        var result = await PrimaryImageUseCase.SetPrimaryArtifactImage(new SetPrimaryArtifactImageCommand(
+            ArtifactId,
+            SelectedImage.ArtifactImageId,
+            primaryState.ConcurrencyToken));
+
+        isSettingPrimary = false;
+        if (result.Succeeded)
+        {
+            await LoadPrimaryStateAsync();
+            SetStatus(previousPrimaryImageId is null ? "تم تعيين الصورة الرئيسية." : "تم تحديث الصورة الرئيسية للقطعة.");
+            await OnImageChanged.InvokeAsync(SelectedImage.ArtifactImageId);
+            return;
+        }
+
+        if (result.ConcurrencyConflict)
+        {
+            await LoadPrimaryStateAsync();
+            SetWarning("تم تغيير الصورة الرئيسية بواسطة مستخدم آخر. تم تحميل الحالة الأحدث؛ راجعها قبل المحاولة مرة أخرى.");
+            await OnImageChanged.InvokeAsync(SelectedImage.ArtifactImageId);
+            return;
+        }
+
+        SetWarning(FailureMessage(result.ValidationIssues.FirstOrDefault()?.Code));
+    }
+
+    private async Task LoadPrimaryStateAsync() =>
+        primaryState = await StateService.GetSnapshot(ArtifactId);
+
+    private void ClearMessage()
+    {
+        message = null;
+        messageClass = "status-message";
+        messageRole = "status";
+        messageLiveMode = "polite";
+    }
+
+    private void SetStatus(string value)
+    {
+        message = value;
+        messageClass = "status-message";
+        messageRole = "status";
+        messageLiveMode = "polite";
+    }
+
+    private void SetWarning(string value)
+    {
+        message = value;
+        messageClass = "warning-message";
+        messageRole = "alert";
+        messageLiveMode = "assertive";
+    }
+
+    private static string FailureMessage(string? code) => code switch
+    {
+        "ArtifactImage.NotFound" => "تعذر العثور على الصورة. تم تحميل البيانات الأحدث.",
+        "ArtifactImage.NotEditable" => "لا يمكن تعديل هذه الصورة لأنها غير متاحة.",
+        "ArtifactImage.CaptionTooLong" => "وصف الصورة يجب ألا يتجاوز 1000 حرف.",
+        "Artifact.Required" => "رابط القطعة غير مكتمل.",
+        "Artifact.NotFound" => "لم يتم العثور على القطعة.",
+        "PrimaryImage.ArtifactConflict" => "الصورة المختارة لا تتبع هذه القطعة.",
+        "PrimaryImage.ImageNotEligible" => "لا يمكن اعتماد هذه الصورة لأنها غير متاحة.",
+        "Photography.PermissionDenied" => "ليست لديك صلاحية إدارة الصور.",
+        _ => "تعذر حفظ التعديل."
+    };
+}

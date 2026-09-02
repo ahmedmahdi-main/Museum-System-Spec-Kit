@@ -78,9 +78,7 @@ public sealed class PhotographyGalleryFlowTests
         Assert.Contains("private PhotographyGalleryImageDto? selectedImage;", page);
         Assert.Contains("private void SelectImage(PhotographyGalleryImageDto image) => selectedImage = image;", page);
         Assert.Contains("aria-pressed=\"@(selectedImage?.ArtifactImageId == image.ArtifactImageId)\"", page);
-        Assert.DoesNotContain("PrimaryImage", page);
-        Assert.DoesNotContain("SetPrimary", page);
-        Assert.DoesNotContain("الصورة الرئيسية", page);
+        Assert.DoesNotContain("PrimaryImageProjectionQueries", page);
     }
 
     [Fact]
