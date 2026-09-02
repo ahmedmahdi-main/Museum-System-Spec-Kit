@@ -130,6 +130,7 @@ public sealed class ArtifactImageDeletionServiceTests
         Assert.Contains("NewPrimaryImageId=<null>", primaryAudit.ChangeSummary);
         var deletionAudit = await db.AuditEntries.SingleAsync(entry => entry.ActionName == PhotographyAuditActions.ImageDeleteByUploaderGrace);
         Assert.Equal(image.ArtifactImageId.ToString(), deletionAudit.EntityId);
+        Assert.Equal(deletionAudit.AuditEntryId.ToString(), result.AuditReference);
         var deleteCall = Assert.Single(storage.DeleteImageObjectCalls);
         Assert.Equal(originalObjectKey, deleteCall.Original);
         Assert.Equal(derivativeKeys, deleteCall.Derivatives);

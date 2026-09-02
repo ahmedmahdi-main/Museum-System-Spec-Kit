@@ -69,6 +69,8 @@ public static class DependencyInjection
         services.AddScoped<PrimaryImageProjectionQueries>();
         services.AddScoped<ArtifactImageDeletionFinalizationService>();
         services.AddScoped<ArtifactImageDeletionService>();
+        services.AddScoped<DeleteArtifactImageByUploaderGraceUseCase>();
+        services.AddScoped<DeleteArtifactImagePrivilegedUseCase>();
         return services;
     }
 }

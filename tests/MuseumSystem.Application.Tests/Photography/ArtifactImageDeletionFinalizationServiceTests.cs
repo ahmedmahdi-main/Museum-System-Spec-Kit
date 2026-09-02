@@ -33,6 +33,7 @@ public sealed class ArtifactImageDeletionFinalizationServiceTests
         var audit = await db.AuditEntries.SingleAsync();
         Assert.Equal(PhotographyAuditActions.ImageDeleteByUploaderGrace, audit.ActionName);
         Assert.Contains("Rule=UploaderGracePeriod", audit.ChangeSummary);
+        Assert.Equal(audit.AuditEntryId.ToString(), result.AuditReference);
     }
 
     [Fact]
@@ -70,6 +71,7 @@ public sealed class ArtifactImageDeletionFinalizationServiceTests
 
         Assert.Equal(ArtifactImageDeletionFinalizationOutcome.AlreadyFinalized, result.Outcome);
         Assert.True(result.Succeeded);
+        Assert.Null(result.AuditReference);
         Assert.Equal(0, await db.AuditEntries.CountAsync());
         var finalImage = await db.ArtifactImages.SingleAsync();
         Assert.Equal(DeletedAt, finalImage.DeletedAt);

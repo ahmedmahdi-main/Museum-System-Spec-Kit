@@ -118,7 +118,7 @@ public sealed class ArtifactImageDeletionService(
         return finalizationResult.Outcome switch
         {
             ArtifactImageDeletionFinalizationOutcome.Completed or ArtifactImageDeletionFinalizationOutcome.AlreadyFinalized =>
-                ArtifactImageDeletionResult.Completed(finalizationResult.ArtifactImageId, finalizationResult.ConcurrencyToken ?? image.ConcurrencyToken),
+                ArtifactImageDeletionResult.Completed(finalizationResult.ArtifactImageId, finalizationResult.ConcurrencyToken ?? image.ConcurrencyToken, finalizationResult.AuditReference),
             _ => ArtifactImageDeletionResult.FinalizationPending(finalizationResult.ArtifactImageId, image.ConcurrencyToken)
         };
     }
@@ -176,12 +176,13 @@ public enum ArtifactImageDeletionOutcome
 public sealed record ArtifactImageDeletionResult(
     ArtifactImageDeletionOutcome Outcome,
     Guid ArtifactImageId,
-    int? ConcurrencyToken)
+    int? ConcurrencyToken,
+    string? AuditReference = null)
 {
     public bool Succeeded => Outcome == ArtifactImageDeletionOutcome.Completed;
 
-    public static ArtifactImageDeletionResult Completed(Guid artifactImageId, int concurrencyToken) =>
-        new(ArtifactImageDeletionOutcome.Completed, artifactImageId, concurrencyToken);
+    public static ArtifactImageDeletionResult Completed(Guid artifactImageId, int concurrencyToken, string? auditReference = null) =>
+        new(ArtifactImageDeletionOutcome.Completed, artifactImageId, concurrencyToken, auditReference);
 
     public static ArtifactImageDeletionResult Conflict(Guid artifactImageId) =>
         new(ArtifactImageDeletionOutcome.Conflict, artifactImageId, null);

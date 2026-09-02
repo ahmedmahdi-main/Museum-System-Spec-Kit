@@ -59,11 +59,11 @@ public sealed class ArtifactImageDeletionFinalizationService(
             image.MarkDeleted(request.DeletionMode, request.ActorUserId, request.ServerDeletedAtUtc);
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            await auditWriter.WriteAsync(BuildAuditRequest(image, request), cancellationToken);
+            var auditReference = await auditWriter.WriteAsync(BuildAuditRequest(image, request), cancellationToken);
             await ResolveDeleteCleanupRecoveriesAsync(image.ArtifactImageId, request.ServerDeletedAtUtc, cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
-            return ArtifactImageDeletionFinalizationResult.Completed(image.ArtifactImageId, image.ConcurrencyToken);
+            return ArtifactImageDeletionFinalizationResult.Completed(image.ArtifactImageId, image.ConcurrencyToken, auditReference);
         }
         catch (DbUpdateException)
         {
@@ -163,13 +163,14 @@ public enum ArtifactImageDeletionFinalizationOutcome
 public sealed record ArtifactImageDeletionFinalizationResult(
     ArtifactImageDeletionFinalizationOutcome Outcome,
     Guid ArtifactImageId,
-    int? ConcurrencyToken)
+    int? ConcurrencyToken,
+    string? AuditReference = null)
 {
     public bool Succeeded =>
         Outcome is ArtifactImageDeletionFinalizationOutcome.Completed or ArtifactImageDeletionFinalizationOutcome.AlreadyFinalized;
 
-    public static ArtifactImageDeletionFinalizationResult Completed(Guid artifactImageId, int concurrencyToken) =>
-        new(ArtifactImageDeletionFinalizationOutcome.Completed, artifactImageId, concurrencyToken);
+    public static ArtifactImageDeletionFinalizationResult Completed(Guid artifactImageId, int concurrencyToken, string? auditReference = null) =>
+        new(ArtifactImageDeletionFinalizationOutcome.Completed, artifactImageId, concurrencyToken, auditReference);
 
     public static ArtifactImageDeletionFinalizationResult AlreadyFinalized(Guid artifactImageId, int concurrencyToken) =>
         new(ArtifactImageDeletionFinalizationOutcome.AlreadyFinalized, artifactImageId, concurrencyToken);
