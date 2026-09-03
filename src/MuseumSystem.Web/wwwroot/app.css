@@ -1288,8 +1288,68 @@ a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visibl
     object-fit: contain;
 }
 
-.photography-management-panel {
+.photography-management-panel,
+.photography-deletion-panel {
     margin-top: var(--space-5);
+}
+
+.photography-deletion-panel {
+    display: grid;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    border: 1px solid var(--museum-border);
+    border-inline-start: 3px solid var(--museum-error);
+    border-radius: var(--radius-2);
+    background: var(--museum-surface-subtle);
+}
+
+.deletion-summary {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.deletion-summary > div:first-child {
+    display: grid;
+    gap: var(--space-1);
+    max-width: 72ch;
+}
+
+.deletion-summary p:not(.eyebrow),
+.deletion-dialog-note,
+.form-help {
+    color: var(--museum-text-muted);
+    font-size: var(--type-meta);
+}
+
+.deletion-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.dialog-panel {
+    display: grid;
+    gap: var(--space-4);
+    max-width: 720px;
+    padding: var(--space-5);
+    border: 1px solid var(--museum-border-strong);
+    border-radius: var(--radius-2);
+    background: var(--museum-surface);
+    box-shadow: var(--shadow-2);
+}
+
+.deletion-dialog h3 {
+    font-size: var(--type-body-lg);
+}
+
+.deletion-dialog form {
+    display: grid;
+    gap: var(--space-3);
 }
 
 .primary-image-control {

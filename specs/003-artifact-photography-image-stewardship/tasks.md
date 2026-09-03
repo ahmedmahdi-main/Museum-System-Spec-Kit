@@ -227,7 +227,7 @@
 - [x] T101 [P] [US5] Add application tests for DeleteArtifactImagePrivileged requiring Photography.Delete, mandatory non-empty reason, audit metadata, binary non-retention, derivative deletion, and current Primary clearing audit trace through existing audit infrastructure in tests/MuseumSystem.Application.Tests/Photography/DeleteArtifactImagePrivilegedUseCaseTests.cs
 - [x] T102 [P] [US5] Add object-storage integration tests for deleting original objects, thumbnails, previews, already-missing object handling, and partial derivative failure recovery in tests/MuseumSystem.Integration.Tests/Photography/ArtifactImageStorageDeletionTests.cs
 - [x] T103 [P] [US5] Add PostgreSQL integration tests for DeletePending/Deleted lifecycle, deleted image primary ineligibility, audit metadata retention, and PrimaryImageId nulling in tests/MuseumSystem.Integration.Tests/Photography/ArtifactImageDeletionPersistenceTests.cs
-- [ ] T104 [P] [US5] Add web acceptance tests for grace deletion, privileged deletion with mandatory reason, blocked unauthorized deletion, current Primary deletion, Arabic/RTL deletion dialogs, and no raw storage internals in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyDeletionFlowTests.cs
+- [x] T104 [P] [US5] Add web acceptance tests for grace deletion, privileged deletion with mandatory reason, blocked unauthorized deletion, current Primary deletion, Arabic/RTL deletion dialogs, and no raw storage internals in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyDeletionFlowTests.cs
 
 ### Implementation for User Story 5
 
@@ -235,7 +235,7 @@
 - [x] T106 [US5] Implement DeleteArtifactImagePrivileged use case with Photography.Delete, non-empty deletion reason validation, expected concurrency, existing audit metadata, object deletion, and Primary clearing traceability when deleting the current Primary Image in src/MuseumSystem.Application/Modules/Photography/DeleteArtifactImagePrivilegedUseCase.cs
 - [x] T107 [US5] Implement shared deletion consistency service for DeletePending, object/derivative deletion, final Deleted metadata, audit finalization including Primary clearing when applicable, and no binary retention in src/MuseumSystem.Application/Modules/Photography/ArtifactImageDeletionService.cs
 - [x] T108 [US5] Implement internal retry helper for storage-deletion success followed by PostgreSQL finalization/audit failure in src/MuseumSystem.Application/Modules/Photography/ArtifactImageDeletionFinalizationService.cs
-- [ ] T109 [US5] Build deletion controls and mandatory-reason UI after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Photography/PhotographyImageDeletionDialog.razor
+- [x] T109 [US5] Build deletion controls and mandatory-reason UI after reading .agents/skills/frontend-design/SKILL.md and docs/design-system.md in src/MuseumSystem.Web/Components/Photography/PhotographyImageDeletionDialog.razor
 
 **Checkpoint**: US5 is independently functional and proves controlled permanent deletion with audit and storage cleanup.
 

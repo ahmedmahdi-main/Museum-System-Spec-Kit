@@ -77,6 +77,11 @@
                     <div class="warning-message">@loadMessage</div>
                 }
 
+                @if (!string.IsNullOrWhiteSpace(deletionMessage))
+                {
+                    <div class="@deletionMessageClass" role="@deletionMessageSemantics" aria-live="@deletionMessageLiveMode">@deletionMessage</div>
+                }
+
                 @if (gallery.State == ArtifactImageGalleryState.NoImages)
                 {
                     <div class="empty-state">
@@ -164,6 +169,11 @@
                         </div>
                     </div>
 
+                    <PhotographyImageDeletionDialog SelectedImage="selectedImage"
+                                                    OnImageDeleted="RefreshAfterDeletionAsync"
+                                                    OnImageDeletionRefreshRequired="RefreshAfterDeletionStateChangeAsync"
+                                                    OnMessageRequested="ShowDeletionWarningAsync" />
+
                     <AuthorizeView Policy="@PermissionNames.PhotographyManage">
                         <Authorized>
                             <PhotographyImageManagementPanel ArtifactId="ArtifactId"
@@ -184,6 +194,10 @@
     private PhotographyGalleryImageDto? selectedImage;
     private bool isLoading;
     private string? loadMessage;
+    private string? deletionMessage;
+    private string deletionMessageClass = "status-message";
+    private string deletionMessageSemantics = "status";
+    private string deletionMessageLiveMode = "polite";
 
     private string ArtifactHref => $"/artifacts/{ArtifactId}";
 
@@ -193,6 +207,7 @@
     {
         isLoading = true;
         loadMessage = null;
+        ClearDeletionMessage();
 
         var result = await ViewImagesUseCase.ViewArtifactImages(new ViewArtifactImagesQuery(ArtifactId));
         if (!result.Succeeded || result.Value is null)
@@ -217,12 +232,51 @@
         selectedImage = gallery?.Images.FirstOrDefault(image => image.ArtifactImageId == artifactImageId) ?? selectedImage;
     }
 
+    private async Task RefreshAfterDeletionAsync(Guid deletedImageId)
+    {
+        await LoadGalleryAsync();
+        SetDeletionStatus("تم حذف الصورة نهائياً.");
+    }
+
+    private async Task RefreshAfterDeletionStateChangeAsync(Guid artifactImageId) =>
+        await LoadGalleryAsync();
+
+    private Task ShowDeletionWarningAsync(string message)
+    {
+        SetDeletionWarning(message);
+        return Task.CompletedTask;
+    }
+
     private PhotographyGalleryImageDto? SelectPreferredImage(Guid? preferredImageId) =>
         gallery?.Images.FirstOrDefault(image => image.ArtifactImageId == preferredImageId)
             ?? gallery?.Images.FirstOrDefault(image => CanShowRendition(image.Preview))
             ?? gallery?.Images.FirstOrDefault();
 
     private void SelectImage(PhotographyGalleryImageDto image) => selectedImage = image;
+
+    private void ClearDeletionMessage()
+    {
+        deletionMessage = null;
+        deletionMessageClass = "status-message";
+        deletionMessageSemantics = "status";
+        deletionMessageLiveMode = "polite";
+    }
+
+    private void SetDeletionStatus(string value)
+    {
+        deletionMessage = value;
+        deletionMessageClass = "status-message";
+        deletionMessageSemantics = "status";
+        deletionMessageLiveMode = "polite";
+    }
+
+    private void SetDeletionWarning(string value)
+    {
+        deletionMessage = value;
+        deletionMessageClass = "warning-message";
+        deletionMessageSemantics = "alert";
+        deletionMessageLiveMode = "assertive";
+    }
 
     private static bool CanShowRendition(PhotographyGalleryRenditionDto rendition) =>
         rendition.Availability == PhotographyImageRenditionAvailability.Available && rendition.Access is not null;

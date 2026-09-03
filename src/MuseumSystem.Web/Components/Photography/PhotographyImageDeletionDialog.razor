@@ -1,0 +1,360 @@
+@using System.Security.Claims
+@inject DeleteArtifactImageByUploaderGraceUseCase GraceDeletionUseCase
+@inject DeleteArtifactImagePrivilegedUseCase PrivilegedDeletionUseCase
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if (ShouldRenderDeletionPanel)
+{
+    <div class="photography-deletion-panel" aria-label="حذف الصورة">
+        <div class="deletion-summary">
+            <div>
+                <p class="eyebrow">حذف الصورة</p>
+                <h2>حذف الصورة نهائياً</h2>
+                <p>يستخدم حذف الصور فقط للتصحيح المصرح أو للحذف المفوض مع سبب محفوظ في سجل التدقيق.</p>
+            </div>
+            <div class="deletion-actions">
+                @if (CanShowGraceAction)
+                {
+                    <button type="button"
+                            class="btn-secondary compact"
+                            disabled="@isDeleting"
+                            @onclick="() => OpenDialog(DeletionDialogMode.UploaderGrace)">
+                        حذف ضمن مهلة التصحيح
+                    </button>
+                }
+
+                @if (canDelete)
+                {
+                    <button type="button"
+                            class="btn-danger compact"
+                            disabled="@isDeleting"
+                            @onclick="() => OpenDialog(DeletionDialogMode.Privileged)">
+                        حذف بصلاحية الحذف
+                    </button>
+                }
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(message))
+        {
+            <div class="@messageClass" role="@messageSemantics" aria-live="@messageLiveMode">@message</div>
+        }
+
+        @if (activeMode is DeletionDialogMode.UploaderGrace)
+        {
+            <div class="dialog-panel deletion-dialog"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="@GraceDialogTitleId"
+                 aria-describedby="@GraceDialogDescriptionId">
+                <h3 id="@GraceDialogTitleId">تأكيد حذف الصورة</h3>
+                <div id="@GraceDialogDescriptionId" class="warning-message">
+                    سيتم حذف الصورة الأصلية والمشتقات نهائياً ولا يمكن التراجع عن هذا الإجراء.
+                </div>
+                <p class="deletion-dialog-note">يناسب هذا المسار تصحيح رفع حديث فقط. يبقى سجل التدقيق محتفظاً ببيانات العملية.</p>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary compact" disabled="@isDeleting" @onclick="CancelDialog">إلغاء</button>
+                    <button type="button" class="btn-danger compact" disabled="@isDeleting" @onclick="ConfirmGraceDeletionAsync">
+                        @(isDeleting ? "جار الحذف..." : "تأكيد حذف الصورة")
+                    </button>
+                </div>
+            </div>
+        }
+        else if (activeMode is DeletionDialogMode.Privileged)
+        {
+            <div class="dialog-panel deletion-dialog"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="@PrivilegedDialogTitleId"
+                 aria-describedby="@PrivilegedDialogDescriptionId">
+                <h3 id="@PrivilegedDialogTitleId">تأكيد الحذف المفوض</h3>
+                <div id="@PrivilegedDialogDescriptionId" class="warning-message">
+                    سيتم حذف الصورة الأصلية والمشتقات نهائياً من المخزون، ولا يمكن التراجع عن هذا الإجراء.
+                </div>
+
+                <EditForm Model="this" OnSubmit="ConfirmPrivilegedDeletionAsync" FormName="privileged-photography-image-deletion">
+                    <label for="@ReasonFieldId">
+                        <span>سبب الحذف</span>
+                        <InputTextArea id="@ReasonFieldId"
+                                       @bind-Value="deletionReason"
+                                       class="form-control"
+                                       maxlength="1000"
+                                       aria-required="true"
+                                       aria-describedby="@PrivilegedReasonHelpId" />
+                    </label>
+                    <div id="@PrivilegedReasonHelpId" class="form-help">اكتب سبباً واضحاً لهذا الحذف. الحد الأقصى 1000 حرف.</div>
+                    <p class="deletion-dialog-note">يبقى السبب وبيانات التدقيق محفوظة بعد إزالة الصورة ونسخ العرض المشتقة.</p>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary compact" disabled="@isDeleting" @onclick="CancelDialog">إلغاء</button>
+                        <button type="submit" class="btn-danger compact" disabled="@isDeleting">
+                            @(isDeleting ? "جار الحذف..." : "تأكيد حذف الصورة")
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public PhotographyGalleryImageDto? SelectedImage { get; set; }
+    [Parameter] public EventCallback<Guid> OnImageDeleted { get; set; }
+    [Parameter] public EventCallback<Guid> OnImageDeletionRefreshRequired { get; set; }
+    [Parameter] public EventCallback<string> OnMessageRequested { get; set; }
+
+    private Guid? selectedImageId;
+    private string? currentUserId;
+    private bool canUpload;
+    private bool canDelete;
+    private bool isDeleting;
+    private DeletionDialogMode? activeMode;
+    private string? deletionReason;
+    private string? message;
+    private string messageClass = "warning-message";
+    private string messageSemantics = "alert";
+    private string messageLiveMode = "assertive";
+
+    private bool CanShowGraceAction =>
+        SelectedImage is not null
+        && canUpload
+        && !string.IsNullOrWhiteSpace(currentUserId)
+        && string.Equals(currentUserId.Trim(), SelectedImage.UploadedByUserId.Trim(), StringComparison.Ordinal);
+
+    private bool ShouldRenderDeletionPanel =>
+        SelectedImage is not null
+        && (CanShowGraceAction || canDelete || activeMode is not null || !string.IsNullOrWhiteSpace(message));
+
+    private string GraceDialogTitleId => DialogId("grace-title");
+    private string GraceDialogDescriptionId => DialogId("grace-description");
+    private string PrivilegedDialogTitleId => DialogId("privileged-title");
+    private string PrivilegedDialogDescriptionId => DialogId("privileged-description");
+    private string PrivilegedReasonHelpId => DialogId("reason-help");
+    private string ReasonFieldId => DialogId("reason");
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SelectedImage is null)
+        {
+            ResetState();
+            return;
+        }
+
+        if (selectedImageId != SelectedImage.ArtifactImageId)
+        {
+            selectedImageId = SelectedImage.ArtifactImageId;
+            activeMode = null;
+            deletionReason = null;
+            ClearMessage();
+        }
+
+        await LoadAuthorizationAsync();
+    }
+
+    private async Task LoadAuthorizationAsync()
+    {
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        currentUserId = state.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        canUpload = (await AuthorizationService.AuthorizeAsync(state.User, PermissionNames.PhotographyUpload)).Succeeded;
+        canDelete = (await AuthorizationService.AuthorizeAsync(state.User, PermissionNames.PhotographyDelete)).Succeeded;
+    }
+
+    private void OpenDialog(DeletionDialogMode mode)
+    {
+        if (isDeleting)
+        {
+            return;
+        }
+
+        activeMode = mode;
+        ClearMessage();
+
+        if (mode == DeletionDialogMode.Privileged)
+        {
+            deletionReason = null;
+        }
+    }
+
+    private void CancelDialog()
+    {
+        if (isDeleting)
+        {
+            return;
+        }
+
+        activeMode = null;
+        deletionReason = null;
+        ClearMessage();
+    }
+
+    private async Task ConfirmGraceDeletionAsync()
+    {
+        if (SelectedImage is null || activeMode != DeletionDialogMode.UploaderGrace || isDeleting)
+        {
+            return;
+        }
+
+        isDeleting = true;
+        ClearMessage();
+
+        var imageId = SelectedImage.ArtifactImageId;
+        try
+        {
+            var result = await GraceDeletionUseCase.DeleteArtifactImageByUploaderGrace(new DeleteArtifactImageByUploaderGraceCommand(
+                SelectedImage.ArtifactImageId,
+                SelectedImage.ConcurrencyToken));
+
+            if (result.Succeeded)
+            {
+                CloseAfterSuccess();
+                await OnImageDeleted.InvokeAsync(imageId);
+                return;
+            }
+
+            await HandleFailureAsync(result, isPrivileged: false, imageId);
+        }
+        finally
+        {
+            isDeleting = false;
+        }
+    }
+
+    private async Task ConfirmPrivilegedDeletionAsync()
+    {
+        if (SelectedImage is null || activeMode != DeletionDialogMode.Privileged || isDeleting)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(deletionReason))
+        {
+            SetWarning("سبب الحذف مطلوب.");
+            return;
+        }
+
+        isDeleting = true;
+        ClearMessage();
+
+        var imageId = SelectedImage.ArtifactImageId;
+        try
+        {
+            var result = await PrivilegedDeletionUseCase.DeleteArtifactImagePrivileged(new DeleteArtifactImagePrivilegedCommand(
+                SelectedImage.ArtifactImageId,
+                deletionReason,
+                SelectedImage.ConcurrencyToken));
+
+            if (result.Succeeded)
+            {
+                CloseAfterSuccess();
+                await OnImageDeleted.InvokeAsync(imageId);
+                return;
+            }
+
+            await HandleFailureAsync(result, isPrivileged: true, imageId);
+        }
+        finally
+        {
+            isDeleting = false;
+        }
+    }
+
+    private async Task HandleFailureAsync(UseCaseResult<ArtifactImageDeletionDto> result, bool isPrivileged, Guid imageId)
+    {
+        if (result.ConcurrencyConflict)
+        {
+            await CloseReloadAndReportAsync(imageId, "تم تغيير حالة الصورة بواسطة مستخدم آخر. تم تحديث البيانات، راجع الصورة قبل المحاولة مرة أخرى.");
+            return;
+        }
+
+        var code = result.ValidationIssues.FirstOrDefault()?.Code;
+        var failureMessage = FailureMessage(code, isPrivileged);
+
+        if (RequiresAuthoritativeRefresh(code))
+        {
+            await CloseReloadAndReportAsync(imageId, failureMessage);
+            return;
+        }
+
+        if (!isPrivileged && code == "ArtifactImage.GracePeriodExpired")
+        {
+            activeMode = null;
+        }
+
+        SetWarning(failureMessage);
+    }
+
+    private async Task CloseReloadAndReportAsync(Guid imageId, string value)
+    {
+        activeMode = null;
+        deletionReason = null;
+        ClearMessage();
+        await OnImageDeletionRefreshRequired.InvokeAsync(imageId);
+        await OnMessageRequested.InvokeAsync(value);
+    }
+
+    private void CloseAfterSuccess()
+    {
+        activeMode = null;
+        deletionReason = null;
+        ClearMessage();
+    }
+
+    private void ResetState()
+    {
+        selectedImageId = null;
+        currentUserId = null;
+        canUpload = false;
+        canDelete = false;
+        isDeleting = false;
+        activeMode = null;
+        deletionReason = null;
+        ClearMessage();
+    }
+
+    private void ClearMessage()
+    {
+        message = null;
+        messageClass = "warning-message";
+        messageSemantics = "alert";
+        messageLiveMode = "assertive";
+    }
+
+    private void SetWarning(string value)
+    {
+        message = value;
+        messageClass = "warning-message";
+        messageSemantics = "alert";
+        messageLiveMode = "assertive";
+    }
+
+    private string DialogId(string suffix) =>
+        SelectedImage is null ? $"photography-deletion-{suffix}" : $"photography-deletion-{SelectedImage.ArtifactImageId:N}-{suffix}";
+
+    private static bool RequiresAuthoritativeRefresh(string? code) =>
+        code is "ArtifactImage.NotFound"
+            or "ArtifactImage.DeleteInvalidState"
+            or "ArtifactImage.DeletionRecoveryRequired"
+            or "ArtifactImage.DeletionFinalizationPending";
+
+    private static string FailureMessage(string? code, bool isPrivileged) => code switch
+    {
+        "ArtifactImage.GracePeriodExpired" => "انتهت مهلة التصحيح الخاصة بهذه الصورة.",
+        "ArtifactImage.UploaderMismatch" => "لا يمكن حذف صورة رفعها مستخدم آخر.",
+        "Photography.PermissionDenied" => isPrivileged
+            ? "ليست لديك صلاحية حذف الصور."
+            : "لا يمكن حذف الصورة من خلال مهلة التصحيح لهذا المستخدم.",
+        "ArtifactImage.NotFound" => "لم تعد الصورة موجودة. تم تحديث البيانات المعروضة.",
+        "ArtifactImage.DeleteInvalidState" => "لا يمكن حذف الصورة في حالتها الحالية. تم تحديث البيانات المعروضة.",
+        "ArtifactImage.DeletionReasonRequired" => "سبب الحذف مطلوب.",
+        "ArtifactImage.DeletionReasonTooLong" => "سبب الحذف لا يجب أن يتجاوز 1000 حرف.",
+        "ArtifactImage.DeletionRecoveryRequired" => "تعذر إكمال حذف الصورة نهائياً. تم حفظ العملية للمعالجة الداخلية دون عرض تفاصيل تقنية.",
+        "ArtifactImage.DeletionFinalizationPending" => "بدأت معالجة حذف الصورة لكن السجل النهائي لم يكتمل بعد. البيانات المعروضة محدثة.",
+        _ => "تعذر حذف الصورة."
+    };
+
+    private enum DeletionDialogMode
+    {
+        UploaderGrace,
+        Privileged
+    }
+}
