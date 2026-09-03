@@ -2,7 +2,6 @@ using MuseumSystem.Application.Common;
 using MuseumSystem.Application.Common.Audit;
 using MuseumSystem.Application.Modules.Photography.Contracts;
 using MuseumSystem.Application.Modules.Photography.Imaging;
-using MuseumSystem.Application.Modules.Photography.Storage;
 using MuseumSystem.Domain.Modules.Photography;
 
 namespace MuseumSystem.Application.Modules.Photography;
@@ -10,10 +9,8 @@ namespace MuseumSystem.Application.Modules.Photography;
 public sealed class AppendImagesToPhotographySetUseCase(
     PhotographyUploadPersistenceService persistence,
     IArtifactImageProcessor imageProcessor,
-    IArtifactImageStorage storage,
     PhotographyUploadFingerprintService fingerprintService,
-    PhotographyObjectKeyFactory objectKeyFactory,
-    PhotographyUploadAuditService auditService,
+    PhotographyUploadConsistencyService uploadConsistencyService,
     PhotographyResponseMapper responseMapper,
     IAuditActorContext actorContext)
 {
@@ -88,11 +85,7 @@ public sealed class AppendImagesToPhotographySetUseCase(
                 continue;
             }
 
-            await PhotographyUploadUseCaseSupport.ProcessFileAsync(
-                persistence,
-                storage,
-                objectKeyFactory,
-                auditService,
+            await uploadConsistencyService.ProcessFileAsync(
                 operation,
                 file,
                 set.ArtifactId,

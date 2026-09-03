@@ -729,11 +729,12 @@ internal static class PhotographyUploadApplicationTestHost
         var fingerprint = new PhotographyUploadFingerprintService();
         var objectKeys = new PhotographyObjectKeyFactory();
         var auditService = new PhotographyUploadAuditService(audit);
+        var consistency = new PhotographyUploadConsistencyService(persistence, storage, objectKeys, auditService);
         var mapper = new PhotographyResponseMapper();
         var actorContext = new TestAuditActorContext(actorUserId);
         return new PhotographyUploadUseCaseHost(
-            new CreatePhotographySetWithImagesUseCase(persistence, processor, storage, fingerprint, objectKeys, auditService, mapper, actorContext),
-            new AppendImagesToPhotographySetUseCase(persistence, processor, storage, fingerprint, objectKeys, auditService, mapper, actorContext),
+            new CreatePhotographySetWithImagesUseCase(persistence, processor, fingerprint, consistency, mapper, actorContext),
+            new AppendImagesToPhotographySetUseCase(persistence, processor, fingerprint, consistency, mapper, actorContext),
             processor,
             storage,
             audit);
@@ -799,6 +800,7 @@ internal sealed class FakeArtifactImageStorage : IArtifactImageStorage
     public List<ImageStorageObjectKey> StatCalls { get; } = [];
     public List<IReadOnlyCollection<ImageStorageObjectKey>> DeleteImageObjectCalls { get; } = [];
     public bool CleanupSucceeds { get; set; } = true;
+    public HashSet<int> CleanupFailureIndexes { get; } = [];
 
     public void QueueOriginalWriteFailure(ArtifactImageStorageResultKind kind, string message, int callOrdinal) =>
         originalWrites[callOrdinal] = QueuedStorageWrite.BeforeStore(kind, "OriginalFailure", message, "provider://internal/original");
@@ -880,8 +882,22 @@ internal sealed class FakeArtifactImageStorage : IArtifactImageStorage
         DeleteImageObjectCalls.Add(keys);
         if (!CleanupSucceeds)
         {
+            var failureIndexes = CleanupFailureIndexes.Count == 0
+                ? Enumerable.Range(0, keys.Length).ToHashSet()
+                : CleanupFailureIndexes;
+            var results = keys.Select((key, index) =>
+            {
+                if (failureIndexes.Contains(index))
+                {
+                    return ArtifactImageStorageDeleteResult.Failed(key, ArtifactImageStorageResultKind.RetryableFailure, "DeleteFailed", "Object cleanup failed.");
+                }
+
+                objects.Remove(key.Value);
+                return ArtifactImageStorageDeleteResult.Success(key);
+            }).ToArray();
+
             return ValueTask.FromResult(ArtifactImageObjectsDeleteResult.PartialFailure(
-                keys.Select(key => ArtifactImageStorageDeleteResult.Failed(key, ArtifactImageStorageResultKind.RetryableFailure, "DeleteFailed", "Object cleanup failed.")).ToArray(),
+                results,
                 "CleanupFailed",
                 "Object cleanup failed.",
                 "provider://internal/delete"));

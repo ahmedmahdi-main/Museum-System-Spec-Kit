@@ -125,7 +125,9 @@ public sealed class PhotographyUploadPersistenceService(IMuseumDbContext dbConte
         string originalFilename,
         string fileFingerprint,
         string staffFacingMessage,
-        IReadOnlyCollection<ImageStorageObjectKey> objectKeys,
+        ImageStorageObjectKey? originalObjectKey,
+        IReadOnlyCollection<ImageStorageObjectKey> derivativeObjectKeys,
+        IReadOnlyCollection<ImageStorageObjectKey> recoveryObjectKeys,
         Guid artifactId,
         string failureSummary,
         CancellationToken cancellationToken = default)
@@ -134,15 +136,15 @@ public sealed class PhotographyUploadPersistenceService(IMuseumDbContext dbConte
         try
         {
             var operation = await LoadUploadOperationAsync(operationId, cancellationToken);
-            var recovery = StorageOperationRecovery.Create(StorageOperationRecoveryType.UploadCleanup, artifactId, objectKeys, failureSummary);
+            var recovery = StorageOperationRecovery.Create(StorageOperationRecoveryType.UploadCleanup, artifactId, recoveryObjectKeys, failureSummary);
             var outcome = PhotographyUploadFileOutcome.RecoveryNeeded(
                 operation.PhotographyUploadOperationId,
                 clientFileOrdinal,
                 originalFilename,
                 fileFingerprint,
                 staffFacingMessage,
-                objectKeys.FirstOrDefault(),
-                objectKeys.Skip(1).ToArray());
+                originalObjectKey,
+                derivativeObjectKeys);
 
             dbContext.StorageOperationRecoveries.Add(recovery);
             operation.AddFileOutcome(outcome);

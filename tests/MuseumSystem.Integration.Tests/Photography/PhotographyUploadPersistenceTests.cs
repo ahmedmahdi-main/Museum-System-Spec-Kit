@@ -235,11 +235,12 @@ public sealed class PhotographyUploadPersistenceTests(PostgresPhotographyTestFix
         var fingerprint = new PhotographyUploadFingerprintService();
         var objectKeys = new PhotographyObjectKeyFactory();
         var audit = new PhotographyUploadAuditService(new RecordingAuditWriter());
+        var consistency = new PhotographyUploadConsistencyService(persistence, storage, objectKeys, audit);
         var mapper = new PhotographyResponseMapper();
         var actor = new TestAuditActorContext("photographer-1");
 
         return new PhotographyUploadPersistenceHost(
-            new CreatePhotographySetWithImagesUseCase(persistence, processor, storage, fingerprint, objectKeys, audit, mapper, actor));
+            new CreatePhotographySetWithImagesUseCase(persistence, processor, fingerprint, consistency, mapper, actor));
     }
 
     private static CreatePhotographySetWithImagesCommand CreateCommand(

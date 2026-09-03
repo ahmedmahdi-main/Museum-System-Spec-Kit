@@ -54,6 +54,7 @@ public static class DependencyInjection
         services.AddScoped<PhotographyObjectKeyFactory>();
         services.AddScoped<PhotographyUploadPersistenceService>();
         services.AddScoped<PhotographyUploadAuditService>();
+        services.AddScoped<PhotographyUploadConsistencyService>();
         services.AddScoped<PhotographyResponseMapper>();
         services.AddScoped<CreatePhotographySetWithImagesUseCase>();
         services.TryAddSingleton(TimeProvider.System);
