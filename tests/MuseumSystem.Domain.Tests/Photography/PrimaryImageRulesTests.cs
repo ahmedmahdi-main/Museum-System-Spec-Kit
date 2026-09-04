@@ -27,7 +27,7 @@ public sealed class PrimaryImageRulesTests
     {
         var artifactId = Guid.NewGuid();
         var image = CreateImage(artifactId);
-        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
+        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
 
         Assert.False(PhotographyRules.IsPrimaryImageEligible(image, artifactId));
     }
@@ -37,8 +37,8 @@ public sealed class PrimaryImageRulesTests
     {
         var artifactId = Guid.NewGuid();
         var image = CreateImage(artifactId);
-        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
-        image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", DateTimeOffset.UtcNow);
+        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
+        image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod);
 
         Assert.False(PhotographyRules.IsPrimaryImageEligible(image, artifactId));
     }

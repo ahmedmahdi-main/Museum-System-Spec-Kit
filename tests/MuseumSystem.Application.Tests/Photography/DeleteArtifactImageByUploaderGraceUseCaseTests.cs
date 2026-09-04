@@ -32,6 +32,10 @@ public sealed class DeleteArtifactImageByUploaderGraceUseCaseTests
         Assert.Equal(ArtifactImageDeletionMode.UploaderGracePeriod, result.Value.DeletionMode);
         var finalImage = await db.ArtifactImages.SingleAsync();
         Assert.Equal(ArtifactImageStatus.Deleted, finalImage.Status);
+        Assert.Equal("photographer-1", finalImage.DeletionRequestedByUserId);
+        Assert.Equal(UploadedAt.AddMinutes(59), finalImage.DeletionRequestedAt);
+        Assert.Equal(finalImage.DeletionRequestedByUserId, finalImage.DeletedByUserId);
+        Assert.Equal(finalImage.DeletionRequestedAt, finalImage.DeletedAt);
         Assert.Null(finalImage.DeletionReason);
         var deletionAudit = await db.AuditEntries.SingleAsync(entry => entry.ActionName == PhotographyAuditActions.ImageDeleteByUploaderGrace);
         Assert.Equal(image.ArtifactImageId.ToString(), deletionAudit.EntityId);
@@ -199,10 +203,10 @@ public sealed class DeleteArtifactImageByUploaderGraceUseCaseTests
         var artifact = PhotographyUploadApplicationTestHost.AddArtifact(db);
         var set = PhotographyRequestApplicationTestHost.AddPhotographySet(db, artifact);
         var image = SeedImage(db, artifact, set, "photographer-1", UploadedAt);
-        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
+        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
         if (status == ArtifactImageStatus.Deleted)
         {
-            image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", UploadedAt.AddMinutes(10));
+            image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod);
         }
 
         await db.SaveChangesAsync();
@@ -285,7 +289,12 @@ public sealed class DeleteArtifactImageByUploaderGraceUseCaseTests
         Assert.Contains(result.ValidationIssues, issue => issue.Code == "ArtifactImage.DeletionRecoveryRequired");
         Assert.DoesNotContain(result.ValidationIssues, issue => issue.Message.Contains("provider://", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(result.ValidationIssues, issue => issue.Message.Contains("Minio", StringComparison.OrdinalIgnoreCase));
-        Assert.Equal(ArtifactImageStatus.DeletePending, (await db.ArtifactImages.SingleAsync()).Status);
+        var pendingImage = await db.ArtifactImages.SingleAsync();
+        Assert.Equal(ArtifactImageStatus.DeletePending, pendingImage.Status);
+        Assert.Equal("photographer-1", pendingImage.DeletionRequestedByUserId);
+        Assert.Equal(UploadedAt.AddMinutes(10), pendingImage.DeletionRequestedAt);
+        Assert.Null(pendingImage.DeletedByUserId);
+        Assert.Null(pendingImage.DeletedAt);
     }
 
     [Fact]

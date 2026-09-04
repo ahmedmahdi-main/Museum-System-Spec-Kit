@@ -27,7 +27,12 @@ public sealed class DeleteArtifactImagePrivilegedUseCaseTests
 
         Assert.True(result.Succeeded);
         Assert.Equal(ArtifactImageDeletionMode.Privileged, result.Value!.DeletionMode);
-        Assert.Equal(ArtifactImageStatus.Deleted, (await db.ArtifactImages.SingleAsync()).Status);
+        var finalImage = await db.ArtifactImages.SingleAsync();
+        Assert.Equal(ArtifactImageStatus.Deleted, finalImage.Status);
+        Assert.Equal("supervisor-1", finalImage.DeletionRequestedByUserId);
+        Assert.Equal(UploadedAt.AddMinutes(5), finalImage.DeletionRequestedAt);
+        Assert.Equal(finalImage.DeletionRequestedByUserId, finalImage.DeletedByUserId);
+        Assert.Equal(finalImage.DeletionRequestedAt, finalImage.DeletedAt);
         Assert.Single(host.Storage.DeleteImageObjectCalls);
     }
 
@@ -235,10 +240,10 @@ public sealed class DeleteArtifactImagePrivilegedUseCaseTests
         var artifact = PhotographyUploadApplicationTestHost.AddArtifact(db);
         var set = PhotographyRequestApplicationTestHost.AddPhotographySet(db, artifact);
         var image = SeedImage(db, artifact, set, "photographer-1", UploadedAt);
-        image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "earlier reason");
+        image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "supervisor-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero), "earlier reason");
         if (status == ArtifactImageStatus.Deleted)
         {
-            image.MarkDeleted(ArtifactImageDeletionMode.Privileged, "supervisor-1", UploadedAt.AddMinutes(10));
+            image.MarkDeleted(ArtifactImageDeletionMode.Privileged);
         }
 
         await db.SaveChangesAsync();
@@ -271,7 +276,12 @@ public sealed class DeleteArtifactImagePrivilegedUseCaseTests
         Assert.False(result.Succeeded);
         Assert.Contains(result.ValidationIssues, issue => issue.Code == "ArtifactImage.DeletionRecoveryRequired");
         Assert.DoesNotContain(result.ValidationIssues, issue => issue.Message.Contains("provider://", StringComparison.OrdinalIgnoreCase));
-        Assert.Equal(ArtifactImageStatus.DeletePending, (await db.ArtifactImages.SingleAsync()).Status);
+        var pendingImage = await db.ArtifactImages.SingleAsync();
+        Assert.Equal(ArtifactImageStatus.DeletePending, pendingImage.Status);
+        Assert.Equal("supervisor-1", pendingImage.DeletionRequestedByUserId);
+        Assert.Equal(UploadedAt.AddMinutes(5), pendingImage.DeletionRequestedAt);
+        Assert.Null(pendingImage.DeletedByUserId);
+        Assert.Null(pendingImage.DeletedAt);
     }
 
     [Fact]

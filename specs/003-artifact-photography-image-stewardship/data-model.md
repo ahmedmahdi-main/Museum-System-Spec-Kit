@@ -73,6 +73,8 @@ Represents metadata for one uploaded original image associated with an existing 
 - `UploadedAt`
 - `Caption` or equivalent Photography-owned metadata, if implemented
 - `Status` - `Available`, `DeletePending`, `Deleted`
+- `DeletionRequestedByUserId` - populated when permanent deletion intent is accepted
+- `DeletionRequestedAt` - server-authoritative UTC time when permanent deletion intent is accepted
 - `DeletedByUserId`
 - `DeletedAt`
 - `DeletionMode` - grace-period or privileged
@@ -86,6 +88,9 @@ Represents metadata for one uploaded original image associated with an existing 
 - Images do not duplicate mutable Artifact core data.
 - Original binary object is immutable.
 - Deleting a wrong image requires authorized permanent deletion and new upload.
+- DeletePending images retain the original accepted deletion actor/time in deletion-request fields while DeletedBy/DeletedAt remain finalization metadata.
+- Final deletion metadata is derived from the persisted deletion-request fields, including during internal retry/recovery after application restart.
+- Legacy DeletePending rows without deletion-request attribution are incomplete and require manual attention before finalization.
 - Deleted image metadata remains only for audit/history and is not a soft-delete binary-retention model.
 - Deleted and DeletePending images cannot be selected as Primary Image.
 - Views for ordinary staff show only available images unless an audit/recovery workflow requires otherwise.

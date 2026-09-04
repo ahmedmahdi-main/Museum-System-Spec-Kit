@@ -262,12 +262,12 @@ public sealed class ViewArtifactImagesUseCaseTests
 
         if (status == ArtifactImageStatus.DeletePending)
         {
-            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
+            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
         }
         else if (status == ArtifactImageStatus.Deleted)
         {
-            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
-            image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", PhotographyRequestApplicationTestHost.CompletedAt.AddMinutes(1));
+            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
+            image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod);
         }
 
         db.ArtifactImages.Add(image);

@@ -54,6 +54,8 @@ public sealed class ArtifactImageConfiguration : IEntityTypeConfiguration<Artifa
         builder.Property(image => image.UploadedAt).IsRequired();
         builder.Property(image => image.Caption).HasMaxLength(1000);
         builder.Property(image => image.Status).HasConversion<string>().HasMaxLength(64).IsRequired();
+        builder.Property(image => image.DeletionRequestedByUserId).HasMaxLength(256);
+        builder.Property(image => image.DeletionRequestedAt);
         builder.Property(image => image.DeletedByUserId).HasMaxLength(256);
         builder.Property(image => image.DeletionMode).HasConversion<string>().HasMaxLength(64);
         builder.Property(image => image.DeletionReason).HasMaxLength(1000);

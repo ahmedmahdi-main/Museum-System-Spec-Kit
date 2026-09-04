@@ -112,7 +112,7 @@ public sealed class ArtifactImageDeletionRulesTests
         var image = CreateImage();
         var beforeToken = image.ConcurrencyToken;
 
-        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
+        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
 
         Assert.Equal(ArtifactImageStatus.DeletePending, image.Status);
         Assert.Equal(ArtifactImageDeletionMode.UploaderGracePeriod, image.DeletionMode);
@@ -126,7 +126,7 @@ public sealed class ArtifactImageDeletionRulesTests
         var image = CreateImage();
         var beforeToken = image.ConcurrencyToken;
 
-        image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "  duplicate accession photo  ");
+        image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "supervisor-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero), "  duplicate accession photo  ");
 
         Assert.Equal(ArtifactImageStatus.DeletePending, image.Status);
         Assert.Equal(ArtifactImageDeletionMode.Privileged, image.DeletionMode);
@@ -142,7 +142,7 @@ public sealed class ArtifactImageDeletionRulesTests
     {
         var image = CreateImage();
 
-        Assert.Throws<ArgumentException>(() => image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, reason));
+        Assert.Throws<ArgumentException>(() => image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "supervisor-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero), reason));
         Assert.Equal(ArtifactImageStatus.Available, image.Status);
         Assert.Null(image.DeletionMode);
     }
@@ -151,19 +151,19 @@ public sealed class ArtifactImageDeletionRulesTests
     public void Delete_pending_image_cannot_be_marked_pending_again()
     {
         var image = CreateImage();
-        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
+        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
 
-        Assert.Throws<InvalidOperationException>(() => image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod));
+        Assert.Throws<InvalidOperationException>(() => image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero)));
     }
 
     [Fact]
     public void Deleted_image_cannot_be_marked_pending_again()
     {
         var image = CreateImage();
-        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
-        image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", UploadedAt.AddMinutes(10));
+        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
+        image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod);
 
-        Assert.Throws<InvalidOperationException>(() => image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "late reason"));
+        Assert.Throws<InvalidOperationException>(() => image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "supervisor-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero), "late reason"));
     }
 
     [Fact]
@@ -171,10 +171,7 @@ public sealed class ArtifactImageDeletionRulesTests
     {
         var image = CreateImage();
 
-        Assert.Throws<InvalidOperationException>(() => image.MarkDeleted(
-            ArtifactImageDeletionMode.UploaderGracePeriod,
-            "photographer-1",
-            UploadedAt.AddMinutes(10)));
+        Assert.Throws<InvalidOperationException>(() => image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod));
         Assert.Equal(ArtifactImageStatus.Available, image.Status);
     }
 
@@ -182,32 +179,22 @@ public sealed class ArtifactImageDeletionRulesTests
     public void Deletion_finalization_mode_must_match_pending_intent()
     {
         var graceImage = CreateImage();
-        graceImage.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
-        Assert.Throws<InvalidOperationException>(() => graceImage.MarkDeleted(
-            ArtifactImageDeletionMode.Privileged,
-            "supervisor-1",
-            UploadedAt.AddMinutes(10),
-            "privileged reason"));
+        graceImage.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
+        Assert.Throws<InvalidOperationException>(() => graceImage.MarkDeleted(ArtifactImageDeletionMode.Privileged));
 
         var privilegedImage = CreateImage();
-        privilegedImage.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "duplicate upload");
-        Assert.Throws<InvalidOperationException>(() => privilegedImage.MarkDeleted(
-            ArtifactImageDeletionMode.UploaderGracePeriod,
-            "photographer-1",
-            UploadedAt.AddMinutes(10)));
+        privilegedImage.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "supervisor-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero), "duplicate upload");
+        Assert.Throws<InvalidOperationException>(() => privilegedImage.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod));
     }
 
     [Fact]
-    public void Privileged_deletion_reason_cannot_be_replaced_during_finalization()
+    public void Privileged_deletion_finalization_preserves_existing_reason()
     {
         var image = CreateImage();
-        image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "reason a");
+        image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "supervisor-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero), "reason a");
 
-        Assert.Throws<InvalidOperationException>(() => image.MarkDeleted(
-            ArtifactImageDeletionMode.Privileged,
-            "supervisor-1",
-            UploadedAt.AddMinutes(10),
-            "reason b"));
+        image.MarkDeleted(ArtifactImageDeletionMode.Privileged);
+
         Assert.Equal("reason a", image.DeletionReason);
     }
 
@@ -215,13 +202,13 @@ public sealed class ArtifactImageDeletionRulesTests
     public void Privileged_deletion_finalization_preserves_existing_reason_when_reason_is_omitted_or_matches()
     {
         var omitted = CreateImage();
-        omitted.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "reason a");
-        omitted.MarkDeleted(ArtifactImageDeletionMode.Privileged, "supervisor-1", UploadedAt.AddMinutes(10));
+        omitted.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "supervisor-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero), "reason a");
+        omitted.MarkDeleted(ArtifactImageDeletionMode.Privileged);
         Assert.Equal("reason a", omitted.DeletionReason);
 
         var matching = CreateImage();
-        matching.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "reason a");
-        matching.MarkDeleted(ArtifactImageDeletionMode.Privileged, "supervisor-1", UploadedAt.AddMinutes(10), "  reason a  ");
+        matching.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "supervisor-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero), "reason a");
+        matching.MarkDeleted(ArtifactImageDeletionMode.Privileged);
         Assert.Equal("reason a", matching.DeletionReason);
     }
 
@@ -230,10 +217,10 @@ public sealed class ArtifactImageDeletionRulesTests
     {
         var image = CreateImage();
         var pendingToken = image.ConcurrencyToken;
-        var deletedAt = UploadedAt.AddMinutes(10);
+        var deletedAt = new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero);
 
-        image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "duplicate upload");
-        image.MarkDeleted(ArtifactImageDeletionMode.Privileged, "supervisor-1", deletedAt);
+        image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "supervisor-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero), "duplicate upload");
+        image.MarkDeleted(ArtifactImageDeletionMode.Privileged);
 
         Assert.Equal(ArtifactImageStatus.Deleted, image.Status);
         Assert.Equal("supervisor-1", image.DeletedByUserId);
@@ -247,13 +234,10 @@ public sealed class ArtifactImageDeletionRulesTests
     public void Deleted_image_cannot_be_finalized_again()
     {
         var image = CreateImage();
-        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
-        image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", UploadedAt.AddMinutes(10));
+        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
+        image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod);
 
-        Assert.Throws<InvalidOperationException>(() => image.MarkDeleted(
-            ArtifactImageDeletionMode.UploaderGracePeriod,
-            "photographer-1",
-            UploadedAt.AddMinutes(11)));
+        Assert.Throws<InvalidOperationException>(() => image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod));
     }
 
     [Theory]
@@ -263,10 +247,10 @@ public sealed class ArtifactImageDeletionRulesTests
     {
         var artifactId = Guid.NewGuid();
         var image = CreateImage(artifactId: artifactId);
-        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
+        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
         if (terminalStatus == ArtifactImageStatus.Deleted)
         {
-            image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", UploadedAt.AddMinutes(10));
+            image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod);
         }
 
         Assert.False(PhotographyRules.IsPrimaryImageEligible(image, artifactId));
@@ -280,8 +264,8 @@ public sealed class ArtifactImageDeletionRulesTests
         var image = CreateImage(artifactId: artifactId, photographySetId: setId);
         var original = OriginalMetadata.From(image);
 
-        image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "duplicate upload");
-        image.MarkDeleted(ArtifactImageDeletionMode.Privileged, "supervisor-1", UploadedAt.AddMinutes(10));
+        image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "supervisor-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero), "duplicate upload");
+        image.MarkDeleted(ArtifactImageDeletionMode.Privileged);
 
         original.AssertUnchanged(image);
     }

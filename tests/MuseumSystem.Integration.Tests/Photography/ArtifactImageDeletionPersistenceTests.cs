@@ -40,7 +40,7 @@ public sealed class ArtifactImageDeletionPersistenceTests(PostgresPhotographyTes
         {
             var (artifactId, setId) = await SeedArtifactAndSetAsync(seed, "DP");
             var image = await PhotographyPersistenceTestData.SeedImageAsync(seed, artifactId, setId, UniqueObjectKey("delete-pending"));
-            image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "  duplicate image  ");
+            image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "supervisor-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero), "  duplicate image  ");
             expectedToken = image.ConcurrencyToken;
             await seed.SaveChangesAsync();
             imageId = image.ArtifactImageId;
@@ -67,7 +67,7 @@ public sealed class ArtifactImageDeletionPersistenceTests(PostgresPhotographyTes
         {
             var (artifactId, setId) = await SeedArtifactAndSetAsync(seed, "DR");
             var image = await PhotographyPersistenceTestData.SeedImageAsync(seed, artifactId, setId, UniqueObjectKey("deleted-roundtrip"));
-            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
+            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "uploader", DeletedAt);
             pendingToken = image.ConcurrencyToken;
             await seed.SaveChangesAsync();
             imageId = image.ArtifactImageId;
@@ -78,7 +78,7 @@ public sealed class ArtifactImageDeletionPersistenceTests(PostgresPhotographyTes
             var pending = await finalize.ArtifactImages.SingleAsync(image => image.ArtifactImageId == imageId);
             Assert.Equal(ArtifactImageStatus.DeletePending, pending.Status);
             Assert.Equal(pendingToken, pending.ConcurrencyToken);
-            pending.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod, "uploader", DeletedAt);
+            pending.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod);
             deletedToken = pending.ConcurrencyToken;
             await finalize.SaveChangesAsync();
         }
@@ -87,8 +87,10 @@ public sealed class ArtifactImageDeletionPersistenceTests(PostgresPhotographyTes
         var reloaded = await reload.ArtifactImages.AsNoTracking().SingleAsync(image => image.ArtifactImageId == imageId);
 
         Assert.Equal(ArtifactImageStatus.Deleted, reloaded.Status);
-        Assert.Equal("uploader", reloaded.DeletedByUserId);
-        Assert.Equal(DeletedAt, reloaded.DeletedAt);
+        Assert.Equal("uploader", reloaded.DeletionRequestedByUserId);
+        Assert.Equal(DeletedAt, reloaded.DeletionRequestedAt);
+        Assert.Equal(reloaded.DeletionRequestedByUserId, reloaded.DeletedByUserId);
+        Assert.Equal(reloaded.DeletionRequestedAt, reloaded.DeletedAt);
         Assert.Equal(ArtifactImageDeletionMode.UploaderGracePeriod, reloaded.DeletionMode);
         Assert.Null(reloaded.DeletionReason);
         Assert.Equal(pendingToken + 1, deletedToken);
@@ -103,8 +105,8 @@ public sealed class ArtifactImageDeletionPersistenceTests(PostgresPhotographyTes
         {
             var (artifactId, setId) = await SeedArtifactAndSetAsync(seed, "PR");
             var image = await PhotographyPersistenceTestData.SeedImageAsync(seed, artifactId, setId, UniqueObjectKey("privileged-reason"));
-            image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "  curatorial duplicate  ");
-            image.MarkDeleted(ArtifactImageDeletionMode.Privileged, "supervisor-1", DeletedAt);
+            image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "supervisor-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero), "  curatorial duplicate  ");
+            image.MarkDeleted(ArtifactImageDeletionMode.Privileged);
             await seed.SaveChangesAsync();
             imageId = image.ArtifactImageId;
         }
@@ -125,8 +127,8 @@ public sealed class ArtifactImageDeletionPersistenceTests(PostgresPhotographyTes
         {
             var (artifactId, setId) = await SeedArtifactAndSetAsync(seed, "GR");
             var image = await PhotographyPersistenceTestData.SeedImageAsync(seed, artifactId, setId, UniqueObjectKey("grace-null-reason"));
-            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
-            image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod, "uploader", DeletedAt);
+            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
+            image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod);
             await seed.SaveChangesAsync();
             imageId = image.ArtifactImageId;
         }
@@ -157,8 +159,8 @@ public sealed class ArtifactImageDeletionPersistenceTests(PostgresPhotographyTes
                 "Seeded deletion audit for persistence retention.",
                 $"ArtifactId={artifactId}; ArtifactImageId={image.ArtifactImageId}; Mode=Privileged");
             seed.AuditEntries.Add(audit);
-            image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "duplicate image");
-            image.MarkDeleted(ArtifactImageDeletionMode.Privileged, "supervisor-1", DeletedAt);
+            image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "supervisor-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero), "duplicate image");
+            image.MarkDeleted(ArtifactImageDeletionMode.Privileged);
             await seed.SaveChangesAsync();
             imageId = image.ArtifactImageId;
             auditId = audit.AuditEntryId;
@@ -200,7 +202,7 @@ public sealed class ArtifactImageDeletionPersistenceTests(PostgresPhotographyTes
         {
             var image = await pendingContext.ArtifactImages.SingleAsync(candidate => candidate.ArtifactImageId == imageAId);
             var state = await pendingContext.ArtifactPhotographyStates.SingleAsync(candidate => candidate.ArtifactId == artifactId);
-            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
+            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
             if (state.PrimaryImageId == image.ArtifactImageId)
             {
                 state.ClearPrimaryImage("uploader");
@@ -213,7 +215,7 @@ public sealed class ArtifactImageDeletionPersistenceTests(PostgresPhotographyTes
         await using (var deleteContext = fixture.CreateContext())
         {
             var image = await deleteContext.ArtifactImages.SingleAsync(candidate => candidate.ArtifactImageId == imageAId);
-            image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod, "uploader", DeletedAt);
+            image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod);
             await deleteContext.SaveChangesAsync();
         }
 
@@ -252,13 +254,13 @@ public sealed class ArtifactImageDeletionPersistenceTests(PostgresPhotographyTes
         {
             var image = await deleteContext.ArtifactImages.SingleAsync(candidate => candidate.ArtifactImageId == deletedImageId);
             var state = await deleteContext.ArtifactPhotographyStates.SingleAsync(candidate => candidate.ArtifactId == artifactId);
-            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
+            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
             if (state.PrimaryImageId == image.ArtifactImageId)
             {
                 state.ClearPrimaryImage("uploader");
             }
 
-            image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod, "uploader", DeletedAt);
+            image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod);
             await deleteContext.SaveChangesAsync();
         }
 
@@ -279,8 +281,8 @@ public sealed class ArtifactImageDeletionPersistenceTests(PostgresPhotographyTes
         {
             var (seedArtifactId, setId) = await SeedArtifactAndSetAsync(seed, "IE");
             var image = await PhotographyPersistenceTestData.SeedImageAsync(seed, seedArtifactId, setId, UniqueObjectKey("ineligible-after-reload"));
-            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
-            image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod, "uploader", DeletedAt);
+            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
+            image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod);
             await seed.SaveChangesAsync();
             artifactId = seedArtifactId;
             imageId = image.ArtifactImageId;
@@ -306,8 +308,8 @@ public sealed class ArtifactImageDeletionPersistenceTests(PostgresPhotographyTes
             var preview = ArtifactImageDerivative.Create(image.ArtifactImageId, ImageDerivativeKind.Preview, ImageStorageObjectKey.Create(UniqueObjectKey("preview-retention")), "image/jpeg", 512, 640, 480);
             seed.ArtifactImageDerivatives.AddRange(thumbnail, preview);
             await seed.SaveChangesAsync();
-            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
-            image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod, "uploader", DeletedAt);
+            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
+            image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod);
             await seed.SaveChangesAsync();
             imageId = image.ArtifactImageId;
             thumbnailId = thumbnail.ArtifactImageDerivativeId;

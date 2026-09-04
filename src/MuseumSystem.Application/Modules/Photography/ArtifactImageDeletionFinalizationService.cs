@@ -19,10 +19,6 @@ public sealed class ArtifactImageDeletionFinalizationService(
             throw new ArgumentException("An artifact image is required.", nameof(request));
         }
 
-        if (string.IsNullOrWhiteSpace(request.ActorUserId))
-        {
-            throw new ArgumentException("An actor is required.", nameof(request));
-        }
 
         var image = await dbContext.ArtifactImages
             .Include(candidate => candidate.Derivatives)
@@ -43,7 +39,9 @@ public sealed class ArtifactImageDeletionFinalizationService(
             return ArtifactImageDeletionFinalizationResult.InvalidState(image.ArtifactImageId);
         }
 
-        if (image.DeletionMode != request.DeletionMode)
+        if (image.DeletionMode != request.DeletionMode
+            || string.IsNullOrWhiteSpace(image.DeletionRequestedByUserId)
+            || image.DeletionRequestedAt is null)
         {
             return ArtifactImageDeletionFinalizationResult.InvalidState(image.ArtifactImageId);
         }
@@ -56,11 +54,11 @@ public sealed class ArtifactImageDeletionFinalizationService(
         await using var transaction = await dbContext.BeginTransactionAsync(cancellationToken);
         try
         {
-            image.MarkDeleted(request.DeletionMode, request.ActorUserId, request.ServerDeletedAtUtc);
+            image.MarkDeleted(request.DeletionMode);
             await dbContext.SaveChangesAsync(cancellationToken);
 
             var auditReference = await auditWriter.WriteAsync(BuildAuditRequest(image, request), cancellationToken);
-            await ResolveDeleteCleanupRecoveriesAsync(image.ArtifactImageId, request.ServerDeletedAtUtc, cancellationToken);
+            await ResolveDeleteCleanupRecoveriesAsync(image.ArtifactImageId, image.DeletedAt!.Value, cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
             return ArtifactImageDeletionFinalizationResult.Completed(image.ArtifactImageId, image.ConcurrencyToken, auditReference);
@@ -90,7 +88,7 @@ public sealed class ArtifactImageDeletionFinalizationService(
                 nameof(ArtifactImage),
                 image.ArtifactImageId.ToString(),
                 "Permanently deleted artifact image under privileged authorization.",
-                $"ArtifactId={image.ArtifactId}; ArtifactImageId={image.ArtifactImageId}; ActorUserId={request.ActorUserId}; DeletedAtUtc={request.ServerDeletedAtUtc:O}; Reason={image.DeletionReason}");
+                $"ArtifactId={image.ArtifactId}; ArtifactImageId={image.ArtifactImageId}; ActorUserId={image.DeletedByUserId}; DeletedAtUtc={image.DeletedAt:O}; Reason={image.DeletionReason}");
         }
 
         return new AuditWriteRequest(
@@ -99,7 +97,7 @@ public sealed class ArtifactImageDeletionFinalizationService(
             nameof(ArtifactImage),
             image.ArtifactImageId.ToString(),
             "Permanently deleted artifact image under the uploader grace-period correction rule.",
-            $"ArtifactId={image.ArtifactId}; ArtifactImageId={image.ArtifactImageId}; ActorUserId={request.ActorUserId}; DeletedAtUtc={request.ServerDeletedAtUtc:O}; Rule=UploaderGracePeriod");
+            $"ArtifactId={image.ArtifactId}; ArtifactImageId={image.ArtifactImageId}; ActorUserId={image.DeletedByUserId}; DeletedAtUtc={image.DeletedAt:O}; Rule=UploaderGracePeriod");
     }
 
     private async Task ResolveDeleteCleanupRecoveriesAsync(Guid artifactImageId, DateTimeOffset resolvedAt, CancellationToken cancellationToken)
@@ -147,8 +145,6 @@ public sealed class ArtifactImageDeletionFinalizationService(
 public sealed record ArtifactImageDeletionFinalizationRequest(
     Guid ArtifactImageId,
     ArtifactImageDeletionMode DeletionMode,
-    string ActorUserId,
-    DateTimeOffset ServerDeletedAtUtc,
     int? ExpectedConcurrencyToken = null);
 
 public enum ArtifactImageDeletionFinalizationOutcome

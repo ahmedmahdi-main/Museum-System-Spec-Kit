@@ -57,7 +57,7 @@ public sealed class ArtifactImageDeletionService(
         await using var transaction = await dbContext.BeginTransactionAsync(cancellationToken);
         try
         {
-            image.MarkDeletePending(request.DeletionMode, request.DeletionReason);
+            image.MarkDeletePending(request.DeletionMode, request.ActorUserId, request.ServerNowUtc, request.DeletionReason);
 
             Guid? previousPrimaryImageId = null;
             var clearedPrimary = false;
@@ -110,8 +110,6 @@ public sealed class ArtifactImageDeletionService(
             new ArtifactImageDeletionFinalizationRequest(
                 image.ArtifactImageId,
                 request.DeletionMode,
-                request.ActorUserId,
-                request.ServerNowUtc,
                 image.ConcurrencyToken),
             cancellationToken);
 

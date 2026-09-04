@@ -4,15 +4,14 @@ namespace MuseumSystem.Domain.Tests.Photography;
 
 public sealed class ArtifactImageDeletionTests
 {
+    private static readonly DateTimeOffset DeletionRequestedAt = new(2026, 8, 24, 13, 0, 0, TimeSpan.Zero);
+
     [Fact]
     public void Available_image_cannot_be_marked_deleted_without_pending_intent()
     {
         var image = CreateImage();
 
-        Assert.Throws<InvalidOperationException>(() => image.MarkDeleted(
-            ArtifactImageDeletionMode.UploaderGracePeriod,
-            "photographer-1",
-            DateTimeOffset.UtcNow));
+        Assert.Throws<InvalidOperationException>(() => image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod));
 
         Assert.Equal(ArtifactImageStatus.Available, image.Status);
     }
@@ -21,16 +20,34 @@ public sealed class ArtifactImageDeletionTests
     public void Available_to_delete_pending_to_deleted_succeeds_and_preserves_intent()
     {
         var image = CreateImage();
-        var deletedAt = new DateTimeOffset(2026, 8, 24, 13, 0, 0, TimeSpan.Zero);
 
-        image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, " Wrong file uploaded ");
-        image.MarkDeleted(ArtifactImageDeletionMode.Privileged, "supervisor-1", deletedAt);
+        image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "supervisor-1", DeletionRequestedAt, " Wrong file uploaded ");
+
+        Assert.Equal(ArtifactImageStatus.DeletePending, image.Status);
+        Assert.Equal("supervisor-1", image.DeletionRequestedByUserId);
+        Assert.Equal(DeletionRequestedAt, image.DeletionRequestedAt);
+        Assert.Null(image.DeletedByUserId);
+        Assert.Null(image.DeletedAt);
+
+        image.MarkDeleted(ArtifactImageDeletionMode.Privileged);
 
         Assert.Equal(ArtifactImageStatus.Deleted, image.Status);
         Assert.Equal(ArtifactImageDeletionMode.Privileged, image.DeletionMode);
         Assert.Equal("Wrong file uploaded", image.DeletionReason);
+        Assert.Equal("supervisor-1", image.DeletionRequestedByUserId);
+        Assert.Equal(DeletionRequestedAt, image.DeletionRequestedAt);
         Assert.Equal("supervisor-1", image.DeletedByUserId);
-        Assert.Equal(deletedAt, image.DeletedAt);
+        Assert.Equal(DeletionRequestedAt, image.DeletedAt);
+    }
+
+    [Fact]
+    public void Pending_deletion_requires_actor_attribution()
+    {
+        var image = CreateImage();
+
+        Assert.Throws<ArgumentException>(() => image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, " ", DeletionRequestedAt));
+
+        Assert.Equal(ArtifactImageStatus.Available, image.Status);
     }
 
     [Fact]
@@ -38,11 +55,13 @@ public sealed class ArtifactImageDeletionTests
     {
         var image = CreateImage();
 
-        Assert.Throws<ArgumentException>(() => image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, " "));
+        Assert.Throws<ArgumentException>(() => image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "supervisor-1", DeletionRequestedAt, " "));
 
         Assert.Equal(ArtifactImageStatus.Available, image.Status);
         Assert.Null(image.DeletionMode);
         Assert.Null(image.DeletionReason);
+        Assert.Null(image.DeletionRequestedByUserId);
+        Assert.Null(image.DeletionRequestedAt);
     }
 
     [Fact]
@@ -50,32 +69,12 @@ public sealed class ArtifactImageDeletionTests
     {
         var image = CreateImage();
 
-        image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "Wrong file uploaded");
+        image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "supervisor-1", DeletionRequestedAt, "Wrong file uploaded");
 
-        Assert.Throws<InvalidOperationException>(() => image.MarkDeleted(
-            ArtifactImageDeletionMode.UploaderGracePeriod,
-            "photographer-1",
-            DateTimeOffset.UtcNow));
+        Assert.Throws<InvalidOperationException>(() => image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod));
 
         Assert.Equal(ArtifactImageStatus.DeletePending, image.Status);
         Assert.Equal(ArtifactImageDeletionMode.Privileged, image.DeletionMode);
-        Assert.Equal("Wrong file uploaded", image.DeletionReason);
-    }
-
-    [Fact]
-    public void Pending_deletion_reason_cannot_be_replaced_during_finalization()
-    {
-        var image = CreateImage();
-
-        image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "Wrong file uploaded");
-
-        Assert.Throws<InvalidOperationException>(() => image.MarkDeleted(
-            ArtifactImageDeletionMode.Privileged,
-            "supervisor-1",
-            DateTimeOffset.UtcNow,
-            "Different reason"));
-
-        Assert.Equal(ArtifactImageStatus.DeletePending, image.Status);
         Assert.Equal("Wrong file uploaded", image.DeletionReason);
     }
 
@@ -84,14 +83,11 @@ public sealed class ArtifactImageDeletionTests
     {
         var image = CreateImage();
 
-        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
-        image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", DateTimeOffset.UtcNow);
+        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", DeletionRequestedAt);
+        image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod);
 
-        Assert.Throws<InvalidOperationException>(() => image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "reason"));
-        Assert.Throws<InvalidOperationException>(() => image.MarkDeleted(
-            ArtifactImageDeletionMode.UploaderGracePeriod,
-            "photographer-1",
-            DateTimeOffset.UtcNow));
+        Assert.Throws<InvalidOperationException>(() => image.MarkDeletePending(ArtifactImageDeletionMode.Privileged, "supervisor-1", DeletionRequestedAt, "reason"));
+        Assert.Throws<InvalidOperationException>(() => image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod));
         Assert.Equal(ArtifactImageStatus.Deleted, image.Status);
     }
 
@@ -100,7 +96,7 @@ public sealed class ArtifactImageDeletionTests
     {
         var image = CreateImage();
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => image.MarkDeletePending((ArtifactImageDeletionMode)99));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.MarkDeletePending((ArtifactImageDeletionMode)99, "photographer-1", DeletionRequestedAt));
         Assert.Equal(ArtifactImageStatus.Available, image.Status);
     }
 

@@ -145,8 +145,8 @@ public sealed class ArtifactImageTests
         var image = CreateImage();
         var deletedAt = new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero);
 
-        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
-        image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", deletedAt);
+        image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
+        image.MarkDeleted(ArtifactImageDeletionMode.UploaderGracePeriod);
 
         Assert.Equal(ArtifactImageStatus.Deleted, image.Status);
         Assert.Equal("photographer-1", image.DeletedByUserId);

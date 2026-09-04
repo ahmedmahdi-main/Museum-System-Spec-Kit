@@ -21,7 +21,7 @@ public sealed class ArtifactImageDeletionConsistencyPersistenceTests(PostgresPho
             var set = await PhotographyPersistenceTestData.SeedSetAsync(seed, artifact.ArtifactId);
             var image = await PhotographyPersistenceTestData.SeedImageAsync(
                 seed, artifact.ArtifactId, set.PhotographySetId, $"original/finalization-rollback-{Guid.NewGuid():N}");
-            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod);
+            image.MarkDeletePending(ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", new DateTimeOffset(2026, 8, 25, 12, 0, 0, TimeSpan.Zero));
             pendingToken = image.ConcurrencyToken;
             await seed.SaveChangesAsync();
             imageId = image.ArtifactImageId;
@@ -32,7 +32,7 @@ public sealed class ArtifactImageDeletionConsistencyPersistenceTests(PostgresPho
             var service = new ArtifactImageDeletionFinalizationService(finalize, new ThrowingAuditWriter());
 
             var result = await service.FinalizeAsync(new ArtifactImageDeletionFinalizationRequest(
-                imageId, ArtifactImageDeletionMode.UploaderGracePeriod, "photographer-1", DeletedAt, pendingToken));
+                imageId, ArtifactImageDeletionMode.UploaderGracePeriod, pendingToken));
 
             Assert.Equal(ArtifactImageDeletionFinalizationOutcome.FinalizationPending, result.Outcome);
         }

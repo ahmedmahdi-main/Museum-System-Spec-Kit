@@ -121,8 +121,10 @@ public sealed class ArtifactImageDeletionServiceTests
         Assert.Equal(ArtifactImageDeletionOutcome.Completed, result.Outcome);
         var finalImage = await db.ArtifactImages.SingleAsync();
         Assert.Equal(ArtifactImageStatus.Deleted, finalImage.Status);
-        Assert.Equal("photographer-1", finalImage.DeletedByUserId);
-        Assert.Equal(DeletionRequestedAt, finalImage.DeletedAt);
+        Assert.Equal("photographer-1", finalImage.DeletionRequestedByUserId);
+        Assert.Equal(DeletionRequestedAt, finalImage.DeletionRequestedAt);
+        Assert.Equal(finalImage.DeletionRequestedByUserId, finalImage.DeletedByUserId);
+        Assert.Equal(finalImage.DeletionRequestedAt, finalImage.DeletedAt);
         var finalState = await db.ArtifactPhotographyStates.SingleAsync();
         Assert.Null(finalState.PrimaryImageId);
         var primaryAudit = await db.AuditEntries.SingleAsync(entry => entry.ActionName == PhotographyAuditActions.PrimaryImageChange);
@@ -173,6 +175,10 @@ public sealed class ArtifactImageDeletionServiceTests
 
         Assert.Equal(ArtifactImageDeletionOutcome.Completed, result.Outcome);
         var finalImage = await db.ArtifactImages.SingleAsync();
+        Assert.Equal("supervisor-1", finalImage.DeletionRequestedByUserId);
+        Assert.Equal(DeletionRequestedAt, finalImage.DeletionRequestedAt);
+        Assert.Equal(finalImage.DeletionRequestedByUserId, finalImage.DeletedByUserId);
+        Assert.Equal(finalImage.DeletionRequestedAt, finalImage.DeletedAt);
         Assert.Equal("duplicate accession photo", finalImage.DeletionReason);
         var audit = await db.AuditEntries.SingleAsync(entry => entry.ActionName == PhotographyAuditActions.ImageDeletePrivileged);
         Assert.Contains("Reason=duplicate accession photo", audit.ChangeSummary);
@@ -203,6 +209,10 @@ public sealed class ArtifactImageDeletionServiceTests
         Assert.Equal(ArtifactImageDeletionOutcome.RecoveryRequired, result.Outcome);
         var pendingImage = await db.ArtifactImages.SingleAsync();
         Assert.Equal(ArtifactImageStatus.DeletePending, pendingImage.Status);
+        Assert.Equal("photographer-1", pendingImage.DeletionRequestedByUserId);
+        Assert.Equal(DeletionRequestedAt, pendingImage.DeletionRequestedAt);
+        Assert.Null(pendingImage.DeletedByUserId);
+        Assert.Null(pendingImage.DeletedAt);
         var recovery = await db.StorageOperationRecoveries.SingleAsync();
         Assert.Equal(StorageOperationRecoveryType.DeleteCleanup, recovery.OperationType);
         Assert.Equal(image.ArtifactImageId, recovery.ArtifactImageId);

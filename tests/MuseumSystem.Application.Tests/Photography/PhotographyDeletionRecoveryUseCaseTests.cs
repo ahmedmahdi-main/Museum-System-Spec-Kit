@@ -46,6 +46,8 @@ public sealed class PhotographyDeletionRecoveryUseCaseTests
 
         var pendingImage = await db.ArtifactImages.SingleAsync();
         Assert.Equal(ArtifactImageStatus.DeletePending, pendingImage.Status);
+        Assert.Equal("photographer-1", pendingImage.DeletionRequestedByUserId);
+        Assert.Equal(DeletionRequestedAt, pendingImage.DeletionRequestedAt);
         Assert.Null(pendingImage.DeletedAt);
         Assert.Null(pendingImage.DeletedByUserId);
 
@@ -63,10 +65,9 @@ public sealed class PhotographyDeletionRecoveryUseCaseTests
     public async Task Restart_retry_with_fresh_finalization_service_transitions_delete_pending_to_deleted_without_repeating_storage_delete()
     {
         await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
-        var retryAt = DeletionRequestedAt.AddMinutes(10);
 
         var (storage, image, retryResult, deletionAudit) = await SeedFailOnceThenRetrySucceedsAsync(
-            db, ArtifactImageDeletionMode.UploaderGracePeriod, reason: null, markPrimary: false, retryActorUserId: "recovery-worker", retryAt: retryAt);
+            db, ArtifactImageDeletionMode.UploaderGracePeriod, reason: null, markPrimary: false, retryActorUserId: "recovery-worker", retryAt: DeletionRequestedAt.AddMinutes(10));
 
         Assert.Equal(ArtifactImageDeletionFinalizationOutcome.Completed, retryResult.Outcome);
         Assert.True(retryResult.Succeeded);
@@ -75,8 +76,10 @@ public sealed class PhotographyDeletionRecoveryUseCaseTests
         var finalImage = await db.ArtifactImages.SingleAsync();
         Assert.Equal(ArtifactImageStatus.Deleted, finalImage.Status);
         Assert.Equal(ArtifactImageDeletionMode.UploaderGracePeriod, finalImage.DeletionMode);
-        Assert.Equal("recovery-worker", finalImage.DeletedByUserId);
-        Assert.Equal(retryAt, finalImage.DeletedAt);
+        Assert.Equal("photographer-1", finalImage.DeletedByUserId);
+        Assert.Equal(DeletionRequestedAt, finalImage.DeletedAt);
+        Assert.Equal(finalImage.DeletionRequestedByUserId, finalImage.DeletedByUserId);
+        Assert.Equal(finalImage.DeletionRequestedAt, finalImage.DeletedAt);
 
         Assert.Equal(image.ArtifactImageId.ToString(), deletionAudit.EntityId);
         Assert.Equal(deletionAudit.AuditEntryId.ToString(), retryResult.AuditReference);
@@ -90,17 +93,15 @@ public sealed class PhotographyDeletionRecoveryUseCaseTests
     public async Task Idempotent_replay_after_successful_retry_does_not_duplicate_audit_storage_or_deletion_metadata()
     {
         await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
-        var retryAt = DeletionRequestedAt.AddMinutes(10);
         var (storage, image, retryResult, _) = await SeedFailOnceThenRetrySucceedsAsync(
-            db, ArtifactImageDeletionMode.UploaderGracePeriod, reason: null, markPrimary: false, retryActorUserId: "recovery-worker", retryAt: retryAt);
+            db, ArtifactImageDeletionMode.UploaderGracePeriod, reason: null, markPrimary: false, retryActorUserId: "recovery-worker", retryAt: DeletionRequestedAt.AddMinutes(10));
         Assert.Equal(ArtifactImageDeletionFinalizationOutcome.Completed, retryResult.Outcome);
 
-        // A further restart/replay: a brand new finalization service instance with a different actor and timestamp.
+        // A further restart/replay: a brand new finalization service instance with a different actor cannot rewrite attribution.
         var replayFinalizationService = new ArtifactImageDeletionFinalizationService(db, new AuditWriter(db, new TestAuditActorContext("replay-worker")));
-        var replayAt = retryAt.AddMinutes(30);
 
         var replayResult = await replayFinalizationService.FinalizeAsync(new ArtifactImageDeletionFinalizationRequest(
-            image.ArtifactImageId, ArtifactImageDeletionMode.UploaderGracePeriod, "replay-worker", replayAt));
+            image.ArtifactImageId, ArtifactImageDeletionMode.UploaderGracePeriod));
 
         Assert.Equal(ArtifactImageDeletionFinalizationOutcome.AlreadyFinalized, replayResult.Outcome);
         Assert.True(replayResult.Succeeded);
@@ -110,24 +111,29 @@ public sealed class PhotographyDeletionRecoveryUseCaseTests
 
         var finalImage = await db.ArtifactImages.SingleAsync();
         Assert.Equal(ArtifactImageStatus.Deleted, finalImage.Status);
-        Assert.Equal("recovery-worker", finalImage.DeletedByUserId);
-        Assert.Equal(retryAt, finalImage.DeletedAt);
+        Assert.Equal("photographer-1", finalImage.DeletedByUserId);
+        Assert.Equal(DeletionRequestedAt, finalImage.DeletedAt);
+        Assert.Equal(finalImage.DeletionRequestedByUserId, finalImage.DeletedByUserId);
+        Assert.Equal(finalImage.DeletionRequestedAt, finalImage.DeletedAt);
     }
 
     [Fact]
     public async Task Privileged_deletion_reason_survives_finalization_failure_and_restart_retry()
     {
         await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
-        var retryAt = DeletionRequestedAt.AddMinutes(15);
 
         var (_, image, retryResult, deletionAudit) = await SeedFailOnceThenRetrySucceedsAsync(
-            db, ArtifactImageDeletionMode.Privileged, reason: "duplicate accession photo", markPrimary: false, retryActorUserId: "supervisor-1", retryAt: retryAt);
+            db, ArtifactImageDeletionMode.Privileged, reason: "duplicate accession photo", markPrimary: false, retryActorUserId: "supervisor-1", retryAt: DeletionRequestedAt.AddMinutes(10));
 
         Assert.Equal(ArtifactImageDeletionFinalizationOutcome.Completed, retryResult.Outcome);
         var finalImage = await db.ArtifactImages.SingleAsync();
         Assert.Equal(ArtifactImageDeletionMode.Privileged, finalImage.DeletionMode);
         Assert.Equal("duplicate accession photo", finalImage.DeletionReason);
         Assert.Equal(PhotographyAuditActions.ImageDeletePrivileged, deletionAudit.ActionName);
+        Assert.Equal("supervisor-1", finalImage.DeletedByUserId);
+        Assert.Equal(DeletionRequestedAt, finalImage.DeletedAt);
+        Assert.Contains("ActorUserId=supervisor-1", deletionAudit.ChangeSummary);
+        Assert.Contains($"DeletedAtUtc={DeletionRequestedAt:O}", deletionAudit.ChangeSummary);
         Assert.Contains("Reason=duplicate accession photo", deletionAudit.ChangeSummary);
         Assert.DoesNotContain("ObjectKey", deletionAudit.ChangeSummary, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("bucket", deletionAudit.ChangeSummary, StringComparison.OrdinalIgnoreCase);
@@ -149,12 +155,15 @@ public sealed class PhotographyDeletionRecoveryUseCaseTests
 
         var retryFinalizationService = new ArtifactImageDeletionFinalizationService(db, new AuditWriter(db, new TestAuditActorContext("recovery-worker")));
         var retryResult = await retryFinalizationService.FinalizeAsync(new ArtifactImageDeletionFinalizationRequest(
-            image.ArtifactImageId, ArtifactImageDeletionMode.UploaderGracePeriod, "recovery-worker", DeletionRequestedAt.AddMinutes(20)));
+            image.ArtifactImageId, ArtifactImageDeletionMode.UploaderGracePeriod));
 
         Assert.Equal(ArtifactImageDeletionFinalizationOutcome.Completed, retryResult.Outcome);
         var stateAfterRetry = await db.ArtifactPhotographyStates.SingleAsync();
         Assert.Null(stateAfterRetry.PrimaryImageId);
         Assert.Equal(1, await db.AuditEntries.CountAsync(entry => entry.ActionName == PhotographyAuditActions.PrimaryImageChange));
+        var finalImage = await db.ArtifactImages.SingleAsync();
+        Assert.Equal("photographer-1", finalImage.DeletedByUserId);
+        Assert.Equal(DeletionRequestedAt, finalImage.DeletedAt);
     }
 
     [Fact]
@@ -185,7 +194,7 @@ public sealed class PhotographyDeletionRecoveryUseCaseTests
 
         var retryFinalizationService = new ArtifactImageDeletionFinalizationService(db, new AuditWriter(db, new TestAuditActorContext("recovery-worker")));
         var retryResult = await retryFinalizationService.FinalizeAsync(new ArtifactImageDeletionFinalizationRequest(
-            image.ArtifactImageId, ArtifactImageDeletionMode.UploaderGracePeriod, "recovery-worker", DeletionRequestedAt.AddMinutes(10)));
+            image.ArtifactImageId, ArtifactImageDeletionMode.UploaderGracePeriod));
         Assert.Equal(ArtifactImageDeletionFinalizationOutcome.Completed, retryResult.Outcome);
 
         var artifactAfter = await db.Artifacts.SingleAsync();
@@ -213,7 +222,7 @@ public sealed class PhotographyDeletionRecoveryUseCaseTests
         faulting.ThrowNextImageConcurrency = true;
         var secondAttemptService = new ArtifactImageDeletionFinalizationService(faulting, new AuditWriter(faulting, new TestAuditActorContext("recovery-worker")));
         var secondAttemptResult = await secondAttemptService.FinalizeAsync(new ArtifactImageDeletionFinalizationRequest(
-            image.ArtifactImageId, ArtifactImageDeletionMode.UploaderGracePeriod, "recovery-worker", DeletionRequestedAt.AddMinutes(5)));
+            image.ArtifactImageId, ArtifactImageDeletionMode.UploaderGracePeriod));
 
         Assert.Equal(ArtifactImageDeletionFinalizationOutcome.FinalizationPending, secondAttemptResult.Outcome);
         Assert.Equal(2, faulting.ImageConcurrencyFailuresThrown);
@@ -231,7 +240,7 @@ public sealed class PhotographyDeletionRecoveryUseCaseTests
 
         var successFinalizationService = new ArtifactImageDeletionFinalizationService(db, new AuditWriter(db, new TestAuditActorContext("recovery-worker")));
         var successResult = await successFinalizationService.FinalizeAsync(new ArtifactImageDeletionFinalizationRequest(
-            image.ArtifactImageId, ArtifactImageDeletionMode.UploaderGracePeriod, "recovery-worker", DeletionRequestedAt.AddMinutes(10)));
+            image.ArtifactImageId, ArtifactImageDeletionMode.UploaderGracePeriod));
 
         Assert.Equal(ArtifactImageDeletionFinalizationOutcome.Completed, successResult.Outcome);
         var recoveriesAfterSuccess = await db.StorageOperationRecoveries.ToListAsync();
@@ -282,10 +291,11 @@ public sealed class PhotographyDeletionRecoveryUseCaseTests
         }
 
         await db.SaveChangesAsync();
-        var (service, storage, faulting) = NewServiceWithFaultingFinalization(db);
+        var originalActorUserId = mode == ArtifactImageDeletionMode.Privileged ? "supervisor-1" : "photographer-1";
+        var (service, storage, faulting) = NewServiceWithFaultingFinalization(db, originalActorUserId);
 
         var result = await service.DeleteAsync(new AuthorizedArtifactImageDeletion(
-            image.ArtifactImageId, image.ConcurrencyToken, mode, reason, "photographer-1", DeletionRequestedAt));
+            image.ArtifactImageId, image.ConcurrencyToken, mode, reason, originalActorUserId, DeletionRequestedAt));
 
         return (storage, artifact, image, faulting, result);
     }
@@ -311,7 +321,7 @@ public sealed class PhotographyDeletionRecoveryUseCaseTests
 
         var retryFinalizationService = new ArtifactImageDeletionFinalizationService(db, new AuditWriter(db, new TestAuditActorContext(retryActorUserId)));
         var retryResult = await retryFinalizationService.FinalizeAsync(new ArtifactImageDeletionFinalizationRequest(
-            image.ArtifactImageId, mode, retryActorUserId, retryAt));
+            image.ArtifactImageId, mode));
 
         var expectedAction = mode == ArtifactImageDeletionMode.Privileged
             ? PhotographyAuditActions.ImageDeletePrivileged

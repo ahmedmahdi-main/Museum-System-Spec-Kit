@@ -52,3 +52,8 @@
 - SkiaSharp README/platform support: https://github.com/mono/SkiaSharp/blob/main/README.md
 - SkiaSharp bitmap decode/encode documentation: https://mono.github.io/SkiaSharp/docs/guides/bitmaps/saving.html
 - Six Labors ImageSharp license: https://github.com/SixLabors/ImageSharp/blob/main/LICENSE
+## Checkpoint U0 - Durable Deletion Attribution
+
+**Decision**: Store deletion-intent attribution separately as `DeletionRequestedByUserId` and `DeletionRequestedAt` on `ArtifactImage` when a permanent deletion is accepted.
+
+**Reason**: `DeletedByUserId` and `DeletedAt` keep their finalization semantics and remain null while an image is `DeletePending`. Automatic recovery after restart can then finalize metadata using the original accepted deletion actor/time without substituting a recovery worker identity or fabricating historical attribution. Legacy `DeletePending` rows without these intent fields are treated as incomplete/manual-attention states.

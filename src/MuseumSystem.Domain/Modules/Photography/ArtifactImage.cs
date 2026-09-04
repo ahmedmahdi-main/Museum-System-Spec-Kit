@@ -47,6 +47,8 @@ public sealed class ArtifactImage
     public DateTimeOffset UploadedAt { get; private set; }
     public string? Caption { get; private set; }
     public ArtifactImageStatus Status { get; private set; }
+    public string? DeletionRequestedByUserId { get; private set; }
+    public DateTimeOffset? DeletionRequestedAt { get; private set; }
     public string? DeletedByUserId { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
     public ArtifactImageDeletionMode? DeletionMode { get; private set; }
@@ -105,7 +107,11 @@ public sealed class ArtifactImage
         Touch();
     }
 
-    public void MarkDeletePending(ArtifactImageDeletionMode mode, string? deletionReason = null)
+    public void MarkDeletePending(
+        ArtifactImageDeletionMode mode,
+        string deletionRequestedByUserId,
+        DateTimeOffset deletionRequestedAt,
+        string? deletionReason = null)
     {
         if (Status != ArtifactImageStatus.Available)
         {
@@ -118,13 +124,17 @@ public sealed class ArtifactImage
             throw new ArgumentException("Privileged deletion requires a reason.", nameof(deletionReason));
         }
 
+        var normalizedDeletionRequestedByUserId = RequireText(deletionRequestedByUserId, nameof(deletionRequestedByUserId));
+
         Status = ArtifactImageStatus.DeletePending;
         DeletionMode = validatedMode;
         DeletionReason = NormalizeOptional(deletionReason);
+        DeletionRequestedByUserId = normalizedDeletionRequestedByUserId;
+        DeletionRequestedAt = deletionRequestedAt;
         Touch();
     }
 
-    public void MarkDeleted(ArtifactImageDeletionMode mode, string deletedByUserId, DateTimeOffset deletedAt, string? deletionReason = null)
+    public void MarkDeleted(ArtifactImageDeletionMode mode)
     {
         var validatedMode = PhotographyEnumValidation.RequireDefined(mode, nameof(mode));
 
@@ -143,20 +153,19 @@ public sealed class ArtifactImage
             throw new InvalidOperationException("Deletion finalization must use the deletion mode recorded by the pending intent.");
         }
 
-        var normalizedReason = NormalizeOptional(deletionReason);
-        if (normalizedReason is not null && !string.Equals(normalizedReason, DeletionReason, StringComparison.Ordinal))
-        {
-            throw new InvalidOperationException("Deletion finalization cannot replace the pending deletion reason.");
-        }
-
         if (!PhotographyRules.HasRequiredDeletionReason(validatedMode, DeletionReason))
         {
-            throw new ArgumentException("Privileged deletion requires a reason.", nameof(deletionReason));
+            throw new InvalidOperationException("Privileged deletion requires a reason.");
+        }
+
+        if (string.IsNullOrWhiteSpace(DeletionRequestedByUserId) || DeletionRequestedAt is null)
+        {
+            throw new InvalidOperationException("Deletion intent attribution is required before deletion can be finalized.");
         }
 
         Status = ArtifactImageStatus.Deleted;
-        DeletedByUserId = RequireText(deletedByUserId, nameof(deletedByUserId));
-        DeletedAt = deletedAt;
+        DeletedByUserId = DeletionRequestedByUserId;
+        DeletedAt = DeletionRequestedAt;
         Touch();
     }
 

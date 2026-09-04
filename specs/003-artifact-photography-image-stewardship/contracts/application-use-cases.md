@@ -229,6 +229,7 @@ These contracts describe application behavior and boundaries. They are not API r
 - Audit records the grace-period correction rule.
 - If the image is current Primary Image, deletion leaves the Artifact with no Primary Image.
 - Original and exclusive derivatives are permanently deleted.
+- Accepted deletion intent persists the original actor and server time before binary deletion; restart/internal recovery uses that persisted attribution for final DeletedBy/DeletedAt values.
 - If storage deletion succeeds but final metadata/audit commit fails, a durable pending state is retried idempotently and full success is not reported until metadata finalization succeeds.
 
 ## DeleteArtifactImagePrivileged
@@ -253,6 +254,7 @@ These contracts describe application behavior and boundaries. They are not API r
 - Audit/history retains the reason and identity metadata after binary removal.
 - If the image is current Primary Image, deletion leaves the Artifact with no Primary Image.
 - Original and exclusive derivatives are permanently deleted.
+- Accepted deletion intent persists the original actor and server time before binary deletion; restart/internal recovery uses that persisted attribution for final DeletedBy/DeletedAt values.
 - If storage deletion succeeds but final metadata/audit commit fails, a durable pending state is retried idempotently and full success is not reported until metadata finalization succeeds.
 
 ## InternalStorageRecovery
