@@ -6,7 +6,8 @@ public sealed record AuditWriteRequest(
     string EntityName,
     string EntityId,
     string Summary,
-    string? ChangeSummary = null);
+    string? ChangeSummary = null,
+    string? AttributedActorUserId = null);
 
 public interface IAuditWriter
 {

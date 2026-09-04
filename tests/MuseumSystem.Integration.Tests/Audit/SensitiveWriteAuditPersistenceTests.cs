@@ -88,6 +88,65 @@ public sealed class SensitiveWriteAuditPersistenceTests
         Assert.Contains(auditEntries, entry => entry.ChangeSummary is not null);
     }
 
+    [Fact]
+    public async Task Audit_writer_uses_current_actor_when_no_attributed_actor_override_is_requested()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var auditWriter = new AuditWriter(database.Context, new TestAuditActorContext("current-user"));
+
+        await auditWriter.WriteAsync(new AuditWriteRequest(
+            "Museum.Generic.Action",
+            "Museum",
+            "Entity",
+            "entity-1",
+            "Generic action summary.",
+            "Generic change summary."));
+
+        var entry = await database.Context.AuditEntries.SingleAsync();
+        Assert.Equal("current-user", entry.ActorUserId);
+        Assert.Equal("Museum.Generic.Action", entry.ActionName);
+    }
+
+    [Fact]
+    public async Task Audit_writer_ignores_attributed_actor_override_for_non_deletion_actions()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var auditWriter = new AuditWriter(database.Context, new TestAuditActorContext("current-user"));
+
+        await auditWriter.WriteAsync(new AuditWriteRequest(
+            "Museum.Generic.Action",
+            "Museum",
+            "Entity",
+            "entity-1",
+            "Generic action summary.",
+            "Generic change summary.",
+            AttributedActorUserId: "business-user"));
+
+        var entry = await database.Context.AuditEntries.SingleAsync();
+        Assert.Equal("current-user", entry.ActorUserId);
+        Assert.NotEqual("business-user", entry.ActorUserId);
+    }
+
+    [Fact]
+    public async Task Audit_writer_uses_attributed_actor_override_for_permanent_photography_deletion_actions()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var auditWriter = new AuditWriter(database.Context, new TestAuditActorContext("recovery-worker"));
+
+        await auditWriter.WriteAsync(new AuditWriteRequest(
+            "Photography.Image.DeletePrivileged",
+            "Photography",
+            "ArtifactImage",
+            "image-1",
+            "Permanent deletion summary.",
+            "ActorUserId=supervisor-1; DeletedAtUtc=2026-08-25T12:05:00.0000000+00:00; Reason=duplicate",
+            AttributedActorUserId: "supervisor-1"));
+
+        var entry = await database.Context.AuditEntries.SingleAsync();
+        Assert.Equal("supervisor-1", entry.ActorUserId);
+        Assert.NotEqual("recovery-worker", entry.ActorUserId);
+    }
+
     private sealed class TestAuditActorContext(string userId) : IAuditActorContext
     {
         public AuditActor CurrentActor => new(userId, "Test user", true);

@@ -34,7 +34,9 @@ public sealed class ArtifactImageDeletionFinalizationServiceTests
         Assert.Equal(finalImage.DeletionRequestedByUserId, finalImage.DeletedByUserId);
         Assert.Equal(finalImage.DeletionRequestedAt, finalImage.DeletedAt);
         var audit = await db.AuditEntries.SingleAsync();
-        Assert.Equal(PhotographyAuditActions.ImageDeleteByUploaderGrace, audit.ActionName);
+        Assert.Equal("Photography.Image.DeleteByUploaderGrace", audit.ActionName);
+        Assert.Equal("photographer-1", audit.ActorUserId);
+        Assert.NotEqual("recovery-worker", audit.ActorUserId);
         Assert.Contains("ActorUserId=photographer-1", audit.ChangeSummary);
         Assert.Contains($"DeletedAtUtc={DeletionRequestedAt:O}", audit.ChangeSummary);
         Assert.DoesNotContain("recovery-worker", audit.ChangeSummary, StringComparison.Ordinal);
@@ -60,7 +62,9 @@ public sealed class ArtifactImageDeletionFinalizationServiceTests
         Assert.Equal(DeletionRequestedAt, finalImage.DeletedAt);
         Assert.Equal("duplicate accession photo", finalImage.DeletionReason);
         var audit = await db.AuditEntries.SingleAsync();
-        Assert.Equal(PhotographyAuditActions.ImageDeletePrivileged, audit.ActionName);
+        Assert.Equal("Photography.Image.DeletePrivileged", audit.ActionName);
+        Assert.Equal("supervisor-1", audit.ActorUserId);
+        Assert.NotEqual("recovery-worker", audit.ActorUserId);
         Assert.Contains("ActorUserId=supervisor-1", audit.ChangeSummary);
         Assert.Contains($"DeletedAtUtc={DeletionRequestedAt:O}", audit.ChangeSummary);
         Assert.Contains("Reason=duplicate accession photo", audit.ChangeSummary);

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using MuseumSystem.Application.Common.Audit;
 using MuseumSystem.Application.Common.Persistence;
+using MuseumSystem.Application.Modules.Photography;
 using MuseumSystem.Domain.Modules.IdentityAccess;
 
 namespace MuseumSystem.Infrastructure.Audit;
@@ -11,11 +12,18 @@ public sealed class AuditWriter(IMuseumDbContext dbContext, IAuditActorContext a
     public async Task<string> WriteAsync(AuditWriteRequest request, CancellationToken cancellationToken = default)
     {
         var actor = actorContext.CurrentActor;
-        var entry = AuditEntry.Create(actor.UserId, request.ActionName, request.ModuleName, request.EntityName, request.EntityId, request.Summary, request.ChangeSummary);
+        var actorUserId = ShouldUseAttributedActor(request)
+            ? request.AttributedActorUserId!
+            : actor.UserId;
+        var entry = AuditEntry.Create(actorUserId, request.ActionName, request.ModuleName, request.EntityName, request.EntityId, request.Summary, request.ChangeSummary);
         dbContext.AuditEntries.Add(entry);
         await dbContext.SaveChangesAsync(cancellationToken);
         return entry.AuditEntryId.ToString();
     }
+
+    private static bool ShouldUseAttributedActor(AuditWriteRequest request) =>
+        !string.IsNullOrWhiteSpace(request.AttributedActorUserId)
+        && request.ActionName is PhotographyAuditActions.ImageDeleteByUploaderGrace or PhotographyAuditActions.ImageDeletePrivileged;
 }
 
 public sealed class HttpAuditActorContext(IHttpContextAccessor httpContextAccessor) : IAuditActorContext

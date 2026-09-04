@@ -88,7 +88,8 @@ public sealed class ArtifactImageDeletionFinalizationService(
                 nameof(ArtifactImage),
                 image.ArtifactImageId.ToString(),
                 "Permanently deleted artifact image under privileged authorization.",
-                $"ArtifactId={image.ArtifactId}; ArtifactImageId={image.ArtifactImageId}; ActorUserId={image.DeletedByUserId}; DeletedAtUtc={image.DeletedAt:O}; Reason={image.DeletionReason}");
+                $"ArtifactId={image.ArtifactId}; ArtifactImageId={image.ArtifactImageId}; ActorUserId={image.DeletedByUserId}; DeletedAtUtc={image.DeletedAt:O}; Reason={image.DeletionReason}",
+                image.DeletionRequestedByUserId);
         }
 
         return new AuditWriteRequest(
@@ -97,7 +98,8 @@ public sealed class ArtifactImageDeletionFinalizationService(
             nameof(ArtifactImage),
             image.ArtifactImageId.ToString(),
             "Permanently deleted artifact image under the uploader grace-period correction rule.",
-            $"ArtifactId={image.ArtifactId}; ArtifactImageId={image.ArtifactImageId}; ActorUserId={image.DeletedByUserId}; DeletedAtUtc={image.DeletedAt:O}; Rule=UploaderGracePeriod");
+            $"ArtifactId={image.ArtifactId}; ArtifactImageId={image.ArtifactImageId}; ActorUserId={image.DeletedByUserId}; DeletedAtUtc={image.DeletedAt:O}; Rule=UploaderGracePeriod",
+            image.DeletionRequestedByUserId);
     }
 
     private async Task ResolveDeleteCleanupRecoveriesAsync(Guid artifactImageId, DateTimeOffset resolvedAt, CancellationToken cancellationToken)
