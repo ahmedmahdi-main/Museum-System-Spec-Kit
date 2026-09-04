@@ -7,8 +7,11 @@ namespace MuseumSystem.Application.Modules.Photography;
 
 public sealed class ArtifactImageDeletionFinalizationService(
     IMuseumDbContext dbContext,
-    IAuditWriter auditWriter)
+    IAuditWriter auditWriter,
+    TimeProvider? clock = null)
 {
+    private readonly TimeProvider timeProvider = clock ?? TimeProvider.System;
+
     public async Task<ArtifactImageDeletionFinalizationResult> FinalizeAsync(
         ArtifactImageDeletionFinalizationRequest request,
         CancellationToken cancellationToken = default)
@@ -58,7 +61,7 @@ public sealed class ArtifactImageDeletionFinalizationService(
             await dbContext.SaveChangesAsync(cancellationToken);
 
             var auditReference = await auditWriter.WriteAsync(BuildAuditRequest(image, request), cancellationToken);
-            await ResolveDeleteCleanupRecoveriesAsync(image.ArtifactImageId, image.DeletedAt!.Value, cancellationToken);
+            await ResolveDeleteCleanupRecoveriesAsync(image.ArtifactImageId, timeProvider.GetUtcNow(), cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
             return ArtifactImageDeletionFinalizationResult.Completed(image.ArtifactImageId, image.ConcurrencyToken, auditReference);

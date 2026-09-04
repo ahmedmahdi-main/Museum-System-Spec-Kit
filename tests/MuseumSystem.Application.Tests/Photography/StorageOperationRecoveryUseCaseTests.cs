@@ -568,6 +568,196 @@ public sealed class StorageOperationRecoveryUseCaseTests
         Assert.Equal(movementCountBefore, await db.MovementRecords.CountAsync());
     }
 
+    // Z1. Resolution timestamp defect proof: DeletionRequestedAt != RetryAt; recovery ResolvedAt/LastAttemptedAt
+    // use the actual recovery/finalization time, not the original deletion-intent time; DeletedAt is unchanged;
+    // and the StorageRecoveryResolved audit reports the real Retrying -> Resolved transition (not Resolved -> Resolved).
+    [Fact]
+    public async Task Z1_recovery_resolution_time_uses_actual_finalization_time_not_original_deletion_intent_time()
+    {
+        Assert.NotEqual(DeletionRequestedAt, RetryAt);
+        await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
+        var (artifact, _, image) = await SeedDeletePendingImageAsync(db, requestedAt: DeletionRequestedAt);
+        var recovery = StorageOperationRecovery.Create(
+            StorageOperationRecoveryType.DeleteCleanup, artifact.ArtifactId, [image.OriginalObjectKey], "summary", image.ArtifactImageId);
+        db.StorageOperationRecoveries.Add(recovery);
+        await db.SaveChangesAsync();
+        var storage = new RecoveryFakeStorage();
+        var (useCase, _) = NewUseCase(RetryAt, db, storage: storage);
+
+        var result = await useCase.RetryAsync(new StorageOperationRecoveryRetryCommand(recovery.StorageOperationRecoveryId));
+
+        Assert.Equal(StorageOperationRecoveryRetryOutcome.Resolved, result.Outcome);
+        var finalImage = await db.ArtifactImages.SingleAsync();
+        Assert.Equal(DeletionRequestedAt, finalImage.DeletedAt);
+        Assert.Equal(DeletionRequestedAt, finalImage.DeletionRequestedAt);
+
+        var resolvedRecovery = await db.StorageOperationRecoveries.SingleAsync();
+        Assert.Equal(StorageOperationRecoveryStatus.Resolved, resolvedRecovery.Status);
+        Assert.Equal(RetryAt, resolvedRecovery.ResolvedAt);
+        Assert.Equal(RetryAt, resolvedRecovery.LastAttemptedAt);
+        Assert.NotEqual(DeletionRequestedAt, resolvedRecovery.ResolvedAt);
+
+        var resolvedAudit = await db.AuditEntries.SingleAsync(entry => entry.ActionName == PhotographyAuditActions.StorageRecoveryResolved);
+        Assert.Contains("PreviousStatus=Retrying", resolvedAudit.ChangeSummary);
+        Assert.Contains("NewStatus=Resolved", resolvedAudit.ChangeSummary);
+        Assert.Contains($"AttemptedAtUtc={RetryAt:O}", resolvedAudit.ChangeSummary);
+        Assert.Contains($"ResolvedAtUtc={RetryAt:O}", resolvedAudit.ChangeSummary);
+        Assert.DoesNotContain("Resolved -> Resolved", resolvedAudit.ChangeSummary);
+    }
+
+    // Z2. Duplicate DeleteCleanup rows: every row resolved by finalization receives the actual finalization
+    // time, never the original deletion-intent time.
+    [Fact]
+    public async Task Z2_duplicate_delete_cleanup_rows_all_receive_actual_finalization_time()
+    {
+        await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
+        var (artifact, _, image) = await SeedDeletePendingImageAsync(db, requestedAt: DeletionRequestedAt);
+        var firstRecovery = StorageOperationRecovery.Create(
+            StorageOperationRecoveryType.DeleteCleanup, artifact.ArtifactId, [image.OriginalObjectKey], "first attempt", image.ArtifactImageId);
+        var secondRecovery = StorageOperationRecovery.Create(
+            StorageOperationRecoveryType.DeleteCleanup, artifact.ArtifactId, [image.OriginalObjectKey], "second attempt", image.ArtifactImageId);
+        db.StorageOperationRecoveries.AddRange(firstRecovery, secondRecovery);
+        await db.SaveChangesAsync();
+        var storage = new RecoveryFakeStorage();
+        var (useCase, _) = NewUseCase(RetryAt, db, storage: storage);
+
+        await useCase.RetryAsync(new StorageOperationRecoveryRetryCommand(firstRecovery.StorageOperationRecoveryId));
+
+        var rows = await db.StorageOperationRecoveries.ToListAsync();
+        Assert.Equal(2, rows.Count);
+        Assert.All(rows, row =>
+        {
+            Assert.Equal(StorageOperationRecoveryStatus.Resolved, row.Status);
+            Assert.Equal(RetryAt, row.ResolvedAt);
+            Assert.NotEqual(DeletionRequestedAt, row.ResolvedAt);
+        });
+    }
+
+    // Z3. UploadCleanup DeleteObjectAsync throws an unexpected exception carrying deliberately sensitive-looking
+    // text (bucket/endpoint/object key/server path); the failure is fully contained.
+    [Fact]
+    public async Task Z3_upload_cleanup_unexpected_delete_exception_is_contained_and_safe()
+    {
+        await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
+        var artifact = PhotographyUploadApplicationTestHost.AddArtifact(db);
+        var key = Key("boom");
+        var recovery = StorageOperationRecovery.Create(StorageOperationRecoveryType.UploadCleanup, artifact.ArtifactId, [key], "Storage cleanup could not be completed.");
+        db.StorageOperationRecoveries.Add(recovery);
+        await db.SaveChangesAsync();
+        var storage = new RecoveryFakeStorage();
+        const string sensitiveMessage = "Connection to bucket 'museum-prod-bucket' at endpoint https://storage.internal:9000 failed for object key artifact-images/abc/original.jpg under path /srv/minio/data";
+        storage.ThrowOnDelete(key, new InvalidOperationException(sensitiveMessage));
+        var (useCase, _) = NewUseCase(RetryAt, db, storage: storage);
+
+        var result = await useCase.RetryAsync(new StorageOperationRecoveryRetryCommand(recovery.StorageOperationRecoveryId));
+
+        Assert.Equal(StorageOperationRecoveryRetryOutcome.RetryFailed, result.Outcome);
+        Assert.False(result.Succeeded);
+        AssertNoSensitiveLeak(result.StaffFacingMessage);
+        var persisted = await db.StorageOperationRecoveries.SingleAsync();
+        Assert.Equal(StorageOperationRecoveryStatus.FailedNeedsAttention, persisted.Status);
+        AssertNoSensitiveLeak(persisted.FailureSummary);
+        var consistencyAudit = await db.AuditEntries.SingleAsync(entry => entry.ActionName == PhotographyAuditActions.StorageConsistencyIssue);
+        AssertNoSensitiveLeak(consistencyAudit.Summary);
+        AssertNoSensitiveLeak(consistencyAudit.ChangeSummary ?? string.Empty);
+    }
+
+    // Z4. DeleteCleanup StatAsync throws an unexpected exception; same safe controlled behavior.
+    [Fact]
+    public async Task Z4_delete_cleanup_unexpected_stat_exception_is_contained_and_safe()
+    {
+        await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
+        var (artifact, _, image) = await SeedDeletePendingImageAsync(db);
+        var recovery = StorageOperationRecovery.Create(
+            StorageOperationRecoveryType.DeleteCleanup, artifact.ArtifactId, [image.OriginalObjectKey], "summary", image.ArtifactImageId);
+        db.StorageOperationRecoveries.Add(recovery);
+        await db.SaveChangesAsync();
+        var storage = new RecoveryFakeStorage();
+        const string sensitiveMessage = "provider endpoint https://storage.internal:9000 unreachable for bucket private-artifacts";
+        storage.ThrowOnStat(image.OriginalObjectKey, new InvalidOperationException(sensitiveMessage));
+        var (useCase, _) = NewUseCase(RetryAt, db, storage: storage);
+
+        var result = await useCase.RetryAsync(new StorageOperationRecoveryRetryCommand(recovery.StorageOperationRecoveryId));
+
+        Assert.Equal(StorageOperationRecoveryRetryOutcome.RetryFailed, result.Outcome);
+        Assert.False(result.Succeeded);
+        AssertNoSensitiveLeak(result.StaffFacingMessage);
+        var persisted = await db.StorageOperationRecoveries.SingleAsync();
+        Assert.Equal(StorageOperationRecoveryStatus.FailedNeedsAttention, persisted.Status);
+        AssertNoSensitiveLeak(persisted.FailureSummary);
+        Assert.Empty(storage.DeleteObjectCalls);
+        var finalImage = await db.ArtifactImages.SingleAsync();
+        Assert.Equal(ArtifactImageStatus.DeletePending, finalImage.Status);
+        var consistencyAudit = await db.AuditEntries.SingleAsync(entry => entry.ActionName == PhotographyAuditActions.StorageConsistencyIssue);
+        AssertNoSensitiveLeak(consistencyAudit.ChangeSummary ?? string.Empty);
+    }
+
+    // Z5. DeleteCleanup DeleteObjectAsync throws an unexpected exception; same safe controlled behavior.
+    [Fact]
+    public async Task Z5_delete_cleanup_unexpected_delete_exception_is_contained_and_safe()
+    {
+        await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
+        var (artifact, _, image) = await SeedDeletePendingImageAsync(db);
+        var recovery = StorageOperationRecovery.Create(
+            StorageOperationRecoveryType.DeleteCleanup, artifact.ArtifactId, [image.OriginalObjectKey], "summary", image.ArtifactImageId);
+        db.StorageOperationRecoveries.Add(recovery);
+        await db.SaveChangesAsync();
+        var storage = new RecoveryFakeStorage();
+        storage.SeedExisting(image.OriginalObjectKey);
+        const string sensitiveMessage = "credential AKIAEXAMPLE rejected for object under server path /srv/minio/data/private-artifacts";
+        storage.ThrowOnDelete(image.OriginalObjectKey, new InvalidOperationException(sensitiveMessage));
+        var (useCase, _) = NewUseCase(RetryAt, db, storage: storage);
+
+        var result = await useCase.RetryAsync(new StorageOperationRecoveryRetryCommand(recovery.StorageOperationRecoveryId));
+
+        Assert.Equal(StorageOperationRecoveryRetryOutcome.RetryFailed, result.Outcome);
+        Assert.False(result.Succeeded);
+        AssertNoSensitiveLeak(result.StaffFacingMessage);
+        var persisted = await db.StorageOperationRecoveries.SingleAsync();
+        Assert.Equal(StorageOperationRecoveryStatus.FailedNeedsAttention, persisted.Status);
+        AssertNoSensitiveLeak(persisted.FailureSummary);
+        var finalImage = await db.ArtifactImages.SingleAsync();
+        Assert.Equal(ArtifactImageStatus.DeletePending, finalImage.Status);
+    }
+
+    // Z6. OperationCanceledException is rethrown, not converted into FailedNeedsAttention; a recovery left
+    // Retrying after cancellation remains retryable on the next attempt.
+    [Fact]
+    public async Task Z6_operation_canceled_exception_is_rethrown_and_recovery_remains_retryable()
+    {
+        await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
+        var artifact = PhotographyUploadApplicationTestHost.AddArtifact(db);
+        var key = Key("cancel-me");
+        var recovery = StorageOperationRecovery.Create(StorageOperationRecoveryType.UploadCleanup, artifact.ArtifactId, [key], "Storage cleanup could not be completed.");
+        db.StorageOperationRecoveries.Add(recovery);
+        await db.SaveChangesAsync();
+        var storage = new RecoveryFakeStorage();
+        storage.ThrowOnDelete(key, new OperationCanceledException("cancelled"));
+        var (useCase, _) = NewUseCase(RetryAt, db, storage: storage);
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            useCase.RetryAsync(new StorageOperationRecoveryRetryCommand(recovery.StorageOperationRecoveryId)));
+
+        var persisted = await db.StorageOperationRecoveries.SingleAsync();
+        Assert.Equal(StorageOperationRecoveryStatus.Retrying, persisted.Status);
+        Assert.NotEqual(StorageOperationRecoveryStatus.FailedNeedsAttention, persisted.Status);
+
+        var recoveredStorage = new RecoveryFakeStorage();
+        var (retryUseCase, _) = NewUseCase(RetryAt.AddMinutes(5), db, storage: recoveredStorage);
+        var retryResult = await retryUseCase.RetryAsync(new StorageOperationRecoveryRetryCommand(recovery.StorageOperationRecoveryId));
+
+        Assert.Equal(StorageOperationRecoveryRetryOutcome.Resolved, retryResult.Outcome);
+    }
+
+    private static void AssertNoSensitiveLeak(string text)
+    {
+        string[] sensitiveFragments = ["museum-prod-bucket", "storage.internal", "srv/minio", "private-artifacts", "AKIAEXAMPLE", "InvalidOperationException", "artifact-images/abc"];
+        foreach (var fragment in sensitiveFragments)
+        {
+            Assert.DoesNotContain(fragment, text, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     private static ImageStorageObjectKey Key(string suffix) =>
         ImageStorageObjectKey.Create($"artifact-images/{Guid.NewGuid():N}/{suffix}");
 
@@ -638,8 +828,8 @@ public sealed class StorageOperationRecoveryUseCaseTests
         storage ??= new RecoveryFakeStorage();
         var actorContext = new TestAuditActorContext(actorUserId);
         var auditWriter = new AuditWriter(context, actorContext);
-        var finalizationService = new ArtifactImageDeletionFinalizationService(context, auditWriter);
         var clock = new FixedTimeProvider(now);
+        var finalizationService = new ArtifactImageDeletionFinalizationService(context, auditWriter, clock);
         var useCase = new StorageOperationRecoveryUseCase(context, storage, finalizationService, auditWriter, clock);
         return (useCase, storage);
     }
@@ -649,6 +839,8 @@ internal sealed class RecoveryFakeStorage : IArtifactImageStorage
 {
     private readonly HashSet<string> existingKeys = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ArtifactImageStorageResultKind> deleteOverrides = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Exception> statThrows = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Exception> deleteThrows = new(StringComparer.Ordinal);
 
     public List<ImageStorageObjectKey> StatCalls { get; } = [];
     public List<ImageStorageObjectKey> DeleteObjectCalls { get; } = [];
@@ -657,9 +849,18 @@ internal sealed class RecoveryFakeStorage : IArtifactImageStorage
 
     public void OverrideDelete(ImageStorageObjectKey key, ArtifactImageStorageResultKind kind) => deleteOverrides[key.Value] = kind;
 
+    public void ThrowOnStat(ImageStorageObjectKey key, Exception exception) => statThrows[key.Value] = exception;
+
+    public void ThrowOnDelete(ImageStorageObjectKey key, Exception exception) => deleteThrows[key.Value] = exception;
+
     public ValueTask<ArtifactImageStorageStatResult> StatAsync(ImageStorageObjectKey objectKey, CancellationToken cancellationToken = default)
     {
         StatCalls.Add(objectKey);
+        if (statThrows.TryGetValue(objectKey.Value, out var exception))
+        {
+            throw exception;
+        }
+
         return ValueTask.FromResult(existingKeys.Contains(objectKey.Value)
             ? ArtifactImageStorageStatResult.Success(Metadata(objectKey))
             : ArtifactImageStorageStatResult.Failed(ArtifactImageStorageResultKind.NotFound, "NotFound", "Stored object was not found."));
@@ -668,6 +869,11 @@ internal sealed class RecoveryFakeStorage : IArtifactImageStorage
     public ValueTask<ArtifactImageStorageDeleteResult> DeleteObjectAsync(ImageStorageObjectKey objectKey, CancellationToken cancellationToken = default)
     {
         DeleteObjectCalls.Add(objectKey);
+        if (deleteThrows.TryGetValue(objectKey.Value, out var exception))
+        {
+            throw exception;
+        }
+
         existingKeys.Remove(objectKey.Value);
 
         if (deleteOverrides.TryGetValue(objectKey.Value, out var kind) && kind != ArtifactImageStorageResultKind.Success)

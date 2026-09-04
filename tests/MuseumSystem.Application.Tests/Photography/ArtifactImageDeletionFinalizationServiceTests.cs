@@ -13,6 +13,7 @@ namespace MuseumSystem.Application.Tests.Photography;
 public sealed class ArtifactImageDeletionFinalizationServiceTests
 {
     private static readonly DateTimeOffset DeletionRequestedAt = new(2026, 8, 25, 12, 5, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset RecoveryAt = new(2026, 8, 25, 13, 30, 0, TimeSpan.Zero);
 
     [Fact]
     public async Task Delete_pending_grace_image_finalizes_to_deleted_with_persisted_intent_attribution()
@@ -257,7 +258,11 @@ public sealed class ArtifactImageDeletionFinalizationServiceTests
         Assert.Equal(ArtifactImageDeletionFinalizationOutcome.Completed, result.Outcome);
         var storedRecovery = await db.StorageOperationRecoveries.SingleAsync();
         Assert.Equal(StorageOperationRecoveryStatus.Resolved, storedRecovery.Status);
-        Assert.Equal(DeletionRequestedAt, storedRecovery.ResolvedAt);
+        Assert.Equal(RecoveryAt, storedRecovery.ResolvedAt);
+        Assert.Equal(RecoveryAt, storedRecovery.LastAttemptedAt);
+        Assert.NotEqual(DeletionRequestedAt, storedRecovery.ResolvedAt);
+        var finalImage = await db.ArtifactImages.SingleAsync();
+        Assert.Equal(DeletionRequestedAt, finalImage.DeletedAt);
     }
 
     [Fact]
@@ -287,12 +292,13 @@ public sealed class ArtifactImageDeletionFinalizationServiceTests
     private static ArtifactImageDeletionFinalizationService NewService(
         MuseumDbContext db,
         IMuseumDbContext? persistenceContext = null,
-        string actorUserId = "photographer-1")
+        string actorUserId = "photographer-1",
+        TimeProvider? clock = null)
     {
         var context = persistenceContext ?? db;
         var actorContext = new TestAuditActorContext(actorUserId);
         var auditWriter = new AuditWriter(context, actorContext);
-        return new ArtifactImageDeletionFinalizationService(context, auditWriter);
+        return new ArtifactImageDeletionFinalizationService(context, auditWriter, clock ?? new FixedTimeProvider(RecoveryAt));
     }
 
     private static (Artifact Artifact, PhotographySet Set, ArtifactImage Image) SeedDeletePendingImage(

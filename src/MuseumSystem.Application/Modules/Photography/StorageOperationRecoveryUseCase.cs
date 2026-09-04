@@ -77,7 +77,20 @@ public sealed class StorageOperationRecoveryUseCase(
         var allCleaned = true;
         foreach (var objectKey in recovery.ObjectKeys)
         {
-            var deleteResult = await storage.DeleteObjectAsync(objectKey, cancellationToken);
+            ArtifactImageStorageDeleteResult deleteResult;
+            try
+            {
+                deleteResult = await storage.DeleteObjectAsync(objectKey, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception)
+            {
+                return await MarkFailedAsync(recovery, attemptedAt, StorageOperationRecoveryRetryOutcome.RetryFailed, cancellationToken, UnexpectedStorageFailureSummary);
+            }
+
             if (!IsCleanedOutcome(deleteResult.Kind))
             {
                 allCleaned = false;
@@ -101,10 +114,36 @@ public sealed class StorageOperationRecoveryUseCase(
 
         foreach (var objectKey in recovery.ObjectKeys)
         {
-            var stat = await storage.StatAsync(objectKey, cancellationToken);
+            ArtifactImageStorageStatResult stat;
+            try
+            {
+                stat = await storage.StatAsync(objectKey, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception)
+            {
+                return await MarkFailedAsync(recovery, attemptedAt, StorageOperationRecoveryRetryOutcome.RetryFailed, cancellationToken, UnexpectedStorageFailureSummary);
+            }
+
             if (stat.Exists)
             {
-                var deleteResult = await storage.DeleteObjectAsync(objectKey, cancellationToken);
+                ArtifactImageStorageDeleteResult deleteResult;
+                try
+                {
+                    deleteResult = await storage.DeleteObjectAsync(objectKey, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception)
+                {
+                    return await MarkFailedAsync(recovery, attemptedAt, StorageOperationRecoveryRetryOutcome.RetryFailed, cancellationToken, UnexpectedStorageFailureSummary);
+                }
+
                 if (!IsCleanedOutcome(deleteResult.Kind))
                 {
                     return await MarkFailedAsync(recovery, attemptedAt, StorageOperationRecoveryRetryOutcome.RetryFailed, cancellationToken);
@@ -156,7 +195,7 @@ public sealed class StorageOperationRecoveryUseCase(
         return finalizationResult.Outcome switch
         {
             ArtifactImageDeletionFinalizationOutcome.Completed or ArtifactImageDeletionFinalizationOutcome.AlreadyFinalized =>
-                await ReloadAndResolveAsync(recovery.StorageOperationRecoveryId, attemptedAt, cancellationToken),
+                await ReloadAndResolveAsync(recovery.StorageOperationRecoveryId, StorageOperationRecoveryStatus.Retrying, attemptedAt, cancellationToken),
             ArtifactImageDeletionFinalizationOutcome.Conflict =>
                 await ReloadAfterFinalizationConflictAsync(recovery.StorageOperationRecoveryId, cancellationToken),
             ArtifactImageDeletionFinalizationOutcome.InvalidState =>
@@ -165,8 +204,17 @@ public sealed class StorageOperationRecoveryUseCase(
         };
     }
 
+    /// <summary>
+    /// Reloads the current row after a linked <see cref="ArtifactImageDeletionFinalizationService"/> call.
+    /// That call may have already auto-resolved this exact row (its Completed path resolves every open
+    /// DeleteCleanup row for the image) - in that case the row's real transition for THIS retry attempt was
+    /// still Retrying -> Resolved, so <paramref name="previousStatusForThisAttempt"/> (always Retrying, the
+    /// status persisted before finalization was invoked) is used for the audit rather than the already-mutated
+    /// post-reload status, to avoid reporting a misleading Resolved -> Resolved transition.
+    /// </summary>
     private async Task<StorageOperationRecoveryRetryResult> ReloadAndResolveAsync(
         Guid recoveryId,
+        StorageOperationRecoveryStatus previousStatusForThisAttempt,
         DateTimeOffset attemptedAt,
         CancellationToken cancellationToken)
     {
@@ -183,7 +231,7 @@ public sealed class StorageOperationRecoveryUseCase(
             return await MarkResolvedAsync(recovery, attemptedAt, cancellationToken);
         }
 
-        await WriteAuditAsync(PhotographyAuditActions.StorageRecoveryResolved, recovery, recovery.Status, attemptedAt, cancellationToken);
+        await WriteAuditAsync(PhotographyAuditActions.StorageRecoveryResolved, recovery, previousStatusForThisAttempt, attemptedAt, cancellationToken);
         return StorageOperationRecoveryRetryResult.Resolved(recoveryId);
     }
 
@@ -222,10 +270,11 @@ public sealed class StorageOperationRecoveryUseCase(
         StorageOperationRecovery recovery,
         DateTimeOffset attemptedAt,
         StorageOperationRecoveryRetryOutcome outcome,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? domainSummaryOverride = null)
     {
         var previousStatus = recovery.Status;
-        recovery.MarkFailedNeedsAttention(attemptedAt, DomainSummaryFor(recovery.OperationType));
+        recovery.MarkFailedNeedsAttention(attemptedAt, domainSummaryOverride ?? DomainSummaryFor(recovery.OperationType));
 
         var failure = await PersistTransitionAsync(recovery, PhotographyAuditActions.StorageConsistencyIssue, previousStatus, attemptedAt, cancellationToken);
         if (failure is not null)
@@ -305,6 +354,9 @@ public sealed class StorageOperationRecoveryUseCase(
 
     private static bool IsCleanedOutcome(ArtifactImageStorageResultKind kind) =>
         kind is ArtifactImageStorageResultKind.Success or ArtifactImageStorageResultKind.NotFound;
+
+    private const string UnexpectedStorageFailureSummary =
+        "Storage recovery operation failed unexpectedly and requires internal attention.";
 
     private static string DomainSummaryFor(StorageOperationRecoveryType operationType) => operationType switch
     {
