@@ -251,7 +251,7 @@
 
 - [x] T110 [P] [US6] Add application tests for object write succeeds/DB commit fails, cleanup succeeds, cleanup fails creating durable StorageOperationRecovery, and prior file successes surviving later failures in tests/MuseumSystem.Application.Tests/Photography/PhotographyUploadRecoveryUseCaseTests.cs
 - [x] T111 [P] [US6] Add application tests for object deletion succeeds/DB finalization fails, pending metadata recovery finalizing idempotently, and controlled not-full-success reporting in tests/MuseumSystem.Application.Tests/Photography/PhotographyDeletionRecoveryUseCaseTests.cs
-- [ ] T112 [P] [US6] Add application tests for internal StorageOperationRecovery retry behavior, audit events, no sixth Photography permission, and staff-safe unavailable messages in tests/MuseumSystem.Application.Tests/Photography/StorageOperationRecoveryUseCaseTests.cs
+- [x] T112 [P] [US6] Add application tests for internal StorageOperationRecovery retry behavior, audit events, no sixth Photography permission, and staff-safe unavailable messages in tests/MuseumSystem.Application.Tests/Photography/StorageOperationRecoveryUseCaseTests.cs
 - [ ] T113 [P] [US6] Add PostgreSQL integration tests for durable StorageOperationRecovery rows, retry state transitions, unresolved recovery retention blocking idempotency cleanup, and recovery audit metadata in tests/MuseumSystem.Integration.Tests/Photography/StorageOperationRecoveryPersistenceTests.cs
 - [ ] T114 [P] [US6] Add object-storage integration tests for metadata failure cleanup, cleanup failure recovery, missing object detection, MinIO restart around operations, and provider error mapping in tests/MuseumSystem.Integration.Tests/Photography/StorageConsistencyRecoveryTests.cs
 - [ ] T115 [P] [US6] Add deployment portability tests proving Domain/Application have no MinIO SDK, bucket, endpoint, Windows path, Docker, WSL, or Linux-specific dependency in tests/MuseumSystem.Integration.Tests/Photography/PhotographyInfrastructureBoundaryTests.cs
@@ -260,7 +260,7 @@
 ### Implementation for User Story 6
 
 - [x] T117 [US6] Implement upload consistency coordinator for storage-before-metadata, object-exists verification, cleanup, recovery creation, and per-file outcome finalization in src/MuseumSystem.Application/Modules/Photography/PhotographyUploadConsistencyService.cs
-- [ ] T118 [US6] Implement StorageOperationRecovery internal retry use case with audit and no staff-facing recovery permission in src/MuseumSystem.Application/Modules/Photography/StorageOperationRecoveryUseCase.cs
+- [x] T118 [US6] Implement StorageOperationRecovery internal retry use case with audit and no staff-facing recovery permission in src/MuseumSystem.Application/Modules/Photography/StorageOperationRecoveryUseCase.cs
 - [ ] T119 [US6] Implement provider-neutral storage health and error classification service for controlled retry/unavailable behavior in src/MuseumSystem.Application/Modules/Photography/ArtifactImageStorageHealthService.cs
 - [ ] T120 [US6] Implement MinIO retry/error translation, misconfiguration handling, and restart-safe behavior behind the storage abstraction in src/MuseumSystem.Infrastructure/Photography/Storage/MinioStorageErrorMapper.cs
 - [ ] T121 [US6] Document provider-neutral migration, configuration assumptions, and future coordinated recovery requirement for PostgreSQL Photography metadata plus object-storage originals/derivatives without backup/HA implementation in docs/operations/photography-storage-provider.md
