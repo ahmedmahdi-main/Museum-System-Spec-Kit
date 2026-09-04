@@ -50,11 +50,9 @@ internal static class DocumentationRecordMapper
         {
             var blockedReason = activeTemplateVersion is null
                 ? "No Active documentation template is available for this Artifact Category."
-                : !isAvailableToDocumentation
-                    ? "The artifact is not currently held by Documentation."
-                    : !permissions.CanCreate
-                        ? "You are not authorized to create documentation records."
-                        : null;
+                : !permissions.CanCreate
+                    ? "You are not authorized to create documentation records."
+                    : null;
 
             return new DocumentationActionAvailabilityDto(
                 blockedReason is null,
@@ -72,11 +70,9 @@ internal static class DocumentationRecordMapper
             return new DocumentationActionAvailabilityDto(false, "The artifact already has a Completed documentation record.", false, false, null, false, null, true);
         }
 
-        var draftBlockedReason = !isAvailableToDocumentation
-            ? "The artifact is not currently held by Documentation."
-            : !permissions.CanEdit
-                ? "You are not authorized to edit documentation records."
-                : null;
+        var draftBlockedReason = !permissions.CanEdit
+            ? "You are not authorized to edit documentation records."
+            : null;
 
         var completeBlockedReason = draftBlockedReason ?? (!permissions.CanComplete
             ? "You are not authorized to complete documentation records."

@@ -5,7 +5,7 @@ namespace MuseumSystem.Web.AcceptanceTests.Documentation;
 public sealed class DocumentationCustodyFlowTests
 {
     [Fact]
-    public void Workspace_and_edit_pages_surface_custody_template_authorization_and_stale_state_messages()
+    public void Workspace_and_edit_pages_surface_template_authorization_and_stale_state_messages()
     {
         var root = FindRepositoryRoot();
         var pagesRoot = Path.Combine(root.FullName, "src", "MuseumSystem.Web", "Components", "Pages", "Documentation");
@@ -15,9 +15,9 @@ public sealed class DocumentationCustodyFlowTests
         Assert.Contains("CreateBlockedReason", index);
         Assert.Contains("DraftEditBlockedReason", index);
         Assert.Contains("No Active", index + edit);
-        Assert.Contains("not currently held by Documentation", index + edit);
         Assert.Contains("not authorized", index + edit);
         Assert.Contains("ConcurrencyConflict", index + edit);
+        Assert.Contains("IsAvailableToDocumentation", index);
     }
 
     [Fact]

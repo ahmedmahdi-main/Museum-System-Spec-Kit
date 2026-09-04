@@ -161,10 +161,10 @@ public sealed class DocumentationConcurrencyUseCaseTests
         };
 
     private static SaveDocumentationDraftUseCase NewSaveDraftUseCase(Infrastructure.Persistence.MuseumDbContext db, RecordingAuditWriter audit) =>
-        new(db, new DocumentationAvailabilityService(), audit, DocumentationApplicationTestHost.ActorContext());
+        new(db, audit, DocumentationApplicationTestHost.ActorContext());
 
     private static CompleteDocumentationRecordUseCase NewCompleteUseCase(Infrastructure.Persistence.MuseumDbContext db, RecordingAuditWriter audit) =>
-        new(db, new DocumentationAvailabilityService(), audit, DocumentationApplicationTestHost.ActorContext());
+        new(db, audit, DocumentationApplicationTestHost.ActorContext());
 
     private static void AssertConcurrencyConflict<T>(UseCaseResult<T> result)
     {

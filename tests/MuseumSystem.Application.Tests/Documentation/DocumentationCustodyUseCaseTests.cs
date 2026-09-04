@@ -9,7 +9,7 @@ public sealed class DocumentationCustodyUseCaseTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task Create_documentation_requires_artifact_to_be_held_by_documentation(bool heldByDocumentation)
+    public async Task Create_documentation_succeeds_regardless_of_custody_holder(bool heldByDocumentation)
     {
         await using var db = DocumentationApplicationTestHost.CreateDbContext();
         var category = DocumentationApplicationTestHost.AddCategory(db);
@@ -27,13 +27,16 @@ public sealed class DocumentationCustodyUseCaseTests
         DocumentationApplicationTestHost.AddActiveTemplateVersion(db, category);
         await db.SaveChangesAsync();
 
+        var holderBefore = artifact.CurrentHolderType;
+        var locationBefore = artifact.CurrentLocationId;
+        var movementCountBefore = db.MovementRecords.Count();
+
         var result = await new CreateDocumentationRecordUseCase(db, new DocumentationTemplateResolver(db), new DocumentationAvailabilityService(), new RecordingAuditWriter(), DocumentationApplicationTestHost.ActorContext())
             .CreateDocumentationRecord(new CreateDocumentationRecordRequest(artifact.ArtifactId));
 
-        Assert.Equal(heldByDocumentation, result.Succeeded);
-        if (!heldByDocumentation)
-        {
-            Assert.Equal("DocumentationRecord.CustodyRequired", result.ValidationIssues[0].Code);
-        }
+        Assert.True(result.Succeeded);
+        Assert.Equal(holderBefore, artifact.CurrentHolderType);
+        Assert.Equal(locationBefore, artifact.CurrentLocationId);
+        Assert.Equal(movementCountBefore, db.MovementRecords.Count());
     }
 }

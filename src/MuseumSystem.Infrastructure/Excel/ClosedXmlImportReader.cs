@@ -5,14 +5,18 @@ namespace MuseumSystem.Infrastructure.Excel;
 
 public sealed class ClosedXmlImportReader : IExcelImportReader
 {
-    public Task<IReadOnlyList<ImportSpreadsheetRow>> ReadRowsAsync(Stream content, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ImportSpreadsheetRow>> ReadRowsAsync(Stream content, CancellationToken cancellationToken = default)
     {
-        using var workbook = new XLWorkbook(content);
+        using var buffered = new MemoryStream();
+        await content.CopyToAsync(buffered, cancellationToken);
+        buffered.Position = 0;
+
+        using var workbook = new XLWorkbook(buffered);
         var worksheet = workbook.Worksheets.First();
         var usedRange = worksheet.RangeUsed();
         if (usedRange is null)
         {
-            return Task.FromResult<IReadOnlyList<ImportSpreadsheetRow>>([]);
+            return [];
         }
 
         var headerRow = usedRange.FirstRow();
@@ -39,7 +43,7 @@ public sealed class ClosedXmlImportReader : IExcelImportReader
             }
         }
 
-        return Task.FromResult<IReadOnlyList<ImportSpreadsheetRow>>(rows);
+        return rows;
     }
 
     private static string? GetCell(IXLRangeRow row, IReadOnlyDictionary<string, int> headerMap, params string[] keys)

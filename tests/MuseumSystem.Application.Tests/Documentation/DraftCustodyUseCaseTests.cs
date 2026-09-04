@@ -7,7 +7,7 @@ namespace MuseumSystem.Application.Tests.Documentation;
 public sealed class DraftCustodyUseCaseTests
 {
     [Fact]
-    public async Task Draft_save_is_blocked_when_artifact_is_no_longer_held_by_documentation()
+    public async Task Draft_save_succeeds_when_artifact_is_no_longer_held_by_documentation_without_changing_custody()
     {
         await using var db = DocumentationApplicationTestHost.CreateDbContext();
         var category = DocumentationApplicationTestHost.AddCategory(db);
@@ -22,11 +22,19 @@ public sealed class DraftCustodyUseCaseTests
         artifact.ReturnToStorage(storage);
         await db.SaveChangesAsync();
 
-        var result = await new SaveDocumentationDraftUseCase(db, new DocumentationAvailabilityService(), new RecordingAuditWriter(), DocumentationApplicationTestHost.ActorContext())
+        var statusBefore = artifact.CurrentStatus;
+        var holderBefore = artifact.CurrentHolderType;
+        var locationBefore = artifact.CurrentLocationId;
+        var movementCountBefore = db.MovementRecords.Count();
+
+        var result = await new SaveDocumentationDraftUseCase(db, new RecordingAuditWriter(), DocumentationApplicationTestHost.ActorContext())
             .SaveDocumentationDraft(new SaveDocumentationDraftRequest(record.DocumentationRecordId, record.ConcurrencyToken, DocumentationApplicationTestHost.RequiredTextValue()));
 
-        Assert.False(result.Succeeded);
-        Assert.Equal("DocumentationRecord.CustodyRequired", result.ValidationIssues[0].Code);
+        Assert.True(result.Succeeded);
         Assert.Equal(DocumentationRecordStatus.Draft, record.Status);
+        Assert.Equal(statusBefore, artifact.CurrentStatus);
+        Assert.Equal(holderBefore, artifact.CurrentHolderType);
+        Assert.Equal(locationBefore, artifact.CurrentLocationId);
+        Assert.Equal(movementCountBefore, db.MovementRecords.Count());
     }
 }

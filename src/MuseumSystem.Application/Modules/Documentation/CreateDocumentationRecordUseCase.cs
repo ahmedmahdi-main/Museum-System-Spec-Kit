@@ -31,11 +31,6 @@ public sealed class CreateDocumentationRecordUseCase(
             return UseCaseResult<DocumentationRecordEditDto>.Failure(new ValidationIssue("DocumentationRecord.AlreadyExists", "The artifact already has a Documentation Record."));
         }
 
-        if (!availabilityService.IsAvailableToDocumentation(artifact))
-        {
-            return UseCaseResult<DocumentationRecordEditDto>.Failure(new ValidationIssue("DocumentationRecord.CustodyRequired", "The artifact is not currently held by Documentation."));
-        }
-
         var resolution = await templateResolver.ResolveActiveVersionForCategory(artifact.CategoryId, cancellationToken);
         if (resolution is null)
         {

@@ -37,7 +37,7 @@ public sealed class DocumentationQuickstartTests
     }
 
     [Fact]
-    public void Custody_separation_keeps_draft_writes_sensitive_and_completed_correction_independent()
+    public void Custody_is_informational_only_and_does_not_gate_create_save_complete_or_correction()
     {
         var root = RepositoryRoot();
         var application = DocumentationApplicationRoot(root);
@@ -48,9 +48,9 @@ public sealed class DocumentationQuickstartTests
         var correction = Read(application, "CorrectCompletedDocumentationUseCase.cs");
         var pageSources = string.Concat(Directory.GetFiles(pages.FullName, "*.razor").Select(File.ReadAllText));
 
-        Assert.Contains("availabilityService.IsAvailableToDocumentation", create);
-        Assert.Contains("availabilityService.IsAvailableToDocumentation", save);
-        Assert.Contains("availabilityService.IsAvailableToDocumentation", complete);
+        Assert.DoesNotContain("CustodyRequired", create);
+        Assert.DoesNotContain("CustodyRequired", save);
+        Assert.DoesNotContain("CustodyRequired", complete);
         Assert.DoesNotContain("DocumentationAvailabilityService", correction);
         Assert.DoesNotContain("DeliverArtifacts", pageSources);
         Assert.DoesNotContain("ReturnArtifacts", pageSources);

@@ -9,7 +9,6 @@ namespace MuseumSystem.Application.Modules.Documentation;
 
 public sealed class SaveDocumentationDraftUseCase(
     IMuseumDbContext dbContext,
-    DocumentationAvailabilityService availabilityService,
     IAuditWriter auditWriter,
     IAuditActorContext actorContext)
 {
@@ -30,11 +29,6 @@ public sealed class SaveDocumentationDraftUseCase(
         if (record.Status != DocumentationRecordStatus.Draft)
         {
             return UseCaseResult<DocumentationRecordSummaryDto>.Failure(new ValidationIssue("DocumentationRecord.NotDraft", "Only Draft documentation records can be saved."));
-        }
-
-        if (!availabilityService.IsAvailableToDocumentation(artifact))
-        {
-            return UseCaseResult<DocumentationRecordSummaryDto>.Failure(new ValidationIssue("DocumentationRecord.CustodyRequired", "The artifact is not currently held by Documentation."));
         }
 
         try

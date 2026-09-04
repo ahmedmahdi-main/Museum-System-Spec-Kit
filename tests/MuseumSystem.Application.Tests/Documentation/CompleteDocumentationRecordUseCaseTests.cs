@@ -76,5 +76,5 @@ public sealed class CompleteDocumentationRecordUseCaseTests
     }
 
     private static CompleteDocumentationRecordUseCase NewUseCase(Infrastructure.Persistence.MuseumDbContext db, RecordingAuditWriter? audit = null) =>
-        new(db, new DocumentationAvailabilityService(), audit ?? new RecordingAuditWriter(), DocumentationApplicationTestHost.ActorContext());
+        new(db, audit ?? new RecordingAuditWriter(), DocumentationApplicationTestHost.ActorContext());
 }

@@ -8,7 +8,7 @@ namespace MuseumSystem.Application.Tests.Documentation;
 public sealed class DocumentationCustodyBoundaryTests
 {
     [Fact]
-    public async Task Complete_rejected_outside_documentation_custody_without_revision_or_custody_changes()
+    public async Task Complete_succeeds_outside_documentation_custody_without_changing_custody_or_movement()
     {
         await using var db = DocumentationApplicationTestHost.CreateDbContext();
         var category = DocumentationApplicationTestHost.AddCategory(db);
@@ -27,14 +27,12 @@ public sealed class DocumentationCustodyBoundaryTests
         var movementCountBefore = db.MovementRecords.Count();
         await db.SaveChangesAsync();
 
-        var result = await new CompleteDocumentationRecordUseCase(db, new DocumentationAvailabilityService(), new RecordingAuditWriter(), DocumentationApplicationTestHost.ActorContext())
+        var result = await new CompleteDocumentationRecordUseCase(db, new RecordingAuditWriter(), DocumentationApplicationTestHost.ActorContext())
             .CompleteDocumentationRecord(new CompleteDocumentationRecordRequest(record.DocumentationRecordId, record.ConcurrencyToken, DocumentationApplicationTestHost.RequiredTextValue()));
 
-        Assert.False(result.Succeeded);
-        Assert.Equal("DocumentationRecord.CustodyRequired", result.ValidationIssues[0].Code);
-        Assert.Equal(DocumentationRecordStatus.Draft, record.Status);
-        Assert.Null(record.CompletedBaselineValuesJson);
-        Assert.Empty(db.DocumentationRevisions);
+        Assert.True(result.Succeeded);
+        Assert.Equal(DocumentationRecordStatus.Completed, record.Status);
+        Assert.NotNull(record.CompletedBaselineValuesJson);
         Assert.Equal(movementCountBefore, db.MovementRecords.Count());
         Assert.Equal(statusBefore, artifact.CurrentStatus);
         Assert.Equal(holderBefore, artifact.CurrentHolderType);

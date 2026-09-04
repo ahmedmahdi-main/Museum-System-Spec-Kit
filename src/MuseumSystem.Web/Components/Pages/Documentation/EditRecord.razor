@@ -47,11 +47,6 @@
             </div>
         </div>
 
-        @if (!record.Artifact.IsAvailableToDocumentation && record.Record.Status == DocumentationRecordStatus.Draft)
-        {
-            <div class="status-message warning-message">القطعة ليست حالياً لدى قسم التوثيق، لذلك لا يمكن تعديل المسودة.</div>
-        }
-
         <EditForm Model="values" OnSubmit="SaveDraftAsync" FormName="documentation-record-draft">
             <DynamicDocumentationForm Fields="record.TemplateVersion.Fields" Values="values" IsReadOnly="IsFormReadOnly" />
 
@@ -220,7 +215,6 @@
 
     private static string LocalizeMessage(string message)
     {
-        if (message.Contains("not currently held by Documentation", StringComparison.OrdinalIgnoreCase)) return "القطعة ليست حالياً لدى قسم التوثيق.";
         if (message.Contains("Draft documentation saved", StringComparison.OrdinalIgnoreCase)) return "تم حفظ المسودة.";
         if (message.Contains("documentation record completed", StringComparison.OrdinalIgnoreCase)) return "تم إكمال التوثيق.";
         if (message.Contains("Reload and review", StringComparison.OrdinalIgnoreCase)) return "تغيرت البيانات بواسطة مستخدم آخر. أعد تحميل أحدث نسخة وراجعها قبل المتابعة.";

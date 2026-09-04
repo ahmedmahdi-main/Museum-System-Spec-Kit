@@ -73,16 +73,11 @@
             </div>
         </div>
 
-        @if (!workspace.Artifact.IsAvailableToDocumentation)
-        {
-            <div class="status-message warning-message">القطعة ليست حالياً لدى قسم التوثيق، لذلك لا يمكن إنشاء سجل جديد أو تعديل مسودة.</div>
-        }
-
         @if (workspace.ExistingRecord is null)
         {
             <div class="card-panel">
                 <h3>لا يوجد سجل توثيق</h3>
-                <p class="muted">يمكن إنشاء سجل توثيق عندما تكون القطعة لدى قسم التوثيق ويوجد قالب نشط لفئتها.</p>
+                <p class="muted">يمكن إنشاء سجل توثيق عندما يوجد قالب توثيق نشط لفئة القطعة.</p>
                 @if (workspace.Actions.CanCreate)
                 {
                     <button type="button" class="btn-primary" @onclick="CreateAsync">إنشاء سجل توثيق</button>
@@ -247,7 +242,6 @@
     {
         if (message.Contains("Artifact was not found", StringComparison.OrdinalIgnoreCase)) return "لم يتم العثور على القطعة.";
         if (message.Contains("already has a Documentation Record", StringComparison.OrdinalIgnoreCase)) return "توجد للقطعة سجل توثيق مسبق.";
-        if (message.Contains("not currently held by Documentation", StringComparison.OrdinalIgnoreCase)) return "القطعة ليست حالياً لدى قسم التوثيق.";
         if (message.Contains("No Active documentation template", StringComparison.OrdinalIgnoreCase)) return "لا يوجد قالب توثيق نشط لهذه الفئة.";
         if (message.Contains("Draft documentation record created", StringComparison.OrdinalIgnoreCase)) return "تم إنشاء مسودة التوثيق.";
         if (message.Contains("Reload and review", StringComparison.OrdinalIgnoreCase)) return "تغيرت البيانات بواسطة مستخدم آخر. أعد تحميل أحدث نسخة وراجعها قبل المتابعة.";
