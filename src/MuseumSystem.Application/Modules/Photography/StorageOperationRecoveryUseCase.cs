@@ -8,7 +8,7 @@ namespace MuseumSystem.Application.Modules.Photography;
 
 /// <summary>
 /// Internal/system retry handler for <see cref="StorageOperationRecovery"/>. Not staff-facing:
-/// no permission check, no sixth Photography permission, no MinIO-specific behavior.
+/// no permission check, no sixth Photography permission, no provider-specific behavior.
 /// </summary>
 public sealed class StorageOperationRecoveryUseCase(
     IMuseumDbContext dbContext,

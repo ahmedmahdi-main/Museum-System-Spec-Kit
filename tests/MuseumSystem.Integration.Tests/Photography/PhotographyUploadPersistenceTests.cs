@@ -235,7 +235,7 @@ public sealed class PhotographyUploadPersistenceTests(PostgresPhotographyTestFix
         var fingerprint = new PhotographyUploadFingerprintService();
         var objectKeys = new PhotographyObjectKeyFactory();
         var audit = new PhotographyUploadAuditService(new RecordingAuditWriter());
-        var consistency = new PhotographyUploadConsistencyService(persistence, storage, objectKeys, audit);
+        var consistency = new PhotographyUploadConsistencyService(persistence, storage, objectKeys, new ArtifactImageStorageHealthService(), audit);
         var mapper = new PhotographyResponseMapper();
         var actor = new TestAuditActorContext("photographer-1");
 

@@ -729,7 +729,7 @@ internal static class PhotographyUploadApplicationTestHost
         var fingerprint = new PhotographyUploadFingerprintService();
         var objectKeys = new PhotographyObjectKeyFactory();
         var auditService = new PhotographyUploadAuditService(audit);
-        var consistency = new PhotographyUploadConsistencyService(persistence, storage, objectKeys, auditService);
+        var consistency = new PhotographyUploadConsistencyService(persistence, storage, objectKeys, new ArtifactImageStorageHealthService(), auditService);
         var mapper = new PhotographyResponseMapper();
         var actorContext = new TestAuditActorContext(actorUserId);
         return new PhotographyUploadUseCaseHost(

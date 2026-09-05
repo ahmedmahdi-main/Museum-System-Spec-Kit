@@ -1,6 +1,8 @@
 using System.Net;
+using Microsoft.Extensions.Options;
 using MuseumSystem.Application.Modules.Photography.Storage;
 using MuseumSystem.Domain.Modules.Photography;
+using MuseumSystem.Infrastructure.Photography.Storage;
 
 namespace MuseumSystem.Integration.Tests.Photography;
 
@@ -73,8 +75,9 @@ public sealed class ArtifactImageStorageUploadTests(MinioArtifactImageStorageTes
         Assert.Equal(ArtifactImageStorageResultKind.NotFound, readMissing.Kind);
         Assert.Equal(ArtifactImageStorageResultKind.NotFound, deleteMissing.Kind);
         Assert.DoesNotContain(fixture.Options.BucketName, readMissing.Failure!.StaffFacingMessage, StringComparison.OrdinalIgnoreCase);
+        AssertSafeStorageFailure(readMissing.Failure, missingKey);
 
-        var badOptions = new MuseumSystem.Infrastructure.Photography.Storage.MinioArtifactImageStorageOptions
+        var badOptions = new MinioArtifactImageStorageOptions
         {
             Provider = "Minio",
             Endpoint = "http://127.0.0.1:1",
@@ -84,12 +87,64 @@ public sealed class ArtifactImageStorageUploadTests(MinioArtifactImageStorageTes
             UseTls = false,
             RequestTimeoutSeconds = 1
         };
-        var misconfiguredStorage = new MuseumSystem.Infrastructure.Photography.Storage.MinioArtifactImageStorage(Microsoft.Extensions.Options.Options.Create(badOptions));
+        var misconfiguredStorage = new MinioArtifactImageStorage(Options.Create(badOptions));
         var result = await misconfiguredStorage.StatAsync(ImageStorageObjectKey.Create("artifact-images/integration/misconfigured.jpg"));
 
-        Assert.Contains(result.Kind, new[] { ArtifactImageStorageResultKind.RetryableFailure, ArtifactImageStorageResultKind.UnauthorizedOrMisconfigured });
+        Assert.Equal(ArtifactImageStorageResultKind.RetryableFailure, result.Kind);
         Assert.NotNull(result.Failure);
-        Assert.DoesNotContain("127.0.0.1", result.Failure!.StaffFacingMessage, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain(fixture.Options.BucketName, result.Failure.StaffFacingMessage, StringComparison.OrdinalIgnoreCase);
+        AssertSafeStorageFailure(result.Failure!, ImageStorageObjectKey.Create("artifact-images/integration/misconfigured.jpg"), "127.0.0.1");
+
+        var repeatedResult = await misconfiguredStorage.StatAsync(ImageStorageObjectKey.Create("artifact-images/integration/misconfigured-again.jpg"));
+        Assert.Equal(ArtifactImageStorageResultKind.RetryableFailure, repeatedResult.Kind);
+        Assert.NotNull(repeatedResult.Failure);
+        AssertSafeStorageFailure(repeatedResult.Failure!, ImageStorageObjectKey.Create("artifact-images/integration/misconfigured-again.jpg"), "127.0.0.1");
+
+        var missingBucketOptions = new MinioArtifactImageStorageOptions
+        {
+            Provider = "Minio",
+            Endpoint = fixture.Options.Endpoint,
+            BucketName = $"{fixture.Options.BucketName}-missing-{Guid.NewGuid():N}",
+            AccessKey = fixture.Options.AccessKey,
+            SecretKey = fixture.Options.SecretKey,
+            UseTls = false,
+            RequestTimeoutSeconds = fixture.Options.RequestTimeoutSeconds
+        };
+        var missingBucketStorage = new MinioArtifactImageStorage(Options.Create(missingBucketOptions));
+        var missingBucketResult = await missingBucketStorage.StatAsync(ImageStorageObjectKey.Create("artifact-images/integration/missing-bucket.jpg"));
+
+        Assert.Equal(ArtifactImageStorageResultKind.UnauthorizedOrMisconfigured, missingBucketResult.Kind);
+        Assert.NotNull(missingBucketResult.Failure);
+        AssertSafeStorageFailure(
+            missingBucketResult.Failure!,
+            ImageStorageObjectKey.Create("artifact-images/integration/missing-bucket.jpg"),
+            missingBucketOptions.BucketName);
+
+        using var source = new CancellationTokenSource();
+        await source.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            await storage.StatAsync(ImageStorageObjectKey.Create(fixture.CreateObjectKey("canceled/stat.jpg")), source.Token));
+    }
+
+    private static void AssertSafeStorageFailure(
+        ArtifactImageStorageFailure failure,
+        ImageStorageObjectKey objectKey,
+        params string[] additionalForbiddenFragments)
+    {
+        Assert.DoesNotContain(objectKey.Value, failure.StaffFacingMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(objectKey.Value, failure.OperationalSummary, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("artifact-images", failure.StaffFacingMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("artifact-images", failure.OperationalSummary, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("endpoint", failure.StaffFacingMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("endpoint", failure.OperationalSummary, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("credential", failure.StaffFacingMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("credential", failure.OperationalSummary, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Exception", failure.StaffFacingMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Exception", failure.OperationalSummary, StringComparison.OrdinalIgnoreCase);
+
+        foreach (var fragment in additionalForbiddenFragments)
+        {
+            Assert.DoesNotContain(fragment, failure.StaffFacingMessage, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(fragment, failure.OperationalSummary, StringComparison.OrdinalIgnoreCase);
+        }
     }
 }

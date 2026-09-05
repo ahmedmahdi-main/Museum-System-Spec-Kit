@@ -9,6 +9,7 @@ public sealed class PhotographyUploadConsistencyService(
     PhotographyUploadPersistenceService persistence,
     IArtifactImageStorage storage,
     PhotographyObjectKeyFactory objectKeyFactory,
+    ArtifactImageStorageHealthService storageHealth,
     PhotographyUploadAuditService auditService)
 {
     internal async Task<PhotographySet?> ProcessFileAsync(
@@ -297,9 +298,14 @@ public sealed class PhotographyUploadConsistencyService(
         var originalStat = await storage.StatAsync(originalKey, cancellationToken);
         if (!IsCompatible(originalStat.StoredObject, new IntendedStoredObject(originalKey, media.ContentType, media.LengthBytes, contentHash)))
         {
+            var assessment = storageHealth.Assess(originalStat.Kind);
             return new StoredObjectVerificationFailure(
-                originalStat.Failure?.StaffFacingMessage ?? "Stored original image could not be verified.",
-                originalStat.Failure?.OperationalSummary);
+                originalStat.Kind == ArtifactImageStorageResultKind.Success
+                    ? "Stored original image could not be verified."
+                    : assessment.CanonicalStaffFacingMessage,
+                originalStat.Kind == ArtifactImageStorageResultKind.Success
+                    ? "Stored object metadata did not match the expected upload."
+                    : assessment.OperationalSummary);
         }
 
         for (var index = 0; index < derivativeKeys.Count; index++)
@@ -308,9 +314,14 @@ public sealed class PhotographyUploadConsistencyService(
             var derivativeStat = await storage.StatAsync(derivativeKeys[index], cancellationToken);
             if (!IsCompatible(derivativeStat.StoredObject, new IntendedStoredObject(derivativeKeys[index], derivative.ContentType, derivative.LengthBytes, null)))
             {
+                var assessment = storageHealth.Assess(derivativeStat.Kind);
                 return new StoredObjectVerificationFailure(
-                    derivativeStat.Failure?.StaffFacingMessage ?? "Stored image derivative could not be verified.",
-                    derivativeStat.Failure?.OperationalSummary);
+                    derivativeStat.Kind == ArtifactImageStorageResultKind.Success
+                        ? "Stored image derivative could not be verified."
+                        : assessment.CanonicalStaffFacingMessage,
+                    derivativeStat.Kind == ArtifactImageStorageResultKind.Success
+                        ? "Stored object metadata did not match the expected upload."
+                        : assessment.OperationalSummary);
             }
         }
 
@@ -328,6 +339,7 @@ public sealed class PhotographyUploadConsistencyService(
         CancellationToken cancellationToken)
     {
         var cleanup = await storage.DeleteImageObjectsAsync(objectKeys.First(), objectKeys.Skip(1).ToArray(), cancellationToken);
+        var cleanupAssessment = storageHealth.Assess(cleanup.Kind);
         var operation = await persistence.LoadUploadOperationAsync(operationId, cancellationToken);
         PhotographyUploadFileOutcome outcome;
         if (cleanup.Succeeded)
@@ -371,7 +383,7 @@ public sealed class PhotographyUploadConsistencyService(
                     objectKeys.Skip(1).Where(unresolvedSet.Contains).ToArray(),
                     unresolvedObjectKeys,
                     artifactId,
-                    SanitizeOperationalSummary(operationalSummary ?? cleanup.Failure?.OperationalSummary ?? cleanup.Failure?.StaffFacingMessage ?? staffFacingFailure),
+                    operationalSummary ?? cleanupAssessment.OperationalSummary ?? "Object storage cleanup did not complete safely.",
                     cancellationToken);
             }
         }
@@ -392,14 +404,10 @@ public sealed class PhotographyUploadConsistencyService(
             return StoredObjectResolution.Established();
         }
 
-        if (writeResult.Kind == ArtifactImageStorageResultKind.NotFound)
+        var writeAssessment = storageHealth.Assess(writeResult.Kind, ArtifactImageStorageOperationContext.Write);
+        if (writeAssessment.IsMissing || !writeAssessment.RequiresAuthoritativeWriteVerification)
         {
-            return StoredObjectResolution.DefinitelyAbsent(writeResult.Failure?.StaffFacingMessage ?? fallbackStaffFacingMessage, writeResult.Failure?.OperationalSummary);
-        }
-
-        if (writeResult.Kind != ArtifactImageStorageResultKind.AlreadyExists && !MayHaveWrittenObject(writeResult.Kind))
-        {
-            return StoredObjectResolution.DefinitelyAbsent(writeResult.Failure?.StaffFacingMessage ?? fallbackStaffFacingMessage, writeResult.Failure?.OperationalSummary);
+            return StoredObjectResolution.DefinitelyAbsent(writeAssessment.CanonicalStaffFacingMessage, writeAssessment.OperationalSummary);
         }
 
         var stat = await storage.StatAsync(intended.ObjectKey, cancellationToken);
@@ -407,24 +415,19 @@ public sealed class PhotographyUploadConsistencyService(
         {
             return IsCompatible(stat.StoredObject, intended)
                 ? StoredObjectResolution.Established()
-                : StoredObjectResolution.Incompatible("Stored object did not match the expected upload.", writeResult.Failure?.OperationalSummary ?? stat.Failure?.OperationalSummary);
+                : StoredObjectResolution.Incompatible("Stored object did not match the expected upload.", writeAssessment.OperationalSummary);
         }
 
-        if (stat.Kind == ArtifactImageStorageResultKind.NotFound)
+        var statAssessment = storageHealth.Assess(stat.Kind);
+        if (statAssessment.IsMissing)
         {
-            return StoredObjectResolution.DefinitelyAbsent(writeResult.Failure?.StaffFacingMessage ?? fallbackStaffFacingMessage, writeResult.Failure?.OperationalSummary);
+            return StoredObjectResolution.DefinitelyAbsent(writeAssessment.CanonicalStaffFacingMessage, writeAssessment.OperationalSummary);
         }
 
         return StoredObjectResolution.Unknown(
             "Storage state could not be verified. Recovery is required.",
-            writeResult.Failure?.OperationalSummary ?? stat.Failure?.OperationalSummary);
+            statAssessment.OperationalSummary ?? writeAssessment.OperationalSummary);
     }
-
-    private static bool MayHaveWrittenObject(ArtifactImageStorageResultKind kind) =>
-        kind is ArtifactImageStorageResultKind.RetryableFailure
-            or ArtifactImageStorageResultKind.PermanentFailure
-            or ArtifactImageStorageResultKind.UnauthorizedOrMisconfigured
-            or ArtifactImageStorageResultKind.PartialFailure;
 
     private static bool IsCompatible(ArtifactImageStoredObjectMetadata? stored, IntendedStoredObject intended)
     {
@@ -447,12 +450,6 @@ public sealed class PhotographyUploadConsistencyService(
         return string.IsNullOrWhiteSpace(stored.Checksum)
             || string.IsNullOrWhiteSpace(intended.Checksum)
             || string.Equals(stored.Checksum, intended.Checksum, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static string SanitizeOperationalSummary(string value)
-    {
-        var trimmed = string.IsNullOrWhiteSpace(value) ? "Storage cleanup failed." : value.Trim();
-        return trimmed.Length <= 500 ? trimmed : trimmed[..500];
     }
 }
 

@@ -1,8 +1,6 @@
-using System.Net.Http;
 using Microsoft.Extensions.Options;
 using Minio;
 using Minio.DataModel.Args;
-using Minio.Exceptions;
 using MuseumSystem.Application.Modules.Photography.Storage;
 using MuseumSystem.Domain.Modules.Photography;
 
@@ -58,7 +56,7 @@ public sealed class MinioArtifactImageStorage : IArtifactImageStorage
                 null,
                 stat.LastModified));
         }
-        catch (Exception ex) when (TryMapFailure(ex, out var failure))
+        catch (Exception ex) when (MinioStorageErrorMapper.TryMap(ex, cancellationToken, out var failure))
         {
             return ArtifactImageStorageStatResult.Failed(failure.Kind, failure.Code, failure.StaffFacingMessage, failure.OperationalSummary);
         }
@@ -91,7 +89,7 @@ public sealed class MinioArtifactImageStorage : IArtifactImageStorage
 
             return ArtifactImageStorageReadResult.Success(new ArtifactImageStorageReadStream(buffer, stat.StoredObject!));
         }
-        catch (Exception ex) when (TryMapFailure(ex, out var failure))
+        catch (Exception ex) when (MinioStorageErrorMapper.TryMap(ex, cancellationToken, out var failure))
         {
             return ArtifactImageStorageReadResult.Failed(failure.Kind, failure.Code, failure.StaffFacingMessage, failure.OperationalSummary);
         }
@@ -138,7 +136,7 @@ public sealed class MinioArtifactImageStorage : IArtifactImageStorage
                 .WithObject(objectKey.Value), cancellationToken);
             return ArtifactImageStorageDeleteResult.Success(objectKey);
         }
-        catch (Exception ex) when (TryMapFailure(ex, out var failure))
+        catch (Exception ex) when (MinioStorageErrorMapper.TryMap(ex, cancellationToken, out var failure))
         {
             return ArtifactImageStorageDeleteResult.Failed(objectKey, failure.Kind, failure.Code, failure.StaffFacingMessage, failure.OperationalSummary);
         }
@@ -228,7 +226,7 @@ public sealed class MinioArtifactImageStorage : IArtifactImageStorage
                 ? ArtifactImageStorageWriteResult.Success(stored.StoredObject!)
                 : ArtifactImageStorageWriteResult.Failed(ArtifactImageStorageResultKind.RetryableFailure, "Storage.WriteVerificationFailed", StaffUnavailable);
         }
-        catch (Exception ex) when (TryMapFailure(ex, out var failure))
+        catch (Exception ex) when (MinioStorageErrorMapper.TryMap(ex, cancellationToken, out var failure))
         {
             return ArtifactImageStorageWriteResult.Failed(failure.Kind, failure.Code, failure.StaffFacingMessage, failure.OperationalSummary);
         }
@@ -258,66 +256,5 @@ public sealed class MinioArtifactImageStorage : IArtifactImageStorage
         }
 
         return endpoint;
-    }
-
-
-    private static bool TryMapFailure(Exception exception, out ArtifactImageStorageFailure failure)
-    {
-        failure = exception switch
-        {
-            ObjectNotFoundException => new ArtifactImageStorageFailure(
-                ArtifactImageStorageResultKind.NotFound,
-                "Storage.NotFound",
-                "Stored object was not found.",
-                SafeSummary(exception)),
-            BucketNotFoundException => new ArtifactImageStorageFailure(
-                ArtifactImageStorageResultKind.UnauthorizedOrMisconfigured,
-                "Storage.BucketMisconfigured",
-                StaffUnavailable,
-                SafeSummary(exception)),
-            AuthorizationException or AccessDeniedException => new ArtifactImageStorageFailure(
-                ArtifactImageStorageResultKind.UnauthorizedOrMisconfigured,
-                "Storage.UnauthorizedOrMisconfigured",
-                StaffUnavailable,
-                SafeSummary(exception)),
-            InvalidEndpointException or InvalidBucketNameException or ConnectionException => new ArtifactImageStorageFailure(
-                ArtifactImageStorageResultKind.UnauthorizedOrMisconfigured,
-                "Storage.Misconfigured",
-                StaffUnavailable,
-                SafeSummary(exception)),
-            InternalClientException or HttpRequestException or IOException or TimeoutException => new ArtifactImageStorageFailure(
-                ArtifactImageStorageResultKind.RetryableFailure,
-                "Storage.RetryableFailure",
-                StaffUnavailable,
-                SafeSummary(exception)),
-            MinioException minioException when IsAlreadyExists(minioException) => new ArtifactImageStorageFailure(
-                ArtifactImageStorageResultKind.AlreadyExists,
-                "Storage.ObjectAlreadyExists",
-                "Stored object already exists.",
-                SafeSummary(exception)),
-            MinioException => new ArtifactImageStorageFailure(
-                ArtifactImageStorageResultKind.PermanentFailure,
-                "Storage.ProviderFailure",
-                StaffUnavailable,
-                SafeSummary(exception)),
-            _ => new ArtifactImageStorageFailure(
-                ArtifactImageStorageResultKind.RetryableFailure,
-                "Storage.UnknownFailure",
-                StaffUnavailable,
-                SafeSummary(exception))
-        };
-
-        return true;
-    }
-
-    private static bool IsAlreadyExists(MinioException exception) =>
-        exception.Message.Contains("Precondition", StringComparison.OrdinalIgnoreCase)
-        || exception.Message.Contains("already", StringComparison.OrdinalIgnoreCase)
-        || exception.Message.Contains("exists", StringComparison.OrdinalIgnoreCase);
-
-    private static string SafeSummary(Exception exception)
-    {
-        var value = $"{exception.GetType().Name}: {exception.Message}".Trim();
-        return value.Length <= 500 ? value : value[..500];
     }
 }
