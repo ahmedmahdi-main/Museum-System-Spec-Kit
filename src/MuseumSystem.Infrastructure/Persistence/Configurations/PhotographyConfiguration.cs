@@ -215,9 +215,13 @@ public sealed class StorageOperationRecoveryConfiguration : IEntityTypeConfigura
         builder.Property(recovery => recovery.Status).HasConversion<string>().HasMaxLength(64).IsRequired();
         builder.Property(recovery => recovery.FailureSummary).HasMaxLength(1000).IsRequired();
         builder.Property(recovery => recovery.CreatedAt).IsRequired();
+        builder.Property(recovery => recovery.PhotographyUploadOperationId);
+        builder.Property(recovery => recovery.PhotographyUploadFileOutcomeId);
         builder.Property(recovery => recovery.ConcurrencyToken).IsConcurrencyToken();
         builder.HasIndex(recovery => recovery.ArtifactId);
         builder.HasIndex(recovery => recovery.ArtifactImageId);
+        builder.HasIndex(recovery => recovery.PhotographyUploadOperationId);
+        builder.HasIndex(recovery => recovery.PhotographyUploadFileOutcomeId);
 
         builder.HasOne<Artifact>()
             .WithMany()

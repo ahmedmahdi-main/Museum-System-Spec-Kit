@@ -52,6 +52,9 @@ public static class DependencyInjection
         services.AddSingleton<IValidateOptions<MinioArtifactImageStorageOptions>, MinioArtifactImageStorageOptionsValidator>();
         services.AddOptions<MinioArtifactImageStorageOptions>()
             .Bind(configuration.GetSection(MinioArtifactImageStorageOptions.SectionName));
+        services.AddSingleton<IValidateOptions<PhotographyIdempotencyOptions>, PhotographyIdempotencyOptionsValidator>();
+        services.AddOptions<PhotographyIdempotencyOptions>()
+            .Bind(configuration.GetSection(PhotographyIdempotencyOptions.SectionName));
 
         services.AddIdentityCore<ApplicationUser>()
             .AddRoles<ApplicationRole>()

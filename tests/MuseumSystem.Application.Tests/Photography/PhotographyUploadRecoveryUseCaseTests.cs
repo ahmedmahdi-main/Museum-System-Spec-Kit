@@ -69,6 +69,12 @@ public sealed class PhotographyUploadRecoveryUseCaseTests
         Assert.Equal(expectedKeys, recovery.ObjectKeys);
         Assert.Equal(expectedKeys, Assert.Single(storage.DeleteImageObjectCalls));
         Assert.False(await db.ArtifactImages.AnyAsync(image => image.Status == ArtifactImageStatus.Available));
+
+        // V0 Scenario A: PersistRecoveryNeededOutcomeAsync correlates the recovery with the exact
+        // upload operation/file outcome IDs that produced it.
+        var operation = await db.PhotographyUploadOperations.SingleAsync();
+        Assert.Equal(operation.PhotographyUploadOperationId, recovery.PhotographyUploadOperationId);
+        Assert.Equal(outcome.PhotographyUploadFileOutcomeId, recovery.PhotographyUploadFileOutcomeId);
     }
 
     [Fact]

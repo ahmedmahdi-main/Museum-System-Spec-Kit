@@ -97,9 +97,107 @@ public sealed class StorageOperationRecoveryUseCase(
             }
         }
 
-        return allCleaned
-            ? await MarkResolvedAsync(recovery, attemptedAt, cancellationToken)
-            : await MarkFailedAsync(recovery, attemptedAt, StorageOperationRecoveryRetryOutcome.RetryFailed, cancellationToken);
+        if (!allCleaned)
+        {
+            return await MarkFailedAsync(recovery, attemptedAt, StorageOperationRecoveryRetryOutcome.RetryFailed, cancellationToken);
+        }
+
+        var reconciliationFailure = await ReconcileUploadCleanupAsync(recovery, attemptedAt, cancellationToken);
+        if (reconciliationFailure is not null)
+        {
+            return reconciliationFailure;
+        }
+
+        return await MarkResolvedAsync(recovery, attemptedAt, cancellationToken);
+    }
+
+    /// <summary>
+    /// Once every recorded orphan object is confirmed cleaned, reconciles the durable upload-idempotency
+    /// snapshot for correlated <see cref="StorageOperationRecoveryType.UploadCleanup"/> rows so it does not
+    /// stay stuck at RecoveryNeeded forever. Legacy rows without correlation (created before T113's
+    /// correlation IDs existed, or produced outside the correlated creation path) are left exactly as
+    /// before: the storage inconsistency itself still resolves, but no upload operation/outcome is guessed
+    /// or mutated - correlation is never inferred from ArtifactId, object keys, or timestamps.
+    /// </summary>
+    private async Task<StorageOperationRecoveryRetryResult?> ReconcileUploadCleanupAsync(
+        StorageOperationRecovery recovery,
+        DateTimeOffset attemptedAt,
+        CancellationToken cancellationToken)
+    {
+        if (recovery.PhotographyUploadOperationId is null && recovery.PhotographyUploadFileOutcomeId is null)
+        {
+            return null;
+        }
+
+        if (recovery.PhotographyUploadOperationId is null || recovery.PhotographyUploadFileOutcomeId is null)
+        {
+            return await MarkFailedAsync(recovery, attemptedAt, StorageOperationRecoveryRetryOutcome.InvalidState, cancellationToken);
+        }
+
+        var outcome = await dbContext.PhotographyUploadFileOutcomes
+            .FirstOrDefaultAsync(candidate => candidate.PhotographyUploadFileOutcomeId == recovery.PhotographyUploadFileOutcomeId.Value, cancellationToken);
+
+        if (outcome is null || outcome.PhotographyUploadOperationId != recovery.PhotographyUploadOperationId.Value)
+        {
+            return await MarkFailedAsync(recovery, attemptedAt, StorageOperationRecoveryRetryOutcome.InvalidState, cancellationToken);
+        }
+
+        var operation = await dbContext.PhotographyUploadOperations
+            .Include(candidate => candidate.FileOutcomes)
+            .FirstOrDefaultAsync(candidate => candidate.PhotographyUploadOperationId == recovery.PhotographyUploadOperationId.Value, cancellationToken);
+
+        if (operation is null)
+        {
+            return await MarkFailedAsync(recovery, attemptedAt, StorageOperationRecoveryRetryOutcome.InvalidState, cancellationToken);
+        }
+
+        if (outcome.Status is not (PhotographyUploadFileOutcomeStatus.RecoveryNeeded or PhotographyUploadFileOutcomeStatus.CleanupPending or PhotographyUploadFileOutcomeStatus.Failed)
+            || operation.Status is not (PhotographyUploadOperationStatus.RecoveryNeeded or PhotographyUploadOperationStatus.Completed or PhotographyUploadOperationStatus.CompletedWithFailures or PhotographyUploadOperationStatus.Failed)
+            || (operation.Status == PhotographyUploadOperationStatus.RecoveryNeeded && operation.FileOutcomes.Count == 0))
+        {
+            return await MarkFailedAsync(recovery, attemptedAt, StorageOperationRecoveryRetryOutcome.InvalidState, cancellationToken);
+        }
+
+        await using var transaction = await dbContext.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            switch (outcome.Status)
+            {
+                case PhotographyUploadFileOutcomeStatus.RecoveryNeeded:
+                case PhotographyUploadFileOutcomeStatus.CleanupPending:
+                    outcome.ResolveToFailed(UploadCleanupCompletedStaffMessage);
+                    break;
+                case PhotographyUploadFileOutcomeStatus.Failed:
+                    break;
+            }
+
+            switch (operation.Status)
+            {
+                case PhotographyUploadOperationStatus.RecoveryNeeded:
+                    operation.FinalizeBatch(operation.FileOutcomes.Count);
+                    break;
+                case PhotographyUploadOperationStatus.Completed:
+                case PhotographyUploadOperationStatus.CompletedWithFailures:
+                case PhotographyUploadOperationStatus.Failed:
+                    break;
+            }
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return null;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            dbContext.ClearTrackedChanges();
+            return await ReloadAfterFinalizationConflictAsync(recovery.StorageOperationRecoveryId, cancellationToken);
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            dbContext.ClearTrackedChanges();
+            throw;
+        }
     }
 
     private async Task<StorageOperationRecoveryRetryResult> RetryDeleteCleanupAsync(
@@ -357,6 +455,9 @@ public sealed class StorageOperationRecoveryUseCase(
 
     private const string UnexpectedStorageFailureSummary =
         "Storage recovery operation failed unexpectedly and requires internal attention.";
+
+    private const string UploadCleanupCompletedStaffMessage =
+        "Upload could not be completed. Storage cleanup was completed safely.";
 
     private static string DomainSummaryFor(StorageOperationRecoveryType operationType) => operationType switch
     {

@@ -73,6 +73,7 @@ public static class DependencyInjection
         services.AddScoped<DeleteArtifactImageByUploaderGraceUseCase>();
         services.AddScoped<DeleteArtifactImagePrivilegedUseCase>();
         services.AddScoped<StorageOperationRecoveryUseCase>();
+        services.AddScoped<PhotographyUploadIdempotencyRetentionService>();
         return services;
     }
 }

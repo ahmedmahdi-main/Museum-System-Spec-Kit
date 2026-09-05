@@ -749,6 +749,349 @@ public sealed class StorageOperationRecoveryUseCaseTests
         Assert.Equal(StorageOperationRecoveryRetryOutcome.Resolved, retryResult.Outcome);
     }
 
+    // V0 Scenario B: successful correlated UploadCleanup resolves the recovery, moves the linked
+    // RecoveryNeeded outcome to a final Failed state with a fixed safe message, and re-finalizes the
+    // operation using its complete persisted file outcomes.
+    [Fact]
+    public async Task V0_B_correlated_upload_cleanup_resolves_and_finalizes_operation_as_failed()
+    {
+        await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
+        var artifact = PhotographyUploadApplicationTestHost.AddArtifact(db);
+        var (operation, outcome) = await SeedRecoveryNeededOperationAsync(db, artifact.ArtifactId, ordinal: 0);
+        operation.FinalizeBatch(1);
+        await db.SaveChangesAsync();
+        var key = Key("upload-orphan-b");
+        var recovery = StorageOperationRecovery.Create(
+            StorageOperationRecoveryType.UploadCleanup, artifact.ArtifactId, [key], "summary",
+            artifactImageId: null, photographyUploadOperationId: operation.PhotographyUploadOperationId, photographyUploadFileOutcomeId: outcome.PhotographyUploadFileOutcomeId);
+        db.StorageOperationRecoveries.Add(recovery);
+        await db.SaveChangesAsync();
+        var (useCase, _) = NewUseCase(RetryAt, db);
+
+        var result = await useCase.RetryAsync(new StorageOperationRecoveryRetryCommand(recovery.StorageOperationRecoveryId));
+
+        Assert.Equal(StorageOperationRecoveryRetryOutcome.Resolved, result.Outcome);
+        var reloadedRecovery = await db.StorageOperationRecoveries.SingleAsync();
+        Assert.Equal(StorageOperationRecoveryStatus.Resolved, reloadedRecovery.Status);
+        var reloadedOutcome = await db.PhotographyUploadFileOutcomes.SingleAsync();
+        Assert.Equal(PhotographyUploadFileOutcomeStatus.Failed, reloadedOutcome.Status);
+        Assert.Equal("Upload could not be completed. Storage cleanup was completed safely.", reloadedOutcome.StaffFacingMessage);
+        var reloadedOperation = await db.PhotographyUploadOperations.SingleAsync();
+        Assert.Equal(PhotographyUploadOperationStatus.Failed, reloadedOperation.Status);
+    }
+
+    // V0 Scenario C: when another outcome on the same operation is still unresolved, the operation
+    // remains RecoveryNeeded even after the correlated recovery resolves.
+    [Fact]
+    public async Task V0_C_operation_remains_recovery_needed_while_another_outcome_is_unresolved()
+    {
+        await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
+        var artifact = PhotographyUploadApplicationTestHost.AddArtifact(db);
+        var operation = PhotographyUploadOperation.Start("photographer-1", PhotographyUploadOperationKind.CreateSetUpload, $"idem-{Guid.NewGuid():N}", $"fp-{Guid.NewGuid():N}", artifact.ArtifactId);
+        db.PhotographyUploadOperations.Add(operation);
+        var outcome1 = PhotographyUploadFileOutcome.RecoveryNeeded(operation.PhotographyUploadOperationId, 0, "a.jpg", "fp-a", "Recovery is required.");
+        var outcome2 = PhotographyUploadFileOutcome.RecoveryNeeded(operation.PhotographyUploadOperationId, 1, "b.jpg", "fp-b", "Recovery is required.");
+        operation.AddFileOutcome(outcome1);
+        operation.AddFileOutcome(outcome2);
+        db.PhotographyUploadFileOutcomes.AddRange(outcome1, outcome2);
+        operation.FinalizeBatch(2);
+        await db.SaveChangesAsync();
+        var key = Key("upload-orphan-c");
+        var recovery = StorageOperationRecovery.Create(
+            StorageOperationRecoveryType.UploadCleanup, artifact.ArtifactId, [key], "summary",
+            artifactImageId: null, photographyUploadOperationId: operation.PhotographyUploadOperationId, photographyUploadFileOutcomeId: outcome1.PhotographyUploadFileOutcomeId);
+        db.StorageOperationRecoveries.Add(recovery);
+        await db.SaveChangesAsync();
+        var (useCase, _) = NewUseCase(RetryAt, db);
+
+        var result = await useCase.RetryAsync(new StorageOperationRecoveryRetryCommand(recovery.StorageOperationRecoveryId));
+
+        Assert.Equal(StorageOperationRecoveryRetryOutcome.Resolved, result.Outcome);
+        var reloadedOutcome1 = await db.PhotographyUploadFileOutcomes.SingleAsync(candidate => candidate.PhotographyUploadFileOutcomeId == outcome1.PhotographyUploadFileOutcomeId);
+        Assert.Equal(PhotographyUploadFileOutcomeStatus.Failed, reloadedOutcome1.Status);
+        var reloadedOutcome2 = await db.PhotographyUploadFileOutcomes.SingleAsync(candidate => candidate.PhotographyUploadFileOutcomeId == outcome2.PhotographyUploadFileOutcomeId);
+        Assert.Equal(PhotographyUploadFileOutcomeStatus.RecoveryNeeded, reloadedOutcome2.Status);
+        var reloadedOperation = await db.PhotographyUploadOperations.SingleAsync();
+        Assert.Equal(PhotographyUploadOperationStatus.RecoveryNeeded, reloadedOperation.Status);
+    }
+
+    // V0 Scenario D: a legacy UploadCleanup row with no correlation can still resolve the storage
+    // inconsistency, but no upload operation/outcome is guessed or mutated.
+    [Fact]
+    public async Task V0_D_legacy_uncorrelated_upload_cleanup_resolves_storage_without_guessing_upload_state()
+    {
+        await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
+        var artifact = PhotographyUploadApplicationTestHost.AddArtifact(db);
+        var (unrelatedOperation, unrelatedOutcome) = await SeedRecoveryNeededOperationAsync(db, artifact.ArtifactId, ordinal: 0);
+        unrelatedOperation.FinalizeBatch(1);
+        await db.SaveChangesAsync();
+        var key = Key("legacy-orphan");
+        var recovery = StorageOperationRecovery.Create(StorageOperationRecoveryType.UploadCleanup, artifact.ArtifactId, [key], "summary");
+        db.StorageOperationRecoveries.Add(recovery);
+        await db.SaveChangesAsync();
+        var (useCase, _) = NewUseCase(RetryAt, db);
+
+        var result = await useCase.RetryAsync(new StorageOperationRecoveryRetryCommand(recovery.StorageOperationRecoveryId));
+
+        Assert.Equal(StorageOperationRecoveryRetryOutcome.Resolved, result.Outcome);
+        var reloadedRecovery = await db.StorageOperationRecoveries.SingleAsync();
+        Assert.Null(reloadedRecovery.PhotographyUploadOperationId);
+        Assert.Null(reloadedRecovery.PhotographyUploadFileOutcomeId);
+        var reloadedUnrelatedOutcome = await db.PhotographyUploadFileOutcomes.SingleAsync();
+        Assert.Equal(PhotographyUploadFileOutcomeStatus.RecoveryNeeded, reloadedUnrelatedOutcome.Status);
+        var reloadedUnrelatedOperation = await db.PhotographyUploadOperations.SingleAsync();
+        Assert.Equal(PhotographyUploadOperationStatus.RecoveryNeeded, reloadedUnrelatedOperation.Status);
+        Assert.Equal(unrelatedOutcome.PhotographyUploadFileOutcomeId, reloadedUnrelatedOutcome.PhotographyUploadFileOutcomeId);
+    }
+
+    // V0 Scenario E: a correlation that points at an outcome belonging to a DIFFERENT operation is an
+    // inconsistent relationship - the use case must not guess; it marks FailedNeedsAttention/InvalidState
+    // and never mutates the mismatched outcome.
+    [Fact]
+    public async Task V0_E_mismatched_correlation_marks_invalid_state_without_arbitrary_mutation()
+    {
+        await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
+        var artifact = PhotographyUploadApplicationTestHost.AddArtifact(db);
+        var (operationA, outcomeA) = await SeedRecoveryNeededOperationAsync(db, artifact.ArtifactId, ordinal: 0);
+        operationA.FinalizeBatch(1);
+        var operationB = PhotographyUploadOperation.Start("photographer-1", PhotographyUploadOperationKind.CreateSetUpload, $"idem-{Guid.NewGuid():N}", $"fp-{Guid.NewGuid():N}", artifact.ArtifactId);
+        db.PhotographyUploadOperations.Add(operationB);
+        await db.SaveChangesAsync();
+        var key = Key("mismatch");
+        var recovery = StorageOperationRecovery.Create(
+            StorageOperationRecoveryType.UploadCleanup, artifact.ArtifactId, [key], "summary",
+            artifactImageId: null, photographyUploadOperationId: operationB.PhotographyUploadOperationId, photographyUploadFileOutcomeId: outcomeA.PhotographyUploadFileOutcomeId);
+        db.StorageOperationRecoveries.Add(recovery);
+        await db.SaveChangesAsync();
+        var (useCase, _) = NewUseCase(RetryAt, db);
+
+        var result = await useCase.RetryAsync(new StorageOperationRecoveryRetryCommand(recovery.StorageOperationRecoveryId));
+
+        Assert.Equal(StorageOperationRecoveryRetryOutcome.InvalidState, result.Outcome);
+        Assert.False(result.Succeeded);
+        var reloadedRecovery = await db.StorageOperationRecoveries.SingleAsync();
+        Assert.Equal(StorageOperationRecoveryStatus.FailedNeedsAttention, reloadedRecovery.Status);
+        var reloadedOutcomeA = await db.PhotographyUploadFileOutcomes.SingleAsync();
+        Assert.Equal(PhotographyUploadFileOutcomeStatus.RecoveryNeeded, reloadedOutcomeA.Status);
+    }
+
+    // V0 Scenario F: two operations sharing the same ArtifactId never cross-link - resolving one
+    // operation's correlated recovery never touches the other operation's outcome, proving correlation
+    // is operation-specific rather than an ArtifactId heuristic.
+    [Fact]
+    public async Task V0_F_same_artifact_different_operations_never_cross_link()
+    {
+        await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
+        var artifact = PhotographyUploadApplicationTestHost.AddArtifact(db);
+        var (operation1, outcome1) = await SeedRecoveryNeededOperationAsync(db, artifact.ArtifactId, ordinal: 0);
+        operation1.FinalizeBatch(1);
+        var (operation2, outcome2) = await SeedRecoveryNeededOperationAsync(db, artifact.ArtifactId, ordinal: 0);
+        operation2.FinalizeBatch(1);
+        await db.SaveChangesAsync();
+        var key1 = Key("cross-link-1");
+        var recovery1 = StorageOperationRecovery.Create(
+            StorageOperationRecoveryType.UploadCleanup, artifact.ArtifactId, [key1], "summary",
+            artifactImageId: null, photographyUploadOperationId: operation1.PhotographyUploadOperationId, photographyUploadFileOutcomeId: outcome1.PhotographyUploadFileOutcomeId);
+        db.StorageOperationRecoveries.Add(recovery1);
+        await db.SaveChangesAsync();
+        var (useCase, _) = NewUseCase(RetryAt, db);
+
+        var result = await useCase.RetryAsync(new StorageOperationRecoveryRetryCommand(recovery1.StorageOperationRecoveryId));
+
+        Assert.Equal(StorageOperationRecoveryRetryOutcome.Resolved, result.Outcome);
+        var reloadedOutcome1 = await db.PhotographyUploadFileOutcomes.SingleAsync(candidate => candidate.PhotographyUploadFileOutcomeId == outcome1.PhotographyUploadFileOutcomeId);
+        Assert.Equal(PhotographyUploadFileOutcomeStatus.Failed, reloadedOutcome1.Status);
+        var reloadedOutcome2 = await db.PhotographyUploadFileOutcomes.SingleAsync(candidate => candidate.PhotographyUploadFileOutcomeId == outcome2.PhotographyUploadFileOutcomeId);
+        Assert.Equal(PhotographyUploadFileOutcomeStatus.RecoveryNeeded, reloadedOutcome2.Status);
+        var reloadedOperation2 = await db.PhotographyUploadOperations.SingleAsync(candidate => candidate.PhotographyUploadOperationId == operation2.PhotographyUploadOperationId);
+        Assert.Equal(PhotographyUploadOperationStatus.RecoveryNeeded, reloadedOperation2.Status);
+    }
+
+    // V0.1 Scenario G: if upload outcome/operation reconciliation committed before a crash but the
+    // recovery row stayed open, retry treats the already-Failed outcome and terminal operation as complete.
+    [Fact]
+    public async Task V0_G_already_failed_outcome_and_terminal_operation_retry_resolves_idempotently()
+    {
+        await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
+        var artifact = PhotographyUploadApplicationTestHost.AddArtifact(db);
+        var (operation, outcome) = await SeedRecoveryNeededOperationAsync(db, artifact.ArtifactId, ordinal: 0);
+        operation.FinalizeBatch(1);
+        outcome.ResolveToFailed("Already failed before crash.");
+        operation.FinalizeBatch(1);
+        await db.SaveChangesAsync();
+        var key = Key("restart-terminal");
+        var recovery = StorageOperationRecovery.Create(
+            StorageOperationRecoveryType.UploadCleanup, artifact.ArtifactId, [key], "summary",
+            artifactImageId: null, photographyUploadOperationId: operation.PhotographyUploadOperationId, photographyUploadFileOutcomeId: outcome.PhotographyUploadFileOutcomeId);
+        recovery.MarkRetrying(RetryAt.AddMinutes(-5));
+        db.StorageOperationRecoveries.Add(recovery);
+        await db.SaveChangesAsync();
+        var (useCase, _) = NewUseCase(RetryAt, db);
+
+        var result = await useCase.RetryAsync(new StorageOperationRecoveryRetryCommand(recovery.StorageOperationRecoveryId));
+
+        Assert.Equal(StorageOperationRecoveryRetryOutcome.Resolved, result.Outcome);
+        Assert.True(result.Succeeded);
+        AssertSafeMessage(result.StaffFacingMessage);
+        var reloadedRecovery = await db.StorageOperationRecoveries.SingleAsync();
+        Assert.Equal(StorageOperationRecoveryStatus.Resolved, reloadedRecovery.Status);
+        var reloadedOutcome = await db.PhotographyUploadFileOutcomes.SingleAsync();
+        Assert.Equal(PhotographyUploadFileOutcomeStatus.Failed, reloadedOutcome.Status);
+        Assert.Equal("Already failed before crash.", reloadedOutcome.StaffFacingMessage);
+        var reloadedOperation = await db.PhotographyUploadOperations.SingleAsync();
+        Assert.Equal(PhotographyUploadOperationStatus.Failed, reloadedOperation.Status);
+        Assert.Equal(0, await db.ArtifactImages.CountAsync());
+        var audits = await db.AuditEntries.Where(entry => entry.ModuleName == "Photography").ToListAsync();
+        Assert.NotEmpty(audits);
+        Assert.All(audits, audit => AssertSafeText(audit.ChangeSummary ?? string.Empty));
+    }
+
+    // V0.1 Scenario H: already-Failed outcome plus a RecoveryNeeded operation re-runs only the
+    // operation finalization step and reaches a terminal state when all outcomes are final.
+    [Fact]
+    public async Task V0_H_already_failed_outcome_with_recovery_needed_operation_refinalizes_to_failed()
+    {
+        await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
+        var artifact = PhotographyUploadApplicationTestHost.AddArtifact(db);
+        var (operation, outcome) = await SeedRecoveryNeededOperationAsync(db, artifact.ArtifactId, ordinal: 0);
+        operation.FinalizeBatch(1);
+        outcome.ResolveToFailed("Already failed before crash.");
+        await db.SaveChangesAsync();
+        var key = Key("restart-refinalize");
+        var recovery = StorageOperationRecovery.Create(
+            StorageOperationRecoveryType.UploadCleanup, artifact.ArtifactId, [key], "summary",
+            artifactImageId: null, photographyUploadOperationId: operation.PhotographyUploadOperationId, photographyUploadFileOutcomeId: outcome.PhotographyUploadFileOutcomeId);
+        db.StorageOperationRecoveries.Add(recovery);
+        await db.SaveChangesAsync();
+        var (useCase, _) = NewUseCase(RetryAt, db);
+
+        var result = await useCase.RetryAsync(new StorageOperationRecoveryRetryCommand(recovery.StorageOperationRecoveryId));
+
+        Assert.Equal(StorageOperationRecoveryRetryOutcome.Resolved, result.Outcome);
+        var reloadedOutcome = await db.PhotographyUploadFileOutcomes.SingleAsync();
+        Assert.Equal(PhotographyUploadFileOutcomeStatus.Failed, reloadedOutcome.Status);
+        var reloadedOperation = await db.PhotographyUploadOperations.SingleAsync();
+        Assert.Equal(PhotographyUploadOperationStatus.Failed, reloadedOperation.Status);
+        Assert.Equal(StorageOperationRecoveryStatus.Resolved, (await db.StorageOperationRecoveries.SingleAsync()).Status);
+    }
+
+    // V0.1 Scenario I: final outcomes that are not the cleanup-failure result are mismatches for
+    // UploadCleanup reconciliation and are not mutated.
+    [Theory]
+    [InlineData(PhotographyUploadFileOutcomeStatus.Succeeded)]
+    [InlineData(PhotographyUploadFileOutcomeStatus.Rejected)]
+    public async Task V0_I_succeeded_or_rejected_correlated_upload_cleanup_outcome_marks_invalid_state_without_mutation(PhotographyUploadFileOutcomeStatus outcomeStatus)
+    {
+        await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
+        var artifact = PhotographyUploadApplicationTestHost.AddArtifact(db);
+        var (operation, outcome) = await SeedFinalOutcomeOperationAsync(db, artifact, outcomeStatus);
+        await db.SaveChangesAsync();
+        var originalMessage = outcome.StaffFacingMessage;
+        var originalImageCount = await db.ArtifactImages.CountAsync();
+        var key = Key($"invalid-{outcomeStatus}");
+        var recovery = StorageOperationRecovery.Create(
+            StorageOperationRecoveryType.UploadCleanup, artifact.ArtifactId, [key], "summary",
+            artifactImageId: null, photographyUploadOperationId: operation.PhotographyUploadOperationId, photographyUploadFileOutcomeId: outcome.PhotographyUploadFileOutcomeId);
+        db.StorageOperationRecoveries.Add(recovery);
+        await db.SaveChangesAsync();
+        var (useCase, _) = NewUseCase(RetryAt, db);
+
+        var result = await useCase.RetryAsync(new StorageOperationRecoveryRetryCommand(recovery.StorageOperationRecoveryId));
+
+        Assert.Equal(StorageOperationRecoveryRetryOutcome.InvalidState, result.Outcome);
+        Assert.False(result.Succeeded);
+        AssertSafeMessage(result.StaffFacingMessage);
+        var reloadedRecovery = await db.StorageOperationRecoveries.SingleAsync();
+        Assert.Equal(StorageOperationRecoveryStatus.FailedNeedsAttention, reloadedRecovery.Status);
+        var reloadedOutcome = await db.PhotographyUploadFileOutcomes.SingleAsync();
+        Assert.Equal(outcomeStatus, reloadedOutcome.Status);
+        Assert.Equal(originalMessage, reloadedOutcome.StaffFacingMessage);
+        Assert.Equal(operation.Status, (await db.PhotographyUploadOperations.SingleAsync()).Status);
+        Assert.Equal(originalImageCount, await db.ArtifactImages.CountAsync());
+    }
+
+    // V0.1 Scenario J: an InProgress operation correlated to an upload cleanup recovery is controlled
+    // InvalidState; retry does not guess by mutating the linked outcome.
+    [Fact]
+    public async Task V0_J_in_progress_correlated_upload_operation_marks_invalid_state_without_mutation()
+    {
+        await using var db = PhotographyUploadApplicationTestHost.CreateDbContext();
+        var artifact = PhotographyUploadApplicationTestHost.AddArtifact(db);
+        var (operation, outcome) = await SeedRecoveryNeededOperationAsync(db, artifact.ArtifactId, ordinal: 0);
+        await db.SaveChangesAsync();
+        var key = Key("in-progress");
+        var recovery = StorageOperationRecovery.Create(
+            StorageOperationRecoveryType.UploadCleanup, artifact.ArtifactId, [key], "summary",
+            artifactImageId: null, photographyUploadOperationId: operation.PhotographyUploadOperationId, photographyUploadFileOutcomeId: outcome.PhotographyUploadFileOutcomeId);
+        db.StorageOperationRecoveries.Add(recovery);
+        await db.SaveChangesAsync();
+        var (useCase, _) = NewUseCase(RetryAt, db);
+
+        var result = await useCase.RetryAsync(new StorageOperationRecoveryRetryCommand(recovery.StorageOperationRecoveryId));
+
+        Assert.Equal(StorageOperationRecoveryRetryOutcome.InvalidState, result.Outcome);
+        var reloadedOutcome = await db.PhotographyUploadFileOutcomes.SingleAsync();
+        Assert.Equal(PhotographyUploadFileOutcomeStatus.RecoveryNeeded, reloadedOutcome.Status);
+        var reloadedOperation = await db.PhotographyUploadOperations.SingleAsync();
+        Assert.Equal(PhotographyUploadOperationStatus.InProgress, reloadedOperation.Status);
+        Assert.Equal(StorageOperationRecoveryStatus.FailedNeedsAttention, (await db.StorageOperationRecoveries.SingleAsync()).Status);
+    }
+
+    private static async Task<(PhotographyUploadOperation Operation, PhotographyUploadFileOutcome Outcome)> SeedRecoveryNeededOperationAsync(
+        MuseumDbContext db,
+        Guid artifactId,
+        int ordinal)
+    {
+        var operation = PhotographyUploadOperation.Start("photographer-1", PhotographyUploadOperationKind.CreateSetUpload, $"idem-{Guid.NewGuid():N}", $"fp-{Guid.NewGuid():N}", artifactId);
+        db.PhotographyUploadOperations.Add(operation);
+        var outcome = PhotographyUploadFileOutcome.RecoveryNeeded(operation.PhotographyUploadOperationId, ordinal, $"file-{ordinal}.jpg", $"fingerprint-{Guid.NewGuid():N}", "Recovery is required.");
+        operation.AddFileOutcome(outcome);
+        db.PhotographyUploadFileOutcomes.Add(outcome);
+        await Task.CompletedTask;
+        return (operation, outcome);
+    }
+
+    private static async Task<(PhotographyUploadOperation Operation, PhotographyUploadFileOutcome Outcome)> SeedFinalOutcomeOperationAsync(
+        MuseumDbContext db,
+        Artifact artifact,
+        PhotographyUploadFileOutcomeStatus outcomeStatus)
+    {
+        PhotographyUploadOperation operation;
+        PhotographyUploadFileOutcome outcome;
+        if (outcomeStatus == PhotographyUploadFileOutcomeStatus.Succeeded)
+        {
+            var set = PhotographyRequestApplicationTestHost.AddPhotographySet(db, artifact);
+            var image = PhotographyRequestApplicationTestHost.AddImage(db, artifact, set);
+            operation = PhotographyUploadOperation.Start("photographer-1", PhotographyUploadOperationKind.AppendToSetUpload, $"idem-{Guid.NewGuid():N}", $"fp-{Guid.NewGuid():N}", artifact.ArtifactId, set.PhotographySetId);
+            db.PhotographyUploadOperations.Add(operation);
+            outcome = PhotographyUploadFileOutcome.Succeeded(
+                operation.PhotographyUploadOperationId,
+                0,
+                "front.jpg",
+                $"fingerprint-{Guid.NewGuid():N}",
+                image.ArtifactImageId,
+                image.OriginalObjectKey,
+                [],
+                "File uploaded.");
+        }
+        else if (outcomeStatus == PhotographyUploadFileOutcomeStatus.Rejected)
+        {
+            operation = PhotographyUploadOperation.Start("photographer-1", PhotographyUploadOperationKind.CreateSetUpload, $"idem-{Guid.NewGuid():N}", $"fp-{Guid.NewGuid():N}", artifact.ArtifactId);
+            db.PhotographyUploadOperations.Add(operation);
+            outcome = PhotographyUploadFileOutcome.Rejected(operation.PhotographyUploadOperationId, 0, "rejected.jpg", $"fingerprint-{Guid.NewGuid():N}", "Unsupported file type.");
+        }
+        else
+        {
+            throw new ArgumentOutOfRangeException(nameof(outcomeStatus), "Only final non-failed outcomes are valid for this helper.");
+        }
+
+        operation.AddFileOutcome(outcome);
+        db.PhotographyUploadFileOutcomes.Add(outcome);
+        operation.FinalizeBatch(1);
+        await Task.CompletedTask;
+        return (operation, outcome);
+    }
+
     private static void AssertNoSensitiveLeak(string text)
     {
         string[] sensitiveFragments = ["museum-prod-bucket", "storage.internal", "srv/minio", "private-artifacts", "AKIAEXAMPLE", "InvalidOperationException", "artifact-images/abc"];
