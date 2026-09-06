@@ -263,7 +263,7 @@
 - [x] T118 [US6] Implement StorageOperationRecovery internal retry use case with audit and no staff-facing recovery permission in src/MuseumSystem.Application/Modules/Photography/StorageOperationRecoveryUseCase.cs
 - [x] T119 [US6] Implement provider-neutral storage health and error classification service for controlled retry/unavailable behavior in src/MuseumSystem.Application/Modules/Photography/ArtifactImageStorageHealthService.cs
 - [x] T120 [US6] Implement MinIO retry/error translation, misconfiguration handling, and restart-safe behavior behind the storage abstraction in src/MuseumSystem.Infrastructure/Photography/Storage/MinioStorageErrorMapper.cs
-- [ ] T121 [US6] Document provider-neutral migration, configuration assumptions, and future coordinated recovery requirement for PostgreSQL Photography metadata plus object-storage originals/derivatives without backup/HA implementation in docs/operations/photography-storage-provider.md
+- [x] T121 [US6] Document provider-neutral migration, configuration assumptions, and future coordinated recovery requirement for PostgreSQL Photography metadata plus object-storage originals/derivatives without backup/HA implementation in docs/operations/photography-storage-provider.md
 
 **Checkpoint**: US6 is independently functional and proves recoverable storage consistency without a distributed transaction assumption.
 
