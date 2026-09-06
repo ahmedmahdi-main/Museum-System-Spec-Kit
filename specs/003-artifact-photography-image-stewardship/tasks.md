@@ -254,7 +254,7 @@
 - [x] T112 [P] [US6] Add application tests for internal StorageOperationRecovery retry behavior, audit events, no sixth Photography permission, and staff-safe unavailable messages in tests/MuseumSystem.Application.Tests/Photography/StorageOperationRecoveryUseCaseTests.cs
 - [x] T113 [P] [US6] Add PostgreSQL integration tests for durable StorageOperationRecovery rows, retry state transitions, unresolved recovery retention blocking idempotency cleanup, and recovery audit metadata in tests/MuseumSystem.Integration.Tests/Photography/StorageOperationRecoveryPersistenceTests.cs
 - [x] T114 [P] [US6] Add object-storage integration tests for metadata failure cleanup, cleanup failure recovery, missing object detection, MinIO restart around operations, and provider error mapping in tests/MuseumSystem.Integration.Tests/Photography/StorageConsistencyRecoveryTests.cs
-- [ ] T115 [P] [US6] Add deployment portability tests proving Domain/Application have no MinIO SDK, bucket, endpoint, Windows path, Docker, WSL, or Linux-specific dependency in tests/MuseumSystem.Integration.Tests/Photography/PhotographyInfrastructureBoundaryTests.cs
+- [x] T115 [P] [US6] Add deployment portability tests proving Domain/Application have no MinIO SDK, bucket, endpoint, Windows path, Docker, WSL, or Linux-specific dependency in tests/MuseumSystem.Integration.Tests/Photography/PhotographyInfrastructureBoundaryTests.cs
 - [ ] T116 [P] [US6] Add web acceptance tests for controlled storage unavailable/retry messaging and no raw operational internals in staff workflows in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyStorageFailureFlowTests.cs
 
 ### Implementation for User Story 6
