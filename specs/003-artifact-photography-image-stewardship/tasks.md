@@ -273,7 +273,7 @@
 
 **Purpose**: Cross-story verification, regression protection, UI review, and operational acceptance tasks.
 
-- [ ] T122 [P] Add Feature 001 custody, movement, current location, Storehouse return, Artifact identity, Museum Number, and category regression tests for Photography workflows in tests/MuseumSystem.Integration.Tests/Photography/PhotographyCustodyBoundaryRegressionTests.cs
+- [x] T122 [P] Add Feature 001 custody, movement, current location, Storehouse return, Artifact identity, Museum Number, and category regression tests for Photography workflows in tests/MuseumSystem.Integration.Tests/Photography/PhotographyCustodyBoundaryRegressionTests.cs
 - [ ] T123 [P] Add Feature 002 Documentation regression tests proving Documentation records/templates are unaffected and only authorized future viewing integration is projected in tests/MuseumSystem.Integration.Tests/Photography/PhotographyDocumentationBoundaryRegressionTests.cs
 - [ ] T124 [P] Add authentication, permission matrix, and audit preservation regression tests for existing system behavior after Photography permissions are enabled in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyPermissionMatrixTests.cs
 - [ ] T125 [P] Add quickstart validation tests for the end-to-end Feature 003 planning verification checklist in tests/MuseumSystem.Integration.Tests/Quickstart/PhotographyQuickstartTests.cs
