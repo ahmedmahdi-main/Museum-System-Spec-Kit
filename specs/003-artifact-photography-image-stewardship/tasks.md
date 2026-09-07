@@ -275,7 +275,7 @@
 
 - [x] T122 [P] Add Feature 001 custody, movement, current location, Storehouse return, Artifact identity, Museum Number, and category regression tests for Photography workflows in tests/MuseumSystem.Integration.Tests/Photography/PhotographyCustodyBoundaryRegressionTests.cs
 - [x] T123 [P] Add Feature 002 Documentation regression tests proving Documentation records/templates are unaffected and only authorized future viewing integration is projected in tests/MuseumSystem.Integration.Tests/Photography/PhotographyDocumentationBoundaryRegressionTests.cs
-- [ ] T124 [P] Add authentication, permission matrix, and audit preservation regression tests for existing system behavior after Photography permissions are enabled in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyPermissionMatrixTests.cs
+- [x] T124 [P] Add authentication, permission matrix, and audit preservation regression tests for existing system behavior after Photography permissions are enabled in tests/MuseumSystem.Web.AcceptanceTests/Photography/PhotographyPermissionMatrixTests.cs
 - [ ] T125 [P] Add quickstart validation tests for the end-to-end Feature 003 planning verification checklist in tests/MuseumSystem.Integration.Tests/Quickstart/PhotographyQuickstartTests.cs
 - [ ] T126 Run frontend design review using .agents/skills/frontend-design-review/SKILL.md and record Arabic/RTL, design-system, minimal-click workflow, and no-conflicting-local-styling findings in specs/003-artifact-photography-image-stewardship/ui-review.md
 - [ ] T127 Verify all Web/UI implementation follows .agents/skills/frontend-design/SKILL.md and docs/design-system.md, then record any required centralized component gaps in specs/003-artifact-photography-image-stewardship/ui-review.md
