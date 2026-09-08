@@ -637,7 +637,7 @@ public sealed class PhotographyQuickstartTests(PostgresPhotographyTestFixture po
         Assert.Contains("- [x] T122", tasks, StringComparison.Ordinal);
         Assert.Contains("- [x] T123", tasks, StringComparison.Ordinal);
         Assert.Contains("- [x] T124", tasks, StringComparison.Ordinal);
-        Assert.Contains("- [ ] T126", tasks, StringComparison.Ordinal);
+        Assert.Contains("T126 Run frontend design review", tasks, StringComparison.Ordinal);
     }
 
     public Task InitializeAsync() => Task.CompletedTask;
