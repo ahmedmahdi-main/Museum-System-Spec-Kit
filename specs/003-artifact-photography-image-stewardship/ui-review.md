@@ -154,3 +154,107 @@ T126 did not perform a repo-wide component-gap inventory and did not mark T127 c
 - Production UI code reviewed only; no production code changed.
 - T127 through T135 remain untouched.
 - This document is the T126 review record.
+
+# T127 — Repository-Wide Frontend Design-System Verification
+
+## T127 Metadata
+
+- **Task**: T127 repository-wide Web/UI verification against `.agents/skills/frontend-design/SKILL.md` and `docs/design-system.md`.
+- **Baseline commit**: `b48c03074edd7a3ee6ce61b5f88dd84842da1891`
+- **Branch**: `003-artifact-photography-image-stewardship`
+- **Evidence method**: Static/source review of authored Web UI files under `src/MuseumSystem.Web`, central CSS, scoped layout CSS, the reconnect UI script, the T126 review record, and broad source scans for inline styles, embedded style blocks, hard-coded colors, physical directional CSS, typography overrides, duplicate local systems, and repeated interaction patterns.
+- **Runtime visual inspection**: No.
+- **Limitations**: No rendered browser, keyboard traversal, device viewport, contrast measurement, Figma, Storybook, screen-reader, or WCAG-conformance inspection is claimed. Bootstrap vendor files and generated `obj` scoped CSS were discovered but not treated as authored project design-system source.
+
+## Coverage Inventory
+
+Authored UI source reviewed: 38 Razor files, 3 `.razor.css` files, 2 authored CSS files, and 1 authored UI JavaScript file. The discovered Bootstrap CSS/JS files are third-party UI dependencies, and generated `obj` scoped CSS files mirror authored scoped CSS.
+
+| Area | Razor files reviewed | CSS/JS reviewed | Result |
+| --- | ---: | --- | --- |
+| Shell/Layout | 3 | 3 `.razor.css`; 1 `.razor.js` | Generally aligned; one reconnect-modal CSS deviation recorded as `T127-DS-001`. |
+| Shared | 1 | 0 | Aligned; shared validation summary uses centralized status messaging. |
+| Home/System | 6 | `wwwroot/app.css`; `wwwroot/fonts/fonts.css` | Aligned; shell, routing, system pages, core tokens, focus, responsive, and reduced-motion foundations accounted for. |
+| Artifacts | 4 | 0 | Aligned; artifact identity, museum number, status, tables, forms, empty states, and primary-image entry point use central primitives. |
+| Storehouse | 5 | 0 | Aligned; delivery, return, reconciliation, locations, and correction workflows use register tables, compact forms, action bars, and status badges. |
+| Documentation | 9 | 0 | Aligned; artifact documentation, templates, revisions, dynamic fields, summaries, tables, and conflict messages use shared classes. |
+| Photography | 8 | 0 | Aligned with T126 limitations; T126 findings `T126-UI-001`, `T126-UI-002`, and `T126-UI-003` remain preserved and are not renumbered. |
+| Imports | 1 | 0 | Aligned; import file picker, validation actions, results table, and feedback use central primitives. |
+| Admin | 1 | 0 | Aligned; audit trail uses page header, page section, status message, table wrapper, and data table. |
+
+## frontend-design Alignment
+
+- **Subject grounding**: The UI is grounded in museum registration, artifact custody, documentation, photography stewardship, storehouse movement, imports, and audit workflows rather than generic dashboard composition.
+- **Museum-specific identity**: The project-specific design direction is calm, precise, trustworthy, Iraqi museum institutional, RTL-native, operational, and register-oriented. This is a valid intentional identity for the generic `frontend-design` guidance; no marketing hero, decorative motion, gradient, or experimental visual language is required.
+- **Information structure**: Screens generally open with `page-header`, then proceed through `page-section`, `sub-section`, `summary-grid`, `artifact-state`, `table-wrap`, and `data-table` structures that encode actual staff workflows.
+- **Typography**: `app.css` keeps the UI on the centralized font stack and uses display/mono treatments for headings and operational references. No feature page introduces an independent font family or inappropriate Arabic letter-spacing.
+- **Restraint**: The navy/bronze/neutral system is preserved. No authored Razor file contains inline styles or embedded style blocks, and no feature creates a competing decorative palette.
+- **Responsive/focus/reduced motion evidence**: Central CSS provides focus-visible rules, table overflow wrappers, responsive grid behavior, and reduced-motion handling. The reconnect modal scoped CSS also includes reduced-motion handling.
+- **Copy consistency**: Action labels and empty/error states are operational and Arabic-first, with safe next steps rather than implementation jargon.
+- **Failure and empty states**: `status-message`, `warning-message`, `empty-state`, table empty rows, and workflow-specific explanations are reused across areas. T126's warning live-region concern remains a preserved Photography finding.
+
+## Design-System Compliance Matrix
+
+| Area | Identity/tokens | Shared primitives | RTL | Forms/tables | Accessibility source evidence | Result |
+| --- | --- | --- | --- | --- | --- | --- |
+| Shell/Layout | Uses central shell/nav tokens; scoped layout CSS delegates to `app.css` | Nav, skip link, reconnect modal | RTL shell direction preserved; reconnect animation has physical `left` values | Not form/table heavy | Skip link, dialog semantics, reduced motion | Needs attention for `T127-DS-001`; non-blocking. |
+| Shared | Uses central status classes | `ValidationSummary` | Neutral | Validation feedback | `role="alert"` for validation summary | Pass. |
+| Home/System | Uses central tokens and fonts | Page header/section, index rows, status/error UI | RTL-native | Home lookup and system actions use central buttons | Error page actions and Blazor error UI present | Pass. |
+| Artifacts | Museum number and artifact identity are prominent | `artifact-state`, `summary-grid`, `data-table`, `empty-state`, `ref`, shared buttons | RTL-native with reference treatment | Forms and artifact register tables use shared classes | Labels, status text with badges, table overflow | Pass. |
+| Storehouse | Operational custody/location identity retained | `page-section`, `form-grid`, `data-table`, `badge-status`, `action-bar` | RTL-native | Compact movement forms and preview tables | Eligibility text plus badges, clear disabled actions | Pass. |
+| Documentation | Documentation records stay artifact-centered | `summary-grid`, `data-table`, `status-message`, `warning-message`, dynamic form component | RTL-native | Template/editor forms and revision tables use shared classes | Conflict reload actions, validation/help text | Pass. |
+| Photography | Photography surfaces follow central museum primitives | `artifact-state`, `file-picker`, `media-thumb`, `dialog-panel`, `summary-grid`, `data-table`, `badge-status` | RTL-native with T126 identifier isolation gaps preserved | Upload/request/gallery forms and tables use shared classes | Alt text, visible media-unavailable states, no raw storage internals | Pass with preserved T126 follow-ups. |
+| Imports | Uses central file picker and register table | `file-picker`, `form-grid`, `data-table`, `status-message` | RTL-native | Import workflow uses shared buttons/forms/table | File input label and status text | Pass. |
+| Admin | Quiet register-style audit view | `data-table`, `table-wrap`, `status-message` | RTL-native | Audit table uses shared table system | Empty state text and semantic table | Pass. |
+
+## Repository-Wide Deviations
+
+- **T127-DS-001 - Reconnect modal scoped CSS retains local sizing/positioning values**
+  - **Severity/significance**: Minor / Needs attention; non-blocking.
+  - **Affected area**: Shell/Layout reconnect UI.
+  - **Paths**: `src/MuseumSystem.Web/Components/Layout/ReconnectModal.razor.css`
+  - **Evidence**: The scoped CSS defines local dialog width/margins, token fallbacks, button padding `7px 18px`, animation dimensions `80px`, and physical `left` positions inside the reconnect animation.
+  - **Why this deviates from `docs/design-system.md`**: The design system asks new UI to rely on shared tokens/primitives, token-scale spacing, and logical direction-aware properties where direction matters. This scoped reconnect styling still keeps local sizing/positioning details outside the ordinary centralized `app.css` primitive set.
+  - **Classification**: Pre-existing cross-project Shell/Layout design-system deviation; not Feature 003-specific; non-blocking.
+  - **Impact**: The modal still uses project colors, typography, dialog semantics, and reduced-motion handling, but it is less centralized than ordinary page/dialog styling and can drift from future shell token changes.
+  - **Recommendation**: When reconnect UI is next edited, migrate remaining spacing/sizing to token values and prefer transform-based animation or logical positioning where practical.
+
+## Centralized Component Gap Analysis
+
+| ID/Candidate | Type | Evidence | Usage sites | Classification | Recommendation |
+| --- | --- | --- | ---: | --- | --- |
+| `file-picker` | CSS primitive | `src/MuseumSystem.Web/wwwroot/app.css`; `src/MuseumSystem.Web/Components/Pages/Imports/ExcelImport.razor`; `src/MuseumSystem.Web/Components/Pages/Photography/Upload.razor` | 2 independent modules | ALREADY CENTRALIZED | Keep the CSS primitive. A Razor wrapper is not required because Excel import and image upload have different accept/multiple/result behavior. |
+| `dialog-panel` | CSS primitive / helper pattern | `src/MuseumSystem.Web/wwwroot/app.css`; `src/MuseumSystem.Web/Components/Photography/PhotographyImageDeletionDialog.razor` | 1 feature workflow | KEEP FEATURE-SPECIFIC | Keep current Photography deletion behavior local until another module implements the same modal/destructive interaction. |
+| `media-thumb` | CSS primitive | `src/MuseumSystem.Web/wwwroot/app.css`; `src/MuseumSystem.Web/Components/Pages/Photography/Upload.razor`; `src/MuseumSystem.Web/Components/Photography/PhotographyUploadResults.razor` | 1 module | KEEP FEATURE-SPECIFIC | Keep as Photography media presentation; do not promote without another media-heavy module. |
+| `primary-image-link` | CSS primitive | `src/MuseumSystem.Web/wwwroot/app.css`; `src/MuseumSystem.Web/Components/Pages/Artifacts/Search.razor` | 1 cross-feature integration point | KEEP FEATURE-SPECIFIC | Keep as a narrow artifact-search integration affordance for Photography primary images. |
+| Artifact search/picker | Razor component candidate | `Documentation/Index.razor`; `Photography/Upload.razor`; `Photography/Requests.razor`; `Artifacts/Search.razor` | 3 modules | RECOMMENDED / FUTURE REUSE | Consider a shared picker only if future work needs the same search/select contract and artifact context summary across modules; current flows differ enough that it is not required. |
+| Artifact identity summary / state strip | CSS primitive / helper pattern | `app.css`; `Artifacts/Details.razor`; `Documentation/Index.razor`; `Photography/Gallery.razor`; `Photography/Upload.razor`; `Photography/Requests.razor`; `PhotographyRequestPanel.razor` | 3 modules | ALREADY CENTRALIZED | Continue using `artifact-state`, `summary-grid`, `summary-item`, and `ref`; no Razor abstraction required now. |
+| Destructive/confirmation dialog | Razor component candidate | `PhotographyImageDeletionDialog.razor`; `PhotographyRequestPanel.razor`; disable/remove actions in Categories, Locations, Documentation templates | Multiple action contexts | RECOMMENDED / FUTURE REUSE | Do not centralize yet. Existing interactions differ between modal deletion, inline request cancellation, and simple disable/remove actions. |
+| Validation/status feedback | CSS primitive / Razor helper | `Shared/ValidationSummary.razor`; many pages using `status-message`/`warning-message`; T126-UI-003 in Photography request warnings | Many modules | ALREADY CENTRALIZED | Keep central message classes and shared validation summary. Future live-region alignment may address T126-UI-003, but no required new component is proven. |
+| Museum-number/reference rendering | CSS primitive / helper pattern | `app.css`; `Artifacts/*`; `Documentation/*`; `Photography/*`; `Storehouse/*` | Many modules | ALREADY CENTRALIZED | Continue using `.ref` for museum numbers and operational identifiers. A Razor wrapper may become useful if LTR/date/user-id drift expands, but current evidence supports the CSS primitive. |
+| Search/filter toolbar | CSS primitive | `app.css`; `Artifacts/Search.razor`; `Photography/Upload.razor`; `Photography/Requests.razor`; `PhotographyGalleryToolbar.razor` | 2 modules | ALREADY CENTRALIZED | Keep `register-toolbar` and `search-row` as central primitives. |
+| Metadata summary grid | CSS primitive | `app.css`; Documentation, Photography, Artifact detail pages | 3 modules | ALREADY CENTRALIZED | Continue using `summary-grid`/`summary-item`. |
+| File upload results / media results | Razor component candidate | `PhotographyUploadResults.razor`; `Imports/ExcelImport.razor` | 2 modules | KEEP FEATURE-SPECIFIC | Results differ by binary/media semantics versus spreadsheet validation; no required shared component. |
+
+## Required Centralized Gaps
+
+No required centralized component gaps were identified.
+
+T127 found reusable patterns and future opportunities, but no candidate met the threshold for required centralization with concrete cross-module drift, duplicated accessibility-critical behavior, or incompatible reimplementation of an existing central primitive.
+
+## T126 Candidate Resolution
+
+- `file-picker`: **ALREADY CENTRALIZED** as a CSS primitive in `app.css`, with independent use in Imports and Photography. No required Razor component gap.
+- `dialog-panel`: **KEEP FEATURE-SPECIFIC** for current behavior. The class is centralized in CSS, but only Photography deletion currently uses this modal pattern.
+- `media-thumb`: **KEEP FEATURE-SPECIFIC** because current usage is Photography image upload/result presentation.
+- `primary-image-link`: **KEEP FEATURE-SPECIFIC** because current usage is a narrow Artifact Search to Photography Gallery affordance.
+
+## T127 Conclusion
+
+Repository-wide Web/UI verification completed for the authored UI source under `src/MuseumSystem.Web`. The Web UI generally follows the `frontend-design` guidance as interpreted through the museum-specific design-system authority: it is subject-grounded, register-oriented, RTL-native, operational, restrained, and consistent with the centralized token/primitives model.
+
+Design-system deviation count: 1 (`T127-DS-001`).
+
+Required centralization gap count: 0.
+
+Production corrections are recommended only as future authorized work: preserve T126 findings, consider future artifact-picker reuse if workflows converge, and normalize reconnect modal CSS during future shell maintenance. No production code changed. No tests changed. T128 and later tasks remain untouched.
