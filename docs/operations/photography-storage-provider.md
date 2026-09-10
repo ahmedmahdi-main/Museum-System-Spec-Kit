@@ -88,6 +88,8 @@ If a future provider requires key transformation, PostgreSQL references and obje
 
 MinIO on Windows Server 2019 is a provisional deployment candidate. Feature 003 does not declare the current direct-Windows MinIO topology production approved.
 
+The [Windows Server 2019 MinIO Production Go/No-Go PoC](photography-minio-windows-2019-poc.md) is the T128 acceptance instrument only. Its existence does not constitute production approval, does not mean the PoC passed, and does not change the PoC status from Pending / Not Executed. Until the actual PoC is executed, evidence is recorded, and an explicit future Go decision is made, Windows Server 2019 MinIO is not production-approved by Feature 003.
+
 Production reliance requires the documented go/no-go proof of concept, including checks such as:
 
 - service start and restart;
@@ -102,7 +104,19 @@ Production reliance requires the documented go/no-go proof of concept, including
 - representative image workload;
 - migration and export feasibility.
 
-Production does not require Docker Desktop, WSL, or a Linux VM. Tests may use containers; production does not depend on them.
+Feature 003 does not require Docker, Docker Desktop, WSL, Testcontainers, or a Linux VM for production operation. Automated tests may use containers; test infrastructure is not a production deployment requirement. Docker is not forbidden, but T129 does not prescribe a new production topology.
+
+## Operational Acceptance Boundaries
+
+Windows filesystem paths used to host MinIO object data are deployment configuration only. They must not become Domain data, Application business data, Artifact identity, Museum Number, image business identity, `ImageStorageObjectKey`, or staff-facing identifiers. `ImageStorageObjectKey` remains a logical object-storage key, not a Windows filesystem path, and the storage contract remains provider-neutral.
+
+If a deployment uses one local `D:\` storage location or another single local volume as the MinIO data location, that topology provides only local persistent storage. It is not high availability, replication, failover, or disaster recovery. Increasing disk capacity does not turn a single storage node, single local volume, or single server into HA.
+
+MinIO/private object storage is the authoritative binary store for Photography originals, thumbnails, and previews, but the existence of those objects is not itself a backup. PostgreSQL is not a backup of MinIO, MinIO is not a backup of PostgreSQL, `StorageOperationRecovery` is not backup, extra free disk capacity is not backup, and a copied object directory without coordinated metadata state is not a complete Photography recovery point.
+
+T128 defines the direct-Windows MinIO go/no-go PoC instrument. T129 documents deployment and operational acceptance boundaries. Neither task executes the PoC, approves production, implements backup, or implements HA. A future successful PoC still would not make a single storage volume highly available and would not constitute a backup strategy.
+
+Operational storage topology must not alter the existing `ArtifactId`, Museum Number, custody, movement history, current physical location, Documentation ownership, or Laboratory workflow meaning.
 
 ## Future Linux Or Provider Migration
 
@@ -163,18 +177,24 @@ PostgreSQL backup alone is not a complete Photography recovery.
 
 Object-storage backup alone is not a complete Photography recovery.
 
-A future backup and restore design must coordinate both:
+A future backup and restore design must coordinate both parts of the Photography logical state:
 
-1. PostgreSQL Photography metadata, history, recovery, and idempotency state.
-2. Original and derivative object binaries.
+1. PostgreSQL metadata/state: Photography Sets, Photography Requests where relevant, Artifact Images, derivatives metadata, Primary Image state, deletion state, idempotency state, `StorageOperationRecovery` state, and audit references.
+2. Object binaries: originals, thumbnails, and previews.
 
-PostgreSQL contains references and state about objects, while object storage contains the binary content. Restoring mismatched points in time can produce:
+A future restore process must establish a coordinated point or otherwise prove that restored metadata and binaries are mutually consistent. Do not claim that Feature 003 provides atomic snapshots or prescribes a backup vendor, product, or restore engine.
 
-- metadata pointing to missing objects;
-- objects with no committed available metadata;
-- stale deletion state;
-- already-deleted objects appearing in an older metadata state;
-- unresolved recovery records inconsistent with actual object state.
+Restoring independent PostgreSQL and object-storage points in time can produce:
+
+- PostgreSQL metadata pointing to an object that does not exist;
+- an object with no corresponding committed metadata;
+- deleted binaries reappearing while PostgreSQL still says `Deleted`;
+- PostgreSQL restored to a pre-delete state while the binary remains deleted;
+- Primary Image metadata referencing unavailable content;
+- stale `DeletePending` or recovery state disagreeing with actual storage;
+- unresolved `StorageOperationRecovery` state no longer matching real object state.
+
+A future restore or migration procedure must control Photography writes sufficiently to avoid creating a new inconsistent point during restore. It may use an approved maintenance window, write quiescence, or another future designed mechanism. Feature 003 does not implement online dual-write restore or migration.
 
 Feature 003 deliberately does not implement the backup or restore mechanism. `StorageOperationRecovery` does not replace backup.
 
@@ -242,15 +262,23 @@ These are operational requirements, not implemented monitoring features.
 T121 and Feature 003 do not implement:
 
 - backup engine;
+- backup scheduler;
 - restore engine;
+- coordinated backup orchestration;
+- coordinated restore orchestration;
 - PostgreSQL PITR;
+- object-storage backup scheduler;
 - object-storage replication;
 - MinIO replication;
 - HA cluster;
+- multi-node MinIO HA;
 - failover;
+- automatic failover;
 - DR orchestration;
+- disaster-recovery orchestration;
 - automatic migration;
 - dual-write migration;
+- online dual-write restore or migration;
 - scheduler for recovery;
 - scheduler for idempotency retention;
 - operator recovery Web UI;
@@ -290,5 +318,6 @@ Do not require production operators to run test fixtures or Testcontainers.
 - [Feature 003 research](../../specs/003-artifact-photography-image-stewardship/research.md)
 - [Storage abstraction contract](../../specs/003-artifact-photography-image-stewardship/contracts/storage-abstraction.md)
 - [Implementation decisions](../../specs/003-artifact-photography-image-stewardship/implementation-decisions.md)
+- [Windows Server 2019 MinIO PoC checklist](photography-minio-windows-2019-poc.md)
 - [MinIO storage options](../../src/MuseumSystem.Infrastructure/Photography/Storage/MinioArtifactImageStorageOptions.cs)
 - [Storage recovery use case](../../src/MuseumSystem.Application/Modules/Photography/StorageOperationRecoveryUseCase.cs)
